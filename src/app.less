@@ -1,0 +1,82 @@
+// out: ../wwwroot/app.css, compress: false, sourceMap: false
+@sider-width:150px;
+@sider-collapsed-width:50px;
+@header-height:40px;
+@layout-margin:10px;
+@layout-padding:5px;
+
+html,body{
+    padding:0;margin:0;  
+} 
+
+.border-box{
+    box-sizing: border-box;
+    border:0;
+    margin:0;
+    padding:0;
+} 
+
+.layout{
+    position: relative;
+    width:100%;
+    &>.sider{
+        box-sizing: border-box;
+        border:0;
+        margin:0;
+        padding:0;
+        width:@sider-width;
+        position: fixed;
+        left:0;
+        top:0;
+        z-index:3;
+        background-color:#ddd;
+        
+    }
+
+    &>.header{
+        box-sizing: border-box;
+        border:0;
+        margin:0;
+        padding:0;
+        width:100%;
+        padding-left:@sider-width + @layout-margin ;
+        position: fixed;
+        height: @header-height;
+        top:0;
+        left:0;
+        z-index:2;
+        background-color:#ccc;
+    }
+    &>.content{
+        box-sizing: border-box;
+        border:0;
+        margin:0;
+        padding:@layout-padding;
+        width:100%;
+        padding-left:@sider-width + @layout-margin;
+        padding-top:@header-height+ @layout-margin;
+    }
+}
+.layout-collapsed{
+    &>.sider{
+        width:@sider-collapsed-width;
+    }
+    &>.header{
+        padding-left:@sider-collapsed-width + @layout-margin ;
+    }
+    &>.content{
+        
+        padding-left:@sider-collapsed-width + @layout-margin;
+    }
+}
+
+.ant-menu-inline-collapsed{
+    width:50px;
+    &>.ant-menu-item,
+    &>.ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
+    &>.ant-menu-submenu > .ant-menu-submenu-title{
+        padding: 0 15px !important; 
+    }
+}
+
+

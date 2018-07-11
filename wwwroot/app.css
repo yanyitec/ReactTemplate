@@ -1,0 +1,67 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+.border-box {
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.layout {
+  position: relative;
+  width: 100%;
+}
+.layout > .sider {
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  width: 150px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  background-color: #ddd;
+}
+.layout > .header {
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  padding-left: 160px;
+  position: fixed;
+  height: 40px;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  background-color: #ccc;
+}
+.layout > .content {
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 5px;
+  width: 100%;
+  padding-left: 160px;
+  padding-top: 50px;
+}
+.layout-collapsed > .sider {
+  width: 50px;
+}
+.layout-collapsed > .header {
+  padding-left: 60px;
+}
+.layout-collapsed > .content {
+  padding-left: 60px;
+}
+.ant-menu-inline-collapsed {
+  width: 50px;
+}
+.ant-menu-inline-collapsed > .ant-menu-item,
+.ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
+.ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
+  padding: 0 15px !important;
+}
