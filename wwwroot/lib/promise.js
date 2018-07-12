@@ -23,6 +23,14 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 (function (global, factory) {
     eval("typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports,global) :\n\ttypeof define === 'function' && define.amd ? define(['exports'], factory) :\n\t(factory(global.exports = {},global));");
 })(this, function (exports, global) {
@@ -40,6 +48,132 @@ var __extends = (this && this.__extends) || (function () {
         PromiseStates[PromiseStates["fullfilled"] = 1] = "fullfilled";
         PromiseStates[PromiseStates["rejected"] = 2] = "rejected";
     })(PromiseStates || (PromiseStates = {}));
+    // 获取异步函数
+    // 如果有setImmediate，就用setImmediate
+    // 否则，使用 setTimeout
+    var _async;
+    if (typeof setImmediate === "function")
+        _async = setImmediate;
+    else
+        _async = setTimeout;
+    var _noop = function () { };
+    //几个重要的过程
+    /**
+     * Promise的解析过程
+     *
+     * @param {IPromise} promise
+     * @param {IPromiseState} promiseState
+     * @param {*} value
+     * @param {IPromiseOptions} opts
+     * @returns {IPromise}
+     */
+    function resolvePromise(promise, promiseState, value, opts) {
+        // 2.3.2.4.3.3 If both resolvePromise and rejectPromise are called, or multiple calls to the same argument are made, 
+        //              the first call takes precedence, and any further calls are ignored.
+        // 如果已经完成，再次调用resolve就直接返回。不做任何操作
+        if (promiseState.__promise_status !== PromiseStates.padding) {
+            //console.warn("promise resolved/rejected more than once.",promise,this);
+            return promise;
+        }
+        // 2.3.1 If promise and x refer to the same object, reject promise with a TypeError as the reason.
+        // resolve自己会循环引用，直接拒绝
+        if (value === promise) {
+            return settleValue(promise, promiseState, PromiseStates.rejected, new TypeError('不能resolve自己'), opts);
+        }
+        //如果要解析的值是 thenable
+        if (value && typeof value.then === "function") {
+            var called_1 = false;
+            var that = value;
+            try {
+                //thenable检查
+                //// 2.3.3.2 If retrieving the property x.then results in a thrown exception e, 
+                //   reject promise with e as the reason.
+                //let then :any = value.then;
+                // 2.3.3.3 If then is a function, call it with x as this,
+                //          first argument resolvePromise, and second argument rejectPromise
+                that.then(function (thatValue) {
+                    if (called_1)
+                        return;
+                    called_1 = true;
+                    resolvePromise(promise, promiseState, thatValue, opts);
+                }, function (thatReason) {
+                    if (called_1)
+                        return;
+                    called_1 = true;
+                    resolvePromise(promise, promiseState, thatReason, opts);
+                });
+                return promise;
+            }
+            catch (ex) {
+                if (called_1)
+                    return;
+                called_1 = true;
+                return settleValue(promise, promiseState, PromiseStates.rejected, ex, opts);
+            }
+        }
+        return settleValue(promise, promiseState, PromiseStates.fullfilled, value, opts);
+    }
+    function rejectPromise(promise, promiseState, reason) {
+        return settleValue(promise, promiseState, PromiseStates.rejected, reason, __assign({}, promiseState.__promise_options, { useApply: false }));
+    }
+    /**
+     * 给promise设定终值
+     *
+     * @param {IPromise} promise
+     * @param {IPromiseState} promiseState
+     * @param {PromiseStates} status
+     * @param {*} settledValue
+     * @param {IPromiseOptions} opts
+     * @returns
+     */
+    function settleValue(promise, promiseState, status, settledValue, opts) {
+        // 2.3.3.3.3 If both resolvePromise and rejectPromise are called, 
+        //           or multiple calls to the same argument are made, 
+        //           the first call takes precedence, and any further calls are ignored.
+        if (promiseState.__promise_status !== PromiseStates.padding)
+            return promise;
+        promiseState.__promise_status = status;
+        promiseState.__promise_settled_value = settledValue;
+        var executeCallbacks = function () {
+            var callbacks = status === PromiseStates.fullfilled
+                ? promiseState.__promise_fullfill_callbacks
+                : promiseState.__promise_reject_callbacks;
+            if (callbacks) {
+                var callback = void 0;
+                while (callback = callbacks.shift()) {
+                    if (opts && opts.useApply) {
+                        callback.apply(promise, settledValue);
+                    }
+                    else
+                        callback.call(promise, settledValue);
+                }
+            }
+            promiseState.__promise_fullfill_callbacks = promiseState.__promise_reject_callbacks = null;
+        };
+        if (opts && opts.callbackSync)
+            executeCallbacks();
+        else
+            _async(executeCallbacks, 0);
+        return promise;
+    }
+    function createThenCallback(orignalCallback, resolveOrReject, useApply) {
+        return function (settledValue) {
+            var result = (useApply) ? orignalCallback.apply(null, arguments) : orignalCallback.call(null, settledValue);
+            resolveOrReject(result);
+            return result;
+        };
+    }
+    function makeOpts(opts) {
+        if (opts === false)
+            opts = { "callbackSync": false };
+        else if (opts === true)
+            opts = { "callbackSync": true };
+        else if (opts === "useApply")
+            opts = { "useApply": true };
+        else if (opts === "callbackSync")
+            opts = { "callbackSync": true };
+        return (opts || {});
+    }
     /**
      * 核心的Promise类
      * 符合PromiseA+规范
@@ -49,176 +183,74 @@ var __extends = (this && this.__extends) || (function () {
      * @implements {IPromise}
      */
     var PromiseA = /** @class */ (function () {
-        function PromiseA(executor, sync, useApply) {
+        function PromiseA(executor, opts) {
             //if(executor===null)return;
             var promise = this;
-            promise.__promise_fullfill_sync = sync === true || sync === "sync";
-            promise.__promise_useApply = useApply === true || useApply === "apply";
+            promise.__promise_options = makeOpts(opts);
             promise.__promise_status = PromiseStates.padding;
-            var promiseThen = promise.then = function (onFullfilled, onRejected) {
-                //if(promise.__promise_status!==PromiseStates.padding){
-                //    fullfillPromise(promise.__promise_status,promise.__promise_value,this,promise.__promise_fullfill_sync);
-                //    return this.then(onFullfilled,onRejected);
-                //}
-                if (typeof onFullfilled === "function") {
-                    (promise.__promise_onFullfilleds || (promise.__promise_onFullfilleds = [])).push({ func: onFullfilled });
-                }
-                if (typeof onRejected === "function") {
-                    (promise.__promise_onRejecteds || (promise.__promise_onRejecteds = [])).push({ func: onRejected });
-                }
-                return promise;
-            };
-            var promiseDone = promise.done = function (onFullfilled, param) {
-                //if(promise.__promise_status!==PromiseStates.padding){
-                //    fullfillPromise(promise.__promise_status,promise.__promise_value,this,promise.__promise_fullfill_sync);
-                //    return this.done(onFullfilled);
-                //}
-                if (typeof onFullfilled === "function") {
-                    (promise.__promise_onFullfilleds || (promise.__promise_onFullfilleds = [])).push({ func: onFullfilled, param: param });
-                }
-                return promise;
-            };
-            var promiseFail = promise.fail = function (onRejected, param) {
-                //if(promise.__promise_status!==PromiseStates.padding){
-                //    fullfillPromise(promise.__promise_status,promise.__promise_value,this,promise.__promise_fullfill_sync);
-                //    return this.fail(onRejected);
-                //}
-                if (typeof onRejected === "function") {
-                    (promise.__promise_onRejecteds || (promise.__promise_onRejecteds = [])).push({ func: onRejected, param: param });
-                }
-                return promise;
-            };
-            var promisePromise = promise.promise = function (target) {
+            promise.__promise_fullfill_callbacks = [];
+            promise.__promise_reject_callbacks = [];
+            //promise.then = makeThen(promise);
+            promise.promise = function (target) {
                 if (target === this)
                     return this;
                 target || (target = {});
-                target.then = function (onfullfill, onreject) { promise.then(onfullfill, onreject); return target; };
-                target.done = function (onfullfill) { promise.done(onfullfill); return target; };
-                target.fail = function (onreject) { promise.then(null, onreject); return target; };
-                target.promise = promisePromise;
+                target.then = function (onfullfill, onreject) { return promise.then(onfullfill, onreject); };
+                target.done = function (onfullfill) { return promise.then(onfullfill); };
+                target.fail = function (onreject) { return promise.then(null, onreject); };
+                target.promise = promise.promise;
                 return target;
             };
-            function resolvePromise(value, isSync) {
-                // 2.3.2.4.3.3 If both resolvePromise and rejectPromise are called, or multiple calls to the same argument are made, 
-                //              the first call takes precedence, and any further calls are ignored.
-                // 如果已经完成，再次调用resolve就直接返回。不做任何操作
-                if (promise.__promise_status !== PromiseStates.padding) {
-                    //console.warn("promise resolved/rejected more than once.",promise,this);
-                    return promise;
-                }
-                // 2.3.1 If promise and x refer to the same object, reject promise with a TypeError as the reason.
-                // resolve自己会循环引用，直接拒绝
-                if (value === promise) {
-                    return rejectPromise(new TypeError('不能resolve自己'));
-                }
-                // 2.3.2 If x is a promise, adopt its state [3.4]
-                // 如果返回的是一个PromiseA对象
-                // 其实跟后面的Thenable检查一样
-                // 应该跟thenable一样，做错误检查
-                if (true || value instanceof PromiseA) {
-                    //let that = value as PromiseA;
-                    //that.then( resolvePromise, rejectPromise);
-                    //return promise;
-                    // 规范文档是错误的，无论是否fullfilled/reject，都要解析里面的参数
-                    // Promise不应该出现在resolve函数的参数中
-                    // 2.3.2.2 If/when x is fulfilled, fulfill promise with the same value.
-                    // 2.3.2.3 If/when x is rejected, reject promise with the same reason.
-                    // 如果已经有结果，用相同的结果/错误传递下去
-                    //if(that.__promise_status === PromiseStates.fullfilled){
-                    //    return executeFullfill(PromiseStates.fullfilled,that.__promise_value);
-                    //}else if(that.__promise_status === PromiseStates.rejected){
-                    //    return executeFullfill(PromiseStates.rejected,that.__promise_reason);
-                    //}else {
-                    // 2.3.2.1 If x is pending, promise must remain pending until x is fulfilled or rejected.
-                    //    that.then( resolvePromise, rejectPromise);
-                    //    return;
-                    //}
-                }
-                var called = false;
-                //如果要解析的值是对象/函数
-                if (typeof value === "object" || typeof value === "function") {
-                    try {
-                        //thenable检查
-                        //// 2.3.3.2 If retrieving the property x.then results in a thrown exception e, 
-                        //   reject promise with e as the reason.
-                        var then = value.then;
-                        // 2.3.3.3 If then is a function, call it with x as this,
-                        //          first argument resolvePromise, and second argument rejectPromise
-                        if (typeof then === "function") {
-                            then.call(value, function (thenValue) {
-                                if (called)
-                                    return;
-                                called = true;
-                                resolvePromise(thenValue);
-                            }, function (thenReason) {
-                                if (called)
-                                    return;
-                                called = true;
-                                rejectPromise(thenReason);
-                            });
-                            return promise;
-                        }
-                    }
-                    catch (ex) {
-                        if (called)
-                            return;
-                        called = true;
-                        rejectPromise(ex);
-                    }
-                }
-                return executeFullfill(PromiseStates.fullfilled, value, isSync);
-            }
-            function rejectPromise(reason, isSync) {
-                if (promise.__promise_status !== PromiseStates.padding) {
-                    //console.warn("promise rejected/resolved more than once.",promise,this);
-                    return promise;
-                }
-                return executeFullfill(PromiseStates.rejected, reason, isSync === undefined ? promise.__promise_fullfill_sync : isSync);
-            }
-            function executeFullfill(status, value, sync) {
-                // 2.3.3.3.3 If both resolvePromise and rejectPromise are called, 
-                //           or multiple calls to the same argument are made, 
-                //           the first call takes precedence, and any further calls are ignored.
-                if (promise.__promise_status !== PromiseStates.padding)
-                    return promise;
-                promise.__promise_status = status;
-                if (status == PromiseStates.fullfilled)
-                    promise.__promise_value = value;
-                else
-                    promise.__promise_reason = value;
-                var exec = function () {
-                    var executions = status === PromiseStates.fullfilled
-                        ? promise.__promise_onFullfilleds
-                        : promise.__promise_onRejecteds;
-                    if (executions) {
-                        var execution = void 0;
-                        var useApply_1 = promise.__promise_useApply === true;
-                        while (execution = executions.shift()) {
-                            if (useApply_1 || execution.param === '#useApply') {
-                                execution.func.apply(promise, value);
-                            }
-                            else
-                                execution.func.call(promise, value, execution.param);
-                        }
-                    }
-                    fullfillPromise(status, value, promise, sync);
-                };
-                var isSync = sync ? (sync === true || sync === 'sync') : promise.__promise_fullfill_sync;
-                if (isSync)
-                    exec();
-                else
-                    _async(exec, 0);
-                return promise;
-            }
             if (executor) {
                 try {
-                    executor(resolvePromise, rejectPromise);
+                    executor(function (value) { return resolvePromise(promise, promise, value, promise.__promise_options); }, function (reason) { return rejectPromise(promise, promise, reason); });
                 }
                 catch (ex) {
-                    rejectPromise(ex);
+                    rejectPromise(promise, promise, ex);
                 }
             }
         }
+        //then:(onFullfilled:(value:any,param?:any)=>void,onRejected?:(reason:any,param?:any)=>void)=>IThenable;
+        PromiseA.prototype.then = function (onFullfilled, onRejected) {
+            var promiseState = this;
+            var resolve;
+            var reject;
+            var thenPromise = new PromiseA(function (_resolve, _reject) {
+                resolve = _resolve;
+                reject = _reject;
+            });
+            var fullfillCallback = typeof onFullfilled !== 'function' ? null : function (settledValue) {
+                var result = (promiseState.__promise_options.useApply) ? onFullfilled.apply(null, arguments) : onFullfilled.call(null, settledValue);
+                resolve(result);
+                return result;
+            };
+            if (fullfillCallback) {
+                if (promiseState.__promise_fullfill_callbacks) {
+                    promiseState.__promise_fullfill_callbacks.push(fullfillCallback);
+                }
+                else {
+                    fullfillCallback(promiseState.__promise_settled_value);
+                    return thenPromise;
+                }
+            }
+            var rejectCallback = typeof onRejected !== 'function' ? null : function (settledValue) {
+                var result = (promiseState.__promise_options.useApply) ? onRejected.apply(null, arguments) : onRejected.call(null, settledValue);
+                reject(result);
+                return result;
+            };
+            if (rejectCallback) {
+                if (promiseState.__promise_reject_callbacks) {
+                    promiseState.__promise_reject_callbacks.push(fullfillCallback);
+                }
+                else {
+                    rejectCallback(promiseState.__promise_settled_value);
+                    return thenPromise;
+                }
+            }
+            return thenPromise;
+        };
+        PromiseA.prototype.done = function (onFullfilled) { return this.then(onFullfilled); };
+        PromiseA.prototype.fail = function (onRejected) { return this.then(null, onRejected); };
         /**
          *
          * 返回一个fullfilled状态的promise,其值为参数
@@ -227,12 +259,11 @@ var __extends = (this && this.__extends) || (function () {
          * @returns {IPromise}
          * @memberof PromiseA
          */
-        PromiseA.resolve = function (value, sync, useApply) {
-            var promise = new PromiseA(function (fullfill, reject) {
+        PromiseA.resolve = function (value, opts) {
+            return new PromiseA(function (fullfill, reject) {
                 fullfill(value);
-            }, sync, useApply);
+            }, opts);
             //fullfillPromise(promise.__promise_status=PromiseStates.fullfilled,promise.__promise_value=value,promise,sync===true||sync==='sync');
-            return promise;
         };
         /**
          * 返回一个rejected状态的promise,其reason为参数值
@@ -242,10 +273,10 @@ var __extends = (this && this.__extends) || (function () {
          * @returns {IPromise}
          * @memberof PromiseA
          */
-        PromiseA.reject = function (reason, sync, useApply) {
-            var promise = new PromiseA(null, sync, useApply);
-            fullfillPromise(promise.__promise_status = PromiseStates.rejected, promise.__promise_reason = reason, promise, sync === true || sync === 'sync');
-            return promise;
+        PromiseA.reject = function (reason, opts) {
+            return new PromiseA(function (fullfill, reject) {
+                reject(reason);
+            }, opts);
         };
         /**
          * 所有参数的promise都resolve了，promise才resolve
@@ -262,21 +293,19 @@ var __extends = (this && this.__extends) || (function () {
          * @returns {IPromise}
          * @memberof PromiseA
          */
-        PromiseA.all = function (_arg, _sync, _useApply) {
+        PromiseA.all = function (_arg, _opts) {
             var arg = [];
-            var sync;
-            var useApply;
+            var opts;
             if (arguments.length >= 1 && typeof _arg === "object" && _arg.length !== undefined) {
                 arg = _arg;
-                sync = _sync;
-                useApply = _useApply;
+                opts = _opts;
             }
             else {
                 arg = Array.prototype.slice.call(arguments);
-                useApply = true;
+                opts = "useApply";
             }
             if (arg.length == 0)
-                return PromiseA.resolve([], sync, useApply);
+                return PromiseA.resolve([], opts);
             return new PromiseA(function (resolve, reject) {
                 var results = [];
                 var taskcount = arg.length;
@@ -303,7 +332,7 @@ var __extends = (this && this.__extends) || (function () {
                         p.then(function (value) { return done(value, i); }, reject);
                     })(arg[i], i);
                 // done(undefined,undefined);
-            }, sync, useApply);
+            }, opts);
         };
         /**
          * 只要其中一个resolve了，整个promise就resolve
@@ -314,21 +343,18 @@ var __extends = (this && this.__extends) || (function () {
          * @returns {IPromise}
          * @memberof PromiseA
          */
-        PromiseA.race = function (_arg, _sync, _useApply) {
+        PromiseA.race = function (_arg, _opts) {
             var arg = [];
-            var sync;
-            var useApply;
+            var opts;
             if (arguments.length >= 1 && typeof _arg === "object" && _arg.length !== undefined) {
-                arg = _arg;
-                sync = _sync;
-                useApply = _useApply;
+                opts = _opts;
             }
             else {
                 arg = Array.prototype.slice.call(arguments);
-                useApply = true;
+                opts = "useApply";
             }
             if (arg.length == 0)
-                return PromiseA.resolve([], sync, useApply);
+                return PromiseA.resolve([], opts);
             return new PromiseA(function (resolve, reject) {
                 for (var i = 0, j = arg.length; i < j; i++)
                     (function (item, i) {
@@ -345,10 +371,10 @@ var __extends = (this && this.__extends) || (function () {
                         }
                         p.then(resolve, reject);
                     })(arg[i], i);
-            }, sync, useApply);
+            }, opts);
         };
-        PromiseA.deferred = function (sync, useApply) {
-            return new Deferred(sync, useApply);
+        PromiseA.defer = function (opts) {
+            return new Deferred(opts);
         };
         PromiseA.Promise = PromiseA;
         return PromiseA;
@@ -370,14 +396,14 @@ var __extends = (this && this.__extends) || (function () {
      */
     var Deferred = /** @class */ (function (_super) {
         __extends(Deferred, _super);
-        function Deferred(sync, useApply) {
+        function Deferred(opts) {
             var _this = this;
             var defferredResolve;
             var defferredReject;
             _this = _super.call(this, function (resolve, reject) {
                 defferredResolve = _this.resolve = resolve;
                 defferredReject = _this.reject = reject;
-            }, sync, useApply) || this;
+            }, opts) || this;
             return _this;
         }
         Deferred.prototype.fullfillable = function (target) {
@@ -408,56 +434,6 @@ var __extends = (this && this.__extends) || (function () {
         return Deferred;
     }(PromiseA));
     PromiseA.Deferred = Deferred;
-    // 获取异步函数
-    // 如果有setImmediate，就用setImmediate
-    // 否则，使用 setTimeout
-    var _async;
-    if (typeof setImmediate === "function")
-        _async = setImmediate;
-    else
-        _async = setTimeout;
-    /**
-     * 把Promise变成fullfilled状态(并不给promise的status,value,reason赋值)
-     * 主要是重写then,done,fail
-     * onFullfilled,onRejected不再进入等待队列，
-     * 而是直接丢给_async去执行
-     *
-     * @param {PromiseStates} status
-     * @param {*} value
-     * @param {PromiseA} promise
-     * @returns {PromiseA}
-     */
-    function fullfillPromise(status, value, promise, sync) {
-        promise.__promise_onFullfilleds = promise.__promise_onRejecteds = undefined;
-        //根据状态改变相关成员
-        if (status == PromiseStates.fullfilled) {
-            promise.then = function (onFullfilled, onRejected) {
-                sync ? onFullfilled.call(promise, value) : _async(function () { return onFullfilled.call(promise, value); }, 0);
-                return promise;
-            };
-            promise.done = function (onFullfilled, param) {
-                sync ? onFullfilled.call(promise, value) : _async(function () { return onFullfilled.call(promise, value); }, 0);
-                return promise;
-            };
-            promise.fail = function (onRejected, param) {
-                return promise;
-            };
-        }
-        else {
-            promise.then = function (onFullfilled, onRejected) {
-                sync ? onRejected.call(promise, value) : _async(function () { return onRejected.call(promise, value); }, 0);
-                return promise;
-            };
-            promise.done = function (onFullfilled, param) {
-                return promise;
-            };
-            promise.fail = function (onRejected, param) {
-                sync ? onRejected.call(promise, value) : _async(function () { return onRejected.call(promise, value); }, 0);
-                return promise;
-            };
-        }
-        return promise;
-    }
     exports.PromiseA = exports.Promise = global.PromiseA = global.Promise = PromiseA;
     //if(!global.Promise) global.Promise = PromiseA;
     exports.Deferred = global.Deferred = Deferred;

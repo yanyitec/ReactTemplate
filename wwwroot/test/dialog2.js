@@ -8,7 +8,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "lib/react/react", "lib/react/react-dom"], function (require, exports, React, ReactDOM) {
+define(["require", "exports", "lib/react/react", "ui"], function (require, exports, React, ui_1) {
     "use strict";
     exports.__esModule = true;
     var My = /** @class */ (function (_super) {
@@ -25,8 +25,8 @@ define(["require", "exports", "lib/react/react", "lib/react/react-dom"], functio
         }
         My.prototype.render = function () {
             var _this = this;
-            if (this.props.$dialogOpts)
-                this.props.$dialogOpts.$getDialogResult = function () {
+            if (this.props.transport)
+                this.props.transport.getModelResult = function () {
                     return _this.state.value;
                 };
             return React.createElement("div", null,
@@ -36,8 +36,5 @@ define(["require", "exports", "lib/react/react", "lib/react/react-dom"], functio
         return My;
     }(React.Component));
     exports["default"] = My;
-    My.renderTo = function (amountElement, props, container) {
-        (props || (props = {})).$container = container;
-        ReactDOM.render(React.createElement(My, props, null), amountElement);
-    };
+    ui_1.$mountable(My);
 });

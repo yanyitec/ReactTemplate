@@ -8,7 +8,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "lib/react/react", "lib/react/react-dom", "app"], function (require, exports, React, ReactDOM, app) {
+define(["require", "exports", "lib/react/react", "app", "ui"], function (require, exports, React, app, ui_1) {
     "use strict";
     exports.__esModule = true;
     var My = /** @class */ (function (_super) {
@@ -16,7 +16,7 @@ define(["require", "exports", "lib/react/react", "lib/react/react-dom", "app"], 
         function My() {
             var _this = _super !== null && _super.apply(this, arguments) || this;
             _this.onLoadModal = function (url) {
-                app.dialog({ title: "里面出来的模态框", url: url || "test/dialog" }).then(function (state) {
+                app.dialog({ title: "里面出来的模态框", module: url || "test/dialog" }).then(function (state) {
                     alert(state.status + "->" + state.result);
                 });
             };
@@ -34,8 +34,5 @@ define(["require", "exports", "lib/react/react", "lib/react/react-dom", "app"], 
         return My;
     }(React.Component));
     exports["default"] = My;
-    My.renderTo = function (amountElement, props, container) {
-        (props || (props = {})).$container = container;
-        ReactDOM.render(React.createElement(My, props, null), amountElement);
-    };
+    ui_1.$mountable(My);
 });

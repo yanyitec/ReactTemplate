@@ -1,23 +1,25 @@
 import * as React from 'lib/react/react';
 import * as ReactDOM from 'lib/react/react-dom';
-import * as app from 'app';
+import {$mountable} from 'ui';
 
 export default class My extends React.Component{
     props:any;
     state:any;
     setState:Function;
+    transport:any;
     constructor(props){
         super(props);
+        this.transport = props.transport ||{};
         this.state = {value:props.importValue};
         
     }
     onChange=(evt)=>{
         this.setState({
-            value:evt.target.value
+            value:this.transport.exports = evt.target.value
         });
     }
     render(){
-        if(this.props.$dialogOpts)this.props.$dialogOpts.$getDialogResult = ()=>{
+        if(this.transport)this.transport.getModalResult = ()=>{
             return this.state.value;
         }
 
@@ -28,7 +30,4 @@ export default class My extends React.Component{
     }
     
 }
-(My as any).renderTo = (amountElement:HTMLElement,props:any,container?:any)=>{
-    (props||(props={})).$container = container;
-    ReactDOM.render(React.createElement(My,props,null),amountElement);
-}
+$mountable(My);

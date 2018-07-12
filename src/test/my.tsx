@@ -1,11 +1,11 @@
 import * as React from 'lib/react/react';
 import * as ReactDOM from 'lib/react/react-dom';
 import * as app from 'app';
-import { stat } from 'fs';
+import { $mountable } from 'ui';
 
 export default class My extends React.Component{
     onLoadModal=(url?:string)=>{
-        (app as any).dialog({title:"里面出来的模态框",url:url||"test/dialog"}).then((state)=>{
+        (app as any).dialog({title:"里面出来的模态框",module:url||"test/dialog"}).then((state)=>{
             alert(state.status + "->" + state.result);
         });
     }
@@ -18,7 +18,4 @@ export default class My extends React.Component{
     }
     
 }
-(My as any).renderTo = (amountElement:HTMLElement,props:any,container?:any)=>{
-    (props||(props={})).$container = container;
-    ReactDOM.render(React.createElement(My,props,null),amountElement);
-}
+$mountable(My);

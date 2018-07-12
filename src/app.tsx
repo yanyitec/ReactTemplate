@@ -2,9 +2,11 @@
 import  React, { Component } from 'lib/react/react';
 import * as ReactDOM from 'lib/react/react-dom';
 import { Menu, Icon, Button,Modal   } from 'lib/antd/antd';
+import { createStore } from 'lib/redux/redux';
+import { Provider, connect } from 'lib/redux/react-redux';
 
+import {mergemo,$mountable,CascadingView, ContentView, IMountArguments} from 'ui';
 
-import {Loadable} from 'ui';
 declare var Deferred : any;
 declare var Promise : any;
 declare var define:any;
@@ -18,12 +20,18 @@ let json = [
     Id:"1",
     Name:"弹出模态框",
     Icon:"mail",
-    url:"javascript:dialog"
+    url:'[dispatch]:{"type":"dialog","text":"hello react."}'
   },
   {
     Id:"2",
     Name:"加载test/my模块",
-    url:"test/my",
+    Url:"test/my",
+    Icon:"mail"
+  },
+  {
+    Id:"22",
+    Name:"加载test/dialog模块",
+    Url:"test/dialog",
     Icon:"mail"
   },
   {
@@ -33,7 +41,8 @@ let json = [
     ChildNodes:[
       {
         Id:"5",
-        Name:"3",
+        Name:"dialog2",
+        Url:"test/dialog2",
         Icon:"mail"
       },
       {
@@ -50,55 +59,60 @@ let json = [
   }
 ];
 
+interface IMenuModel{
+  data:any[],
+  defaultSelectedKeys:boolean,
+  defaultOpenKeys:boolean,
+  collapsed:boolean
+}
+interface IDialogModel{
+  visible:boolean,opts:{title:string,content:any,url:string,width:any,height:any}
+}
+interface IWorkAreaModel{
+  pages:any[]
+}
 
-export default class App extends Component{
-  setState:Function;
+interface IAppModel{
+  menu:IMenuModel;
+  dialog:IDialogModel;
+  workarea:IWorkAreaModel;
+  user:any;
+}
+
+class MainMenuView extends Component{
   props:any;
-  modalPromise:IPromise;
   constructor(props){
     super(props);
-    define("app",this);
   }
-  state = {
-    layout_collapsed: false,
-    modal_visible:false,
-    modal_title:"",
-    modal_content:"一个模态框",
-    workspace_module:undefined
-  }
-  
-  _toggleLayoutCollapsed = () => {
-    this.setState({
-      collapsed: !this.state.layout_collapsed,
-    });
+  render(){
+    const { onClick,model} = this.props;
+    const {data,defaultSelectedKeys,defaultOpenKeys,collapsed} = this.props;
+    
+    return <Menu
+        defaultSelectedKeys={defaultSelectedKeys}
+        defaultOpenKeys={defaultOpenKeys}
+        mode="inline"
+        theme="dark"
+        inlineCollapsed={collapsed}
+      >
+        {this._buildMenu(data,onClick)}
+    </Menu>;
   }
 
-  _onMenuClick=(node)=>{
-    if(node.url.indexOf("javascript:")>=0){
-      let actionName = node.url.substr("javascript:".length);
-      let action = (this as any)[actionName];
-      if(typeof action==='function') action.call(this,node);
-    }else {
-      this.setState({
-        workspace_module:node.url
-      });
-    }
-  }
-    
-   _buildMenuName=(node) => {
-    if(node.url){
-      return <span onClick={()=>this._onMenuClick(node)}>{node.Name}</span>
+  _buildMenuName=(node,menuClickHandler) => {
+    if(node.Url){
+      return <span onClick={()=>menuClickHandler(node)}>{node.Name}</span>
     }else{
       return <span>{node.Name}</span>;
     }
   }
-  _buildMenu=(data)=>{
+  _buildMenu=(children,menuClickHandler)=>{
     let result = [];
-    for(let i =0,j=data.length;i<j;i++){
-      let node = data[i];
-      let name = this._buildMenuName(node);
+    for(let i =0,j=children.length;i<j;i++){
+      let node = children[i];
+      let name = this._buildMenuName(node,menuClickHandler);
       if(node.ChildNodes && node.ChildNodes.length){
-        let subs = this._buildMenu(node.ChildNodes);
+        let subs = this._buildMenu(node.ChildNodes,menuClickHandler);
         result.push(<SubMenu key={node.Id} title={<span><Icon type={node.Icon|| "email"} />{name}</span>}>
         {subs}
         </SubMenu>);
@@ -111,105 +125,158 @@ export default class App extends Component{
     }
     return result;
   }
-  dialog = (opts) => {
-    if(this.modalPromise)return (Promise as any).reject(undefined);
-    opts||(opts={});
-    let content = opts.content;
-    
-    if(opts.url){
-      let contentOpts = opts.contentOpts || {};
-      contentOpts.$dialogOpts = opts;
-      contentOpts.key = this.genId();
-      content = <Loadable module={opts.url} parameters={...contentOpts} key={contentOpts.key} />
-    }
-    this.setState({
-      modal_visible: true,
-      modal_title : opts.title||"",
-      modal_content: content||""
-    });
-    let promise = this.modalPromise = new Deferred();
-    promise.opts = opts;
-    return promise;
-  }
-  
-  _onModalOk = () => {
-    this.setState({
-      modal_visible: false,
-      confirmLoading: false,
-    });
-    let result;
-    if((this.modalPromise as any).opts && (this.modalPromise as any).opts.$getDialogResult){
-      result = (this.modalPromise as any).opts.$getDialogResult();
-    }
-    (this.modalPromise as any).resolve({status:"ok",result:result});
-    this.modalPromise=undefined;
-  }
-  
-  _onModalCancel = () => {
-    this.setState({
-      modal_visible: false,
-    });
-    (this.modalPromise as any).resolve({status:"cancel"});
-    this.modalPromise=undefined;
-  }
-
-  genId = ()=>{
-    let idSeed=1;
-    let time = new Date().valueOf().toString();
-    this.genId = ()=>{
-        if(idSeed>2100000000){ 
-            idSeed=1;time = new Date().valueOf().toString();
-        }
-        return  idSeed.toString() + '_' + time;
-    };
-    return this.genId();
 }
+let MainMenu = connect((model:IAppModel)=>{return model.menu},(dispatch)=>{
+  return {
+    onClick:(node)=>dispatch({type:"menu.click",node:node})
+  }
+})(MainMenuView);
 
+export class DialogView extends Component{
+  props:any;
+  
   render(){
-    let loadable;
-    if(this.state.workspace_module){
-      loadable = <Loadable className='content' module={this.state.workspace_module} loadingText="正在加载..." />;
-    }
-    //const  = this.props;
-        let logo;
-        if(true){
-          logo = <Button type="primary" onClick={this._toggleLayoutCollapsed} >
-          <Icon type={this.state.layout_collapsed ? 'menu-unfold' : 'menu-fold'} />
-          </Button>;
-        }
-        let menuNodes= this._buildMenu(json);
-        const menu = <Menu
-        defaultSelectedKeys={['1']}
-        defaultOpenKeys={['sub1']}
-        mode="inline"
-        theme="dark"
-        inlineCollapsed={this.props.layout_collapsed}
-      >
-        {menuNodes}
-      </Menu>;
-        return <div  className={this.state.layout_collapsed?"layout layout-collapsed":"layout"}>
-            <div className='sider'><div className={this.state.layout_collapsed?"collapsed":""}>{logo}{menu}</div></div>
-            <div className='header'>header</div>
-            <div className="content">{loadable}
-            </div>
-            
-            <Modal title={this.state.modal_title}
-              visible={this.state.modal_visible}
-              onOk={this._onModalOk}
-              confirmLoading={false}
-              onCancel={this._onModalCancel}
-            >
-              <div>{this.state.modal_content}</div>
-            </Modal>
-        </div>
-        //return 
-    }
+    const {title,width,height,onOk,onCancel} = this.props; 
+    let contentView = React.createElement(ContentView,this.props,null);
+    return <Modal title={title}
+      visible={true}
+      onOk={onOk}
+      onCancel={onCancel}
+      confirmLoading={false}
+    >
+      {contentView}
+    </Modal>
+  }
 }
 
-(App as any).renderTo = (amountElement:HTMLElement,props:any,container?:any)=>{
-  (props||(props={})).$container = container;
-  ReactDOM.render(React.createElement(App,props,null),amountElement);
+let Dialog = connect((model:IAppModel)=>{return model.dialog},(dispatch)=>{
+  return {
+    onOk:()=>dispatch({type:"dialog.ok"}),
+    onCancel:()=>dispatch({type:"dialog.cancel"})
+  }
+})(DialogView);
+let WorkArea = connect((model:IAppModel)=>model.workarea,(dispatch)=>{
+  return {};
+})(CascadingView);
+
+
+
+export class AppView extends Component{
+  props:any;
+  render(){
+    const {menu,dialog,menu_collapsed} = this.props;
+    const dialogView = dialog.visible?<Dialog />:null;
+    return <div  className={menu_collapsed?"layout layout-collapsed":"layout"}>
+        <div className="sider">
+          <MainMenu></MainMenu>
+        </div>
+        <div className='header'>header</div>
+        <div className="content">
+          <WorkArea id="workarea" />
+        </div>
+        {dialogView}
+    </div>
+  }
 }
+
+let App = connect((state)=>{return {...state}},(dispatch)=>{
+  return {
+    onOk:()=>dispatch({type:"dialog.ok"}),
+    onCancel:()=>dispatch({type:"dialog.cancel"})
+  }
+})(AppView);
+
+
+let controller ={
+  "menu.click":(model,action)=>{
+    let node = action.node;
+    let url = node.Url;
+    if(!url) return model;
+    if(url.indexOf("[dispatch]:")>=0){
+      let actionJson = url.substr("[dispatch]:".length);
+      let action = JSON.parse(actionJson);
+      let handler = controller[action.type];
+      if(handler) return handler.call(this,model,action);
+      return model;
+    }
+    return controller.navigate.call(this,model,{
+      type:"navigate",
+      module:url
+    });
+    return model;
+  },
+  "dialog":(model,action)=>{
+    action.visible = true;
+    if(!action.deferred) action.deferred = new Deferred();
+    action.transport = {'__transport__':'dialog'};
+    return mergemo(model,{
+      dialog:action
+    });
+  },
+  "dialog.ok":(model,action)=>{
+    model.dialog.deferred.resolve({status:"ok",result:model.dialog.transport.exports});
+    return mergemo(model,{
+      dialog:{visible:false,deferred:null,$transport:null}
+    });
+  },
+  "dialog.cancel":(model,action)=>{
+    model.dialog.deferred.resolve({status:"cancel"});
+    return mergemo(model,{
+      dialog:{visible:false,deferred:null}
+    });
+  },
+  "navigate":(model,action)=>{
+    action.transport={"__transport__":"app.navigate"};
+    action.superStore = appStore;
+    return {...model,workarea:{pages:[action]}};
+  }
+};
+const initModel ={
+  menu:{
+    data:json
+  },
+  dialog:{width:100},
+  workarea:{
+    pages:[]
+  },
+  user:{}
+};
+
+const api ={
+  dialog:(opts)=>{
+    let deferred = new Deferred();
+    let action ={type:"dialog", deferred:deferred,...opts};
+    appStore.dispatch(action);
+    return deferred.promise();
+  },
+  getStore:()=>appStore
+};
+define("app",api);
+let appStore;
+let MOD= $mountable(AppView,{
+  model :initModel,
+  mapStateToProps:null,
+  onCreating:(reduxParams:IMountArguments)=>{
+    appStore = reduxParams.store
+  },
+  mapDispatchToProps:(dispatch)=>{
+    return {
+      onOk:()=>dispatch({type:"dialog.ok"}),
+      onCancel:()=>dispatch({type:"dialog.cancel"})
+    }
+  },
+  controller:controller
+});
+export default MOD;
+
+
+
+
+
+
+
+
+
 
 
 

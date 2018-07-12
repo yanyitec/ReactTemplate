@@ -10,7 +10,7 @@
  //   constructor(executor:Function,sync?:boolean|string);
  //};
 declare var Promise:Function;
-
+//declare var IPromise;
 /**
  * require的配置
  *
@@ -172,7 +172,7 @@ interface IRes{
             mods.push(mod);
         }
  
-        return (Promise as any).all(mods,false,useApply);
+        return (Promise as any).all(mods,{useApply:useApply,callbackSync:false});
     } as IRequire;
     
     let modules = requirejs.$modules = [];
@@ -468,7 +468,7 @@ interface IRes{
                     this.urls = names.urls;
                 }
                 this.status=ModuleStates.init;
-                this._deferred = (Promise as any).deferred();
+                this._deferred = (Promise as any).defer();
                 this._deferred.done((value)=>{
                     this.value = value;
                     this.status = ModuleStates.completed;
@@ -653,7 +653,7 @@ interface IRes{
             (elem as any).onerror = reject;
             let head= getHead();
             head.appendChild(elem);
-        },true) as any;
+        },'callbackSync') as any;
         
         
     }

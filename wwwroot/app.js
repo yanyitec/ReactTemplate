@@ -8,8 +8,17 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "lib/react/react", "lib/react/react-dom", "lib/antd/antd", "ui"], function (require, exports, react_1, ReactDOM, antd_1, ui_1) {
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
+define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/react-redux", "ui"], function (require, exports, react_1, antd_1, react_redux_1, ui_1) {
     "use strict";
+    var _this = this;
     exports.__esModule = true;
     var SubMenu = antd_1.Menu.SubMenu;
     var json = [
@@ -17,12 +26,18 @@ define(["require", "exports", "lib/react/react", "lib/react/react-dom", "lib/ant
             Id: "1",
             Name: "弹出模态框",
             Icon: "mail",
-            url: "javascript:dialog"
+            url: '[dispatch]:{"type":"dialog","text":"hello react."}'
         },
         {
             Id: "2",
             Name: "加载test/my模块",
-            url: "test/my",
+            Url: "test/my",
+            Icon: "mail"
+        },
+        {
+            Id: "22",
+            Name: "加载test/dialog模块",
+            Url: "test/dialog",
             Icon: "mail"
         },
         {
@@ -32,7 +47,8 @@ define(["require", "exports", "lib/react/react", "lib/react/react-dom", "lib/ant
             ChildNodes: [
                 {
                     Id: "5",
-                    Name: "3",
+                    Name: "dialog2",
+                    Url: "test/dialog2",
                     Icon: "mail"
                 },
                 {
@@ -48,50 +64,25 @@ define(["require", "exports", "lib/react/react", "lib/react/react-dom", "lib/ant
             Icon: "mail"
         }
     ];
-    var App = /** @class */ (function (_super) {
-        __extends(App, _super);
-        function App(props) {
+    var MainMenuView = /** @class */ (function (_super) {
+        __extends(MainMenuView, _super);
+        function MainMenuView(props) {
             var _this = _super.call(this, props) || this;
-            _this.state = {
-                layout_collapsed: false,
-                modal_visible: false,
-                modal_title: "",
-                modal_content: "一个模态框",
-                workspace_module: undefined
-            };
-            _this._toggleLayoutCollapsed = function () {
-                _this.setState({
-                    collapsed: !_this.state.layout_collapsed
-                });
-            };
-            _this._onMenuClick = function (node) {
-                if (node.url.indexOf("javascript:") >= 0) {
-                    var actionName = node.url.substr("javascript:".length);
-                    var action = _this[actionName];
-                    if (typeof action === 'function')
-                        action.call(_this, node);
-                }
-                else {
-                    _this.setState({
-                        workspace_module: node.url
-                    });
-                }
-            };
-            _this._buildMenuName = function (node) {
-                if (node.url) {
-                    return react_1["default"].createElement("span", { onClick: function () { return _this._onMenuClick(node); } }, node.Name);
+            _this._buildMenuName = function (node, menuClickHandler) {
+                if (node.Url) {
+                    return react_1["default"].createElement("span", { onClick: function () { return menuClickHandler(node); } }, node.Name);
                 }
                 else {
                     return react_1["default"].createElement("span", null, node.Name);
                 }
             };
-            _this._buildMenu = function (data) {
+            _this._buildMenu = function (children, menuClickHandler) {
                 var result = [];
-                for (var i = 0, j = data.length; i < j; i++) {
-                    var node = data[i];
-                    var name_1 = _this._buildMenuName(node);
+                for (var i = 0, j = children.length; i < j; i++) {
+                    var node = children[i];
+                    var name_1 = _this._buildMenuName(node, menuClickHandler);
                     if (node.ChildNodes && node.ChildNodes.length) {
-                        var subs = _this._buildMenu(node.ChildNodes);
+                        var subs = _this._buildMenu(node.ChildNodes, menuClickHandler);
                         result.push(react_1["default"].createElement(SubMenu, { key: node.Id, title: react_1["default"].createElement("span", null,
                                 react_1["default"].createElement(antd_1.Icon, { type: node.Icon || "email" }),
                                 name_1) }, subs));
@@ -104,89 +95,148 @@ define(["require", "exports", "lib/react/react", "lib/react/react-dom", "lib/ant
                 }
                 return result;
             };
-            _this.dialog = function (opts) {
-                if (_this.modalPromise)
-                    return Promise.reject(undefined);
-                opts || (opts = {});
-                var content = opts.content;
-                if (opts.url) {
-                    var contentOpts = opts.contentOpts || {};
-                    contentOpts.$dialogOpts = opts;
-                    contentOpts.key = _this.genId();
-                    content = react_1["default"].createElement(ui_1.Loadable, { module: opts.url, parameters: contentOpts, key: contentOpts.key });
-                }
-                _this.setState({
-                    modal_visible: true,
-                    modal_title: opts.title || "",
-                    modal_content: content || ""
-                });
-                var promise = _this.modalPromise = new Deferred();
-                promise.opts = opts;
-                return promise;
-            };
-            _this._onModalOk = function () {
-                _this.setState({
-                    modal_visible: false,
-                    confirmLoading: false
-                });
-                var result;
-                if (_this.modalPromise.opts && _this.modalPromise.opts.$getDialogResult) {
-                    result = _this.modalPromise.opts.$getDialogResult();
-                }
-                _this.modalPromise.resolve({ status: "ok", result: result });
-                _this.modalPromise = undefined;
-            };
-            _this._onModalCancel = function () {
-                _this.setState({
-                    modal_visible: false
-                });
-                _this.modalPromise.resolve({ status: "cancel" });
-                _this.modalPromise = undefined;
-            };
-            _this.genId = function () {
-                var idSeed = 1;
-                var time = new Date().valueOf().toString();
-                _this.genId = function () {
-                    if (idSeed > 2100000000) {
-                        idSeed = 1;
-                        time = new Date().valueOf().toString();
-                    }
-                    return idSeed.toString() + '_' + time;
-                };
-                return _this.genId();
-            };
-            define("app", _this);
             return _this;
         }
-        App.prototype.render = function () {
-            var loadable;
-            if (this.state.workspace_module) {
-                loadable = react_1["default"].createElement(ui_1.Loadable, { className: 'content', module: this.state.workspace_module, loadingText: "\u6B63\u5728\u52A0\u8F7D..." });
-            }
-            //const  = this.props;
-            var logo;
-            if (true) {
-                logo = react_1["default"].createElement(antd_1.Button, { type: "primary", onClick: this._toggleLayoutCollapsed },
-                    react_1["default"].createElement(antd_1.Icon, { type: this.state.layout_collapsed ? 'menu-unfold' : 'menu-fold' }));
-            }
-            var menuNodes = this._buildMenu(json);
-            var menu = react_1["default"].createElement(antd_1.Menu, { defaultSelectedKeys: ['1'], defaultOpenKeys: ['sub1'], mode: "inline", theme: "dark", inlineCollapsed: this.props.layout_collapsed }, menuNodes);
-            return react_1["default"].createElement("div", { className: this.state.layout_collapsed ? "layout layout-collapsed" : "layout" },
-                react_1["default"].createElement("div", { className: 'sider' },
-                    react_1["default"].createElement("div", { className: this.state.layout_collapsed ? "collapsed" : "" },
-                        logo,
-                        menu)),
-                react_1["default"].createElement("div", { className: 'header' }, "header"),
-                react_1["default"].createElement("div", { className: "content" }, loadable),
-                react_1["default"].createElement(antd_1.Modal, { title: this.state.modal_title, visible: this.state.modal_visible, onOk: this._onModalOk, confirmLoading: false, onCancel: this._onModalCancel },
-                    react_1["default"].createElement("div", null, this.state.modal_content)));
-            //return 
+        MainMenuView.prototype.render = function () {
+            var _a = this.props, onClick = _a.onClick, model = _a.model;
+            var _b = this.props, data = _b.data, defaultSelectedKeys = _b.defaultSelectedKeys, defaultOpenKeys = _b.defaultOpenKeys, collapsed = _b.collapsed;
+            return react_1["default"].createElement(antd_1.Menu, { defaultSelectedKeys: defaultSelectedKeys, defaultOpenKeys: defaultOpenKeys, mode: "inline", theme: "dark", inlineCollapsed: collapsed }, this._buildMenu(data, onClick));
         };
-        return App;
+        return MainMenuView;
     }(react_1.Component));
-    exports["default"] = App;
-    App.renderTo = function (amountElement, props, container) {
-        (props || (props = {})).$container = container;
-        ReactDOM.render(react_1["default"].createElement(App, props, null), amountElement);
+    var MainMenu = react_redux_1.connect(function (model) { return model.menu; }, function (dispatch) {
+        return {
+            onClick: function (node) { return dispatch({ type: "menu.click", node: node }); }
+        };
+    })(MainMenuView);
+    var DialogView = /** @class */ (function (_super) {
+        __extends(DialogView, _super);
+        function DialogView() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        DialogView.prototype.render = function () {
+            var _a = this.props, title = _a.title, width = _a.width, height = _a.height, onOk = _a.onOk, onCancel = _a.onCancel;
+            var contentView = react_1["default"].createElement(ui_1.ContentView, this.props, null);
+            return react_1["default"].createElement(antd_1.Modal, { title: title, visible: true, onOk: onOk, onCancel: onCancel, confirmLoading: false }, contentView);
+        };
+        return DialogView;
+    }(react_1.Component));
+    exports.DialogView = DialogView;
+    var Dialog = react_redux_1.connect(function (model) { return model.dialog; }, function (dispatch) {
+        return {
+            onOk: function () { return dispatch({ type: "dialog.ok" }); },
+            onCancel: function () { return dispatch({ type: "dialog.cancel" }); }
+        };
+    })(DialogView);
+    var WorkArea = react_redux_1.connect(function (model) { return model.workarea; }, function (dispatch) {
+        return {};
+    })(ui_1.CascadingView);
+    var AppView = /** @class */ (function (_super) {
+        __extends(AppView, _super);
+        function AppView() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        AppView.prototype.render = function () {
+            var _a = this.props, menu = _a.menu, dialog = _a.dialog, menu_collapsed = _a.menu_collapsed;
+            var dialogView = dialog.visible ? react_1["default"].createElement(Dialog, null) : null;
+            return react_1["default"].createElement("div", { className: menu_collapsed ? "layout layout-collapsed" : "layout" },
+                react_1["default"].createElement("div", { className: "sider" },
+                    react_1["default"].createElement(MainMenu, null)),
+                react_1["default"].createElement("div", { className: 'header' }, "header"),
+                react_1["default"].createElement("div", { className: "content" },
+                    react_1["default"].createElement(WorkArea, { id: "workarea" })),
+                dialogView);
+        };
+        return AppView;
+    }(react_1.Component));
+    exports.AppView = AppView;
+    var App = react_redux_1.connect(function (state) { return __assign({}, state); }, function (dispatch) {
+        return {
+            onOk: function () { return dispatch({ type: "dialog.ok" }); },
+            onCancel: function () { return dispatch({ type: "dialog.cancel" }); }
+        };
+    })(AppView);
+    var controller = {
+        "menu.click": function (model, action) {
+            var node = action.node;
+            var url = node.Url;
+            if (!url)
+                return model;
+            if (url.indexOf("[dispatch]:") >= 0) {
+                var actionJson = url.substr("[dispatch]:".length);
+                var action_1 = JSON.parse(actionJson);
+                var handler = controller[action_1.type];
+                if (handler)
+                    return handler.call(_this, model, action_1);
+                return model;
+            }
+            return controller.navigate.call(_this, model, {
+                type: "navigate",
+                module: url
+            });
+            return model;
+        },
+        "dialog": function (model, action) {
+            action.visible = true;
+            if (!action.deferred)
+                action.deferred = new Deferred();
+            action.transport = { '__transport__': 'dialog' };
+            return ui_1.mergemo(model, {
+                dialog: action
+            });
+        },
+        "dialog.ok": function (model, action) {
+            model.dialog.deferred.resolve({ status: "ok", result: model.dialog.transport.exports });
+            return ui_1.mergemo(model, {
+                dialog: { visible: false, deferred: null, $transport: null }
+            });
+        },
+        "dialog.cancel": function (model, action) {
+            model.dialog.deferred.resolve({ status: "cancel" });
+            return ui_1.mergemo(model, {
+                dialog: { visible: false, deferred: null }
+            });
+        },
+        "navigate": function (model, action) {
+            action.transport = { "__transport__": "app.navigate" };
+            action.superStore = appStore;
+            return __assign({}, model, { workarea: { pages: [action] } });
+        }
     };
+    var initModel = {
+        menu: {
+            data: json
+        },
+        dialog: { width: 100 },
+        workarea: {
+            pages: []
+        },
+        user: {}
+    };
+    var api = {
+        dialog: function (opts) {
+            var deferred = new Deferred();
+            var action = __assign({ type: "dialog", deferred: deferred }, opts);
+            appStore.dispatch(action);
+            return deferred.promise();
+        },
+        getStore: function () { return appStore; }
+    };
+    define("app", api);
+    var appStore;
+    var MOD = ui_1.$mountable(AppView, {
+        model: initModel,
+        mapStateToProps: null,
+        onCreating: function (reduxParams) {
+            appStore = reduxParams.store;
+        },
+        mapDispatchToProps: function (dispatch) {
+            return {
+                onOk: function () { return dispatch({ type: "dialog.ok" }); },
+                onCancel: function () { return dispatch({ type: "dialog.cancel" }); }
+            };
+        },
+        controller: controller
+    });
+    exports["default"] = MOD;
 });

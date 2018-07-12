@@ -1,6 +1,6 @@
 import * as React from 'lib/react/react';
 import * as ReactDOM from 'lib/react/react-dom';
-import * as app from 'app';
+import {$mountable} from 'ui';
 
 export default class My extends React.Component{
     props:any;
@@ -17,7 +17,7 @@ export default class My extends React.Component{
         });
     }
     render(){
-        if(this.props.$dialogOpts)this.props.$dialogOpts.$getDialogResult = ()=>{
+        if(this.props.transport)this.props.transport.getModelResult = ()=>{
             return this.state.value;
         }
 
@@ -28,7 +28,4 @@ export default class My extends React.Component{
     }
     
 }
-(My as any).renderTo = (amountElement:HTMLElement,props:any,container?:any)=>{
-    (props||(props={})).$container = container;
-    ReactDOM.render(React.createElement(My,props,null),amountElement);
-}
+$mountable(My);

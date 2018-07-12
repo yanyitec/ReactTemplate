@@ -47,7 +47,7 @@ var ModuleStates;
                 mod = mod_m.ensure(modname_1);
             mods.push(mod);
         }
-        return Promise.all(mods, false, useApply);
+        return Promise.all(mods, { useApply: useApply, callbackSync: false });
     };
     var modules = requirejs.$modules = [];
     var prefixes = requirejs.$prefixes = {};
@@ -318,7 +318,7 @@ var ModuleStates;
                     this.urls = names.urls;
                 }
                 this.status = ModuleStates.init;
-                this._deferred = Promise.deferred();
+                this._deferred = Promise.defer();
                 this._deferred.done(function (value) {
                     _this.value = value;
                     _this.status = ModuleStates.completed;
@@ -489,7 +489,7 @@ var ModuleStates;
             elem.onerror = reject;
             var head = getHead();
             head.appendChild(elem);
-        }, true);
+        }, 'callbackSync');
     };
     var getHead = function () {
         var head;

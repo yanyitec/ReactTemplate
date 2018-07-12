@@ -22,7 +22,8 @@
         ,"antd@lib/antd/antd"
         ,"app"
     ).then((axios,react,ReactDOM,propTypes,redux,react_redux,moment,antd,App)=>{
-        App.renderTo(document.getElementById("app"));
+        //console.log(App);
+        App.$mount({},document.getElementById("app"));
     });
     </script>
 </html>

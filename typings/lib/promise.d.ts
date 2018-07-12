@@ -19,7 +19,7 @@
  * @interface IThenable
  */
 interface IThenable {
-    then: (onFullfilled: (value: any, param?: any) => void, onRejected?: (reason: any, param?: any) => void) => IThenable;
+    then: (onFullfilled: (value: any) => void, onRejected?: (reason: any) => void) => IThenable;
 }
 /**
  * promise 是一个拥有 then 方法的对象或函数，其行为符合本规范；
@@ -29,9 +29,13 @@ interface IThenable {
  * @extends {IThenable} 拥有then 方法
  */
 interface IPromise extends IThenable {
-    done: (onFullfilled: (value: any, param?: any) => void, param?: any) => IPromise;
-    fail: (onRejected: (value: any, param?: any) => void, param?: any) => IPromise;
+    done: (onFullfilled: (value: any) => void) => IPromise;
+    fail: (onRejected: (value: any) => void) => IPromise;
     promise(target?: any): IPromise;
+}
+interface IPromiseOptions {
+    useApply?: boolean;
+    callbackSync?: boolean;
 }
 interface IResolvable {
     resolve: (value?: any) => IResolvable;
@@ -39,8 +43,4 @@ interface IResolvable {
     fullfillable: (target?: any) => IResolvable;
 }
 interface IDeferred extends IPromise, IResolvable {
-}
-interface IExecution {
-    func: (value?: any, param?: any) => void;
-    param?: any;
 }
