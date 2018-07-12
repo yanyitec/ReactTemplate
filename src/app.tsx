@@ -5,7 +5,7 @@ import { Menu, Icon, Button,Modal   } from 'lib/antd/antd';
 import { createStore } from 'lib/redux/redux';
 import { Provider, connect } from 'lib/redux/react-redux';
 
-import {mergemo,$mountable,CascadingView, ContentView, IMountArguments} from 'ui';
+import {mergemo,$mountable,CascadingView, ContentView, IMountArguments, SigninView} from 'ui';
 
 declare var Deferred : any;
 declare var Promise : any;
@@ -155,6 +155,14 @@ let Dialog = connect((model:IAppModel)=>{return model.dialog},(dispatch)=>{
     onCancel:()=>dispatch({type:"dialog.cancel"})
   }
 })(DialogView);
+
+let Signin = connect((model:IAppModel)=>{return model.user},(dispatch)=>{
+  return {
+    onSigninSuccess:(userInfo)=>{dispatch({user:userInfo,type:'user.signinSuccess'});}
+  }
+})(SigninView);
+
+
 let WorkArea = connect((model:IAppModel)=>model.workarea,(dispatch)=>{
   return {};
 })(CascadingView);
@@ -164,8 +172,9 @@ let WorkArea = connect((model:IAppModel)=>model.workarea,(dispatch)=>{
 export class AppView extends Component{
   props:any;
   render(){
-    const {menu,dialog,menu_collapsed} = this.props;
+    const {menu,dialog,user,menu_collapsed} = this.props;
     const dialogView = dialog.visible?<Dialog />:null;
+    if(!user || !user.Id) return <Signin />;
     return <div  className={menu_collapsed?"layout layout-collapsed":"layout"}>
         <div className="sider">
           <MainMenu></MainMenu>
@@ -229,6 +238,9 @@ let controller ={
     action.transport={"__transport__":"app.navigate"};
     action.superStore = appStore;
     return {...model,workarea:{pages:[action]}};
+  },
+  "user.signinSuccess":(model,action)=>{
+    return {...model,user:action.user}
   }
 };
 const initModel ={

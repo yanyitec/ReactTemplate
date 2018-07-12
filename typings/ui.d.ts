@@ -1,6 +1,14 @@
 /// <reference types="react" />
 import React, { Component } from 'lib/react/react';
 export declare let mergemo: (old: any, newModel: any) => any;
+export declare let attach: (elem: any, evt: any, handler: any) => void;
+export declare let detech: (elem: any, evt: any, handler: any) => void;
+export declare let getBox: (elem?: any) => {
+    x: number;
+    y: number;
+    width: any;
+    height: any;
+};
 export interface IMountArguments {
     model?: any;
     mapStateToProps?: any;
@@ -56,6 +64,40 @@ export declare class LoadableView extends Component {
 }
 export declare class ContentView extends Component {
     props: any;
+    render(): JSX.Element;
+}
+export declare class Center extends React.Component {
+    refs: any;
+    props: any;
+    setState: any;
+    forceUpdate: any;
+    state: any;
+    context: any;
+    render(): JSX.Element;
+    componentDidUpdate(): void;
+    componentDidMount(): void;
+    componentWillUnmount(): void;
+}
+export declare class SigninView extends React.Component {
+    refs: any;
+    props: any;
+    setState: any;
+    forceUpdate: any;
+    state: any;
+    context: any;
+    user: any;
+    timer: any;
+    opacity: any;
+    constructor(props: any);
+    componentDidMount(): void;
+    componentWillUnmount(): void;
+    onSubmit: () => any;
+    checkInputs(): any[];
+    nameFocusin: () => void;
+    nameFocusout: (e: any) => void;
+    pswdFocusin: () => void;
+    pswdFocusout: (e: any) => void;
+    remeberPassChange: (e: any) => void;
     render(): JSX.Element;
 }
 export declare class CascadingView extends React.Component {

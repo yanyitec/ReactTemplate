@@ -128,6 +128,11 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             onCancel: function () { return dispatch({ type: "dialog.cancel" }); }
         };
     })(DialogView);
+    var Signin = react_redux_1.connect(function (model) { return model.user; }, function (dispatch) {
+        return {
+            onSigninSuccess: function (userInfo) { dispatch({ user: userInfo, type: 'user.signinSuccess' }); }
+        };
+    })(ui_1.SigninView);
     var WorkArea = react_redux_1.connect(function (model) { return model.workarea; }, function (dispatch) {
         return {};
     })(ui_1.CascadingView);
@@ -137,8 +142,10 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             return _super !== null && _super.apply(this, arguments) || this;
         }
         AppView.prototype.render = function () {
-            var _a = this.props, menu = _a.menu, dialog = _a.dialog, menu_collapsed = _a.menu_collapsed;
+            var _a = this.props, menu = _a.menu, dialog = _a.dialog, user = _a.user, menu_collapsed = _a.menu_collapsed;
             var dialogView = dialog.visible ? react_1["default"].createElement(Dialog, null) : null;
+            if (!user || !user.Id)
+                return react_1["default"].createElement(Signin, null);
             return react_1["default"].createElement("div", { className: menu_collapsed ? "layout layout-collapsed" : "layout" },
                 react_1["default"].createElement("div", { className: "sider" },
                     react_1["default"].createElement(MainMenu, null)),
@@ -201,6 +208,9 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             action.transport = { "__transport__": "app.navigate" };
             action.superStore = appStore;
             return __assign({}, model, { workarea: { pages: [action] } });
+        },
+        "user.signinSuccess": function (model, action) {
+            return __assign({}, model, { user: action.user });
         }
     };
     var initModel = {

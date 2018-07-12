@@ -15,6 +15,96 @@ html,body{
     margin:0;
     padding:0;
 } 
+#signin{
+    position:fixed;
+    box-sizing: border-box;
+    border:0;
+    margin:0;
+    padding:0;
+    width:100%;
+    img{
+        width:100%;
+        filter:blur(5px);
+        background-image:linear-gradient(90deg,#fb3 11px,transparent 0),
+        linear-gradient(90deg,#ab4 23px,transparent 0),
+        linear-gradient(90deg,#655 41px,transparent 0);
+        background-size: 41px 100%,61px 100%,83px 100%;
+    }
+}
+
+#signinInfo{
+    position:absolute;
+    max-width:500px;
+    max-height:500px;
+    background-color:#fff;
+    padding:10px 30px;
+    opacity:0.90;
+    filter:alpha(opacity=90);
+    border: 1px solid #efefef;
+    border-radius: 3px;
+    box-shadow:  10px #ddd;
+    
+    h1{
+        margin:12px 0 2px 0;
+        text-align: center;
+    }
+    .error{
+        //margin:20px auto 0 auto;
+        text-align: left;
+        width:240px;
+        margin:3px auto;
+    }
+
+    .data-field{
+        position: relative;
+        padding-top:22px;
+        
+        label.data-label{
+            position: absolute;
+            display: block;
+            text-align: left;
+            padding-left:30px;
+            font-size:16px;
+            width:100%;
+            top:32px;
+            color:#999;
+        }
+        .data-input{
+            i{
+                font-size:22px;
+            }
+            input[type='text'],input[type='password']{
+                border:1px solid #666;
+                font-size:16px;
+                padding:3px;
+                margin:5px;
+                width:240px;
+            }
+        }
+        
+    }
+    .data-field.inputing{
+        label.data-label{
+            top:0;
+            font-size:17px;
+            color:#666;
+            text-shadow: #efefef;
+        }
+    }
+    .data-field.noLabel{
+        padding:10px 0;
+        text-align: right;
+    }
+
+    .data-actions{
+        text-align: center;
+        margin-bottom: 20px;
+        button{
+            width:240px;
+            margin-bottom: 10px;
+        }
+    }
+}
 
 .layout{
     position: relative;

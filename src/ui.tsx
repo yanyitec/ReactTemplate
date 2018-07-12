@@ -5,6 +5,7 @@ import React,{Component} from 'lib/react/react';
 import * as ReactDOM from 'lib/react/react-dom';
 import { createStore } from 'lib/redux/redux';
 import { Provider, connect } from 'lib/redux/react-redux';
+import {Icon,Tooltip,Checkbox,Alert,Button} from 'lib/antd/antd';
 
 export let mergemo=(old,newModel)=>{
     for(let n in old) {
@@ -12,6 +13,37 @@ export let mergemo=(old,newModel)=>{
     }
     return newModel;
   };
+let div:HTMLElement = document.createElement("div") as HTMLElement;
+let _attach : (elem,evt,handler)=>void;
+let _detech : (elem,evt,handler)=>void;
+if((div as any).attachEvent){
+    _attach = (elem,evt,handler)=>elem.attachEvent('on' + evt,handler);
+    _detech = (elem,evt,handler)=>elem.detechEvent('on' + evt,handler);
+}else {
+    _attach = (elem,evt,handler)=>elem.addEventListener( evt,handler,false);
+    _detech = (elem,evt,handler)=>elem.removeEventListener( evt,handler,false);
+}
+export let attach = _attach;
+export let detech = _detech;
+
+export let getBox = function(elem?:any){
+    if(!elem){
+        let w= window.innerWidth || document.documentElement.clientWidth;
+        let h= window.innerHeight || document.documentElement.clientHeight;
+        return {x:0,y:0,width:w,height:h};
+    }
+    let x=0,y=0;
+    let w = elem.clientWidth,h=elem.clientHeight;
+    while(elem){
+        x+=elem.offsetLeft;
+        y+=elem.offsetTop;
+        if(elem===document.body)break;
+        elem = elem.offsetParent;
+    }
+    return {x:x,y:y,width:w,height:h};
+}
+
+
 export interface IMountArguments{
     model?:any,
     mapStateToProps?:any;
@@ -79,10 +111,8 @@ export let $mountable = (Component:any,mountArguments?:IMountArguments)=>{
     return Component;
 }
 
-export class HtmlElementView extends Component{
-    
+export class HtmlElementView extends Component{  
     content:any;
-
     refs:any;
     props:any;
     setState:any;
@@ -90,7 +120,7 @@ export class HtmlElementView extends Component{
     state:any;
     context:any;
     render(){
-        const {id,className,text,vnode} = this.props;
+        const {id,className} = this.props;
         if(this.props.vnode){
             return <div className={(className||"") + ' html-element' } id={id||""} ref="html-element">{this.props.vnode}</div>
         } 
@@ -245,6 +275,203 @@ export class ContentView extends Component{
             return <HtmlElementView vnode={vnode||""} html ={html||""} text={text||""} dom={dom||""} />;
         }
         return null;
+    }
+}
+export class Center extends React.Component{
+    refs:any;
+    props:any;
+    setState:any;
+    forceUpdate:any;
+    state:any;
+    context:any;
+    render(){
+        return <div ref='elem' id={this.props.id||""} className={this.props.className||""}>
+        {this.props.children}
+        </div>
+    }
+    componentDidUpdate(){
+        let ctr = this.refs["elem"];
+        ctr.__rsz();
+    }
+    componentDidMount(){
+        let target = this.props.target;
+        if(target)target = document.getElementById(target);else target = "";
+        let ctr = this.refs["elem"];
+        ctr.style.position="absolute";
+        ctr.style.cssText = "position:absolute;margin:0;z-index:999;";
+        //document.body.appendChild(ctr);
+        let rsz = ctr.__rsz = ()=>{
+            let pPos = getBox(ctr.offsetParent);
+            let {x,y,width,height} = getBox(target);
+            x = x-pPos.x;y = y-pPos.y;
+            console.log(x,y,width,height);
+            let adjust = parseInt(this.props.adjust) || 0;
+            let top = y + (height - ctr.clientHeight)/2 + adjust ;
+            if(this.props.mintop){
+                let min =parseInt(this.props.mintop);
+                if(top< min) top = min;
+            }
+            if(top<50) top=50;
+            ctr.style.left = x + (width - ctr.clientWidth)/2 + "px";
+            ctr.style.top = top + "px";
+        };
+        rsz();
+        attach(window,'resize',rsz);
+    }
+    componentWillUnmount(){
+        let ctr = this.refs["elem"];
+        detech(window,'resize',ctr.__rsz);
+    }
+}
+
+export class SigninView extends React.Component{
+    refs:any;
+    props:any;
+    setState:any;
+    forceUpdate:any;
+    state:any;
+    context:any;
+    user:any;
+    timer:any;
+    opacity:any;
+    constructor(props){
+        super(props);
+        const user = this.user = props.user||{};
+        this.opacity=30;
+        this.state={
+            nameInputing:user.Username,
+            pswdInputing:user.Password,
+            passwordRemberded:user.RemberPassword,
+            waiting:false
+        }
+    }
+
+    componentDidMount(){
+        let elem = document.getElementById("signin-bg");
+        elem.style.opacity=(this.opacity/100).toString();
+        elem.style.filter = `alpha(opacity=${this.opacity})`;
+        this.timer = setTimeout(()=>{
+            this.timer = setInterval(()=>{
+                if(this.opacity<100){
+                    this.opacity+=10;
+                    elem.style.opacity=(this.opacity/100).toString();
+                    elem.style.filter = `alpha(opacity=${this.opacity})`;
+                   
+                }else {
+                    clearInterval(this.timer);
+                    this.timer=0;
+                }
+            },3000);
+        },500);
+    }
+
+    componentWillUnmount(){
+        clearTimeout(this.timer);
+        clearInterval(this.timer);
+        this.timer = 0;
+    }
+    onSubmit=()=>{
+        let error = this.checkInputs();
+        if(error.length) return this.setState({errorMessage:error});
+        axios.get('api/login').then((value)=>{
+            value = value.data;
+            if(value.Username===this.user.Username && value.Password===this.user.Password){
+                if(this.props.onSigninSuccess)this.props.onSigninSuccess(value);
+                return;
+            }else {
+                error.push(<div key='3'>用户名密码不正确</div>);
+                this.setState({errorMessage:error,waiting:false});
+            }
+        });
+        this.setState({
+            waiting:true
+        });
+    }
+    checkInputs(){
+        let error=[];
+        if(!this.user.Username){
+            error.push(<div  key={error.length}>请填写用户名</div>);
+        }
+        if(!this.user.Password){
+            error.push(<div key={error.length}>请填写密码</div>);
+        }
+        return error;
+    }
+
+    nameFocusin=()=>{
+        this.setState({nameInputing:true});
+    }
+    nameFocusout=(e)=>{
+        this.user.Username = e.target.value;
+        this.setState({nameInputing:this.user.Username,errorMessage :this.checkInputs()});
+    }
+
+    pswdFocusin=()=>{
+        this.setState({pswdInputing:true});
+    }
+    pswdFocusout=(e)=>{
+        this.user.Password = e.target.value;
+        this.setState({pswdInputing:this.user.Password,errorMessage :this.checkInputs()});
+    }
+    remeberPassChange=(e)=>{
+        this.user.RememberPassword = e.target.checked;
+        this.setState({passwordRemberded:e.target.checked});
+    }
+
+    render(){
+        let inputForm = <div>
+            
+            <div className={this.state.nameInputing?'data-field inputing':'data-field'}>
+                <label className='data-label' htmlFor="signin-Username">用户名</label>
+                <span className='data-input'>
+                    <Icon type="user" />
+                    <input type="text" name="Username" id="signin-Username" onFocus={this.nameFocusin} onBlur={this.nameFocusout}/>
+                </span>
+                <Tooltip placement="right" title={'请输入用户名'}>
+                    <Icon type="question-circle" />
+                </Tooltip>
+            </div>
+            <div className={this.state.pswdInputing?'data-field inputing':'data-field'}>
+                <label className='data-label' htmlFor="signin-Password">密码</label>
+                <span className='data-input'>
+                    <Icon type="key" />
+                    <input type="password" name="Password" id="signin-Password" onFocus={this.pswdFocusin} onBlur={this.pswdFocusout}/>
+                </span>
+                <Tooltip placement="right" title={'请输入密码'}>
+                    <Icon type="question-circle" />
+                </Tooltip>
+            </div>
+            <div className='data-field noLabel'> 
+                <Checkbox onChange={this.remeberPassChange} checked={this.state.passwordRemberded}>记住密码</Checkbox>
+            </div>
+            <div className='data-actions'>
+                <Button text="登陆" type="primary" onClick={this.onSubmit}>
+                登陆<Icon type="unlock" />
+                </Button>
+                {
+                this.state.errorMessage && this.state.errorMessage.length?<div className='error'><Alert
+                    message={this.state.errorMessage}
+                    type="error"
+                    showIcon
+                    closable
+                /></div>:null
+                }
+            </div>
+        </div>;
+        let loadingForm = <div>
+            <img src="images/loading.gif" />
+            <div>正在登陆..</div>
+        </div>;
+        
+        return <div id='signin'>
+            <img className='bg' id="signin-bg" src="images/login-bg.jpg"/>
+            <Center id='signinInfo' adjust='-100px'>
+                <h1><Icon type="lock" />登 陆 </h1>
+                {
+                    this.state.waiting? loadingForm:inputForm
+                }
+            </Center>
+        </div>
     }
 }
 

@@ -16,7 +16,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
-define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-dom", "lib/redux/redux", "lib/redux/react-redux"], function (require, exports, axios, react_1, ReactDOM, redux_1, react_redux_1) {
+define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-dom", "lib/redux/redux", "lib/redux/react-redux", "lib/antd/antd"], function (require, exports, axios, react_1, ReactDOM, redux_1, react_redux_1, antd_1) {
     "use strict";
     exports.__esModule = true;
     exports.mergemo = function (old, newModel) {
@@ -25,6 +25,36 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
                 newModel[n] = old[n];
         }
         return newModel;
+    };
+    var div = document.createElement("div");
+    var _attach;
+    var _detech;
+    if (div.attachEvent) {
+        _attach = function (elem, evt, handler) { return elem.attachEvent('on' + evt, handler); };
+        _detech = function (elem, evt, handler) { return elem.detechEvent('on' + evt, handler); };
+    }
+    else {
+        _attach = function (elem, evt, handler) { return elem.addEventListener(evt, handler, false); };
+        _detech = function (elem, evt, handler) { return elem.removeEventListener(evt, handler, false); };
+    }
+    exports.attach = _attach;
+    exports.detech = _detech;
+    exports.getBox = function (elem) {
+        if (!elem) {
+            var w_1 = window.innerWidth || document.documentElement.clientWidth;
+            var h_1 = window.innerHeight || document.documentElement.clientHeight;
+            return { x: 0, y: 0, width: w_1, height: h_1 };
+        }
+        var x = 0, y = 0;
+        var w = elem.clientWidth, h = elem.clientHeight;
+        while (elem) {
+            x += elem.offsetLeft;
+            y += elem.offsetTop;
+            if (elem === document.body)
+                break;
+            elem = elem.offsetParent;
+        }
+        return { x: x, y: y, width: w, height: h };
     };
     exports.$mountable = function (Component, mountArguments) {
         mountArguments || (mountArguments = {});
@@ -75,7 +105,7 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
             return _super !== null && _super.apply(this, arguments) || this;
         }
         HtmlElementView.prototype.render = function () {
-            var _a = this.props, id = _a.id, className = _a.className, text = _a.text, vnode = _a.vnode;
+            var _a = this.props, id = _a.id, className = _a.className;
             if (this.props.vnode) {
                 return react_1["default"].createElement("div", { className: (className || "") + ' html-element', id: id || "", ref: "html-element" }, this.props.vnode);
             }
@@ -234,6 +264,181 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
         return ContentView;
     }(react_1.Component));
     exports.ContentView = ContentView;
+    var Center = /** @class */ (function (_super) {
+        __extends(Center, _super);
+        function Center() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        Center.prototype.render = function () {
+            return react_1["default"].createElement("div", { ref: 'elem', id: this.props.id || "", className: this.props.className || "" }, this.props.children);
+        };
+        Center.prototype.componentDidUpdate = function () {
+            var ctr = this.refs["elem"];
+            ctr.__rsz();
+        };
+        Center.prototype.componentDidMount = function () {
+            var _this = this;
+            var target = this.props.target;
+            if (target)
+                target = document.getElementById(target);
+            else
+                target = "";
+            var ctr = this.refs["elem"];
+            ctr.style.position = "absolute";
+            ctr.style.cssText = "position:absolute;margin:0;z-index:999;";
+            //document.body.appendChild(ctr);
+            var rsz = ctr.__rsz = function () {
+                var pPos = exports.getBox(ctr.offsetParent);
+                var _a = exports.getBox(target), x = _a.x, y = _a.y, width = _a.width, height = _a.height;
+                x = x - pPos.x;
+                y = y - pPos.y;
+                console.log(x, y, width, height);
+                var adjust = parseInt(_this.props.adjust) || 0;
+                var top = y + (height - ctr.clientHeight) / 2 + adjust;
+                if (_this.props.mintop) {
+                    var min = parseInt(_this.props.mintop);
+                    if (top < min)
+                        top = min;
+                }
+                if (top < 50)
+                    top = 50;
+                ctr.style.left = x + (width - ctr.clientWidth) / 2 + "px";
+                ctr.style.top = top + "px";
+            };
+            rsz();
+            exports.attach(window, 'resize', rsz);
+        };
+        Center.prototype.componentWillUnmount = function () {
+            var ctr = this.refs["elem"];
+            exports.detech(window, 'resize', ctr.__rsz);
+        };
+        return Center;
+    }(react_1["default"].Component));
+    exports.Center = Center;
+    var SigninView = /** @class */ (function (_super) {
+        __extends(SigninView, _super);
+        function SigninView(props) {
+            var _this = _super.call(this, props) || this;
+            _this.onSubmit = function () {
+                var error = _this.checkInputs();
+                if (error.length)
+                    return _this.setState({ errorMessage: error });
+                axios.get('api/login').then(function (value) {
+                    value = value.data;
+                    if (value.Username === _this.user.Username && value.Password === _this.user.Password) {
+                        if (_this.props.onSigninSuccess)
+                            _this.props.onSigninSuccess(value);
+                        return;
+                    }
+                    else {
+                        error.push(react_1["default"].createElement("div", { key: '3' }, "\u7528\u6237\u540D\u5BC6\u7801\u4E0D\u6B63\u786E"));
+                        _this.setState({ errorMessage: error, waiting: false });
+                    }
+                });
+                _this.setState({
+                    waiting: true
+                });
+            };
+            _this.nameFocusin = function () {
+                _this.setState({ nameInputing: true });
+            };
+            _this.nameFocusout = function (e) {
+                _this.user.Username = e.target.value;
+                _this.setState({ nameInputing: _this.user.Username, errorMessage: _this.checkInputs() });
+            };
+            _this.pswdFocusin = function () {
+                _this.setState({ pswdInputing: true });
+            };
+            _this.pswdFocusout = function (e) {
+                _this.user.Password = e.target.value;
+                _this.setState({ pswdInputing: _this.user.Password, errorMessage: _this.checkInputs() });
+            };
+            _this.remeberPassChange = function (e) {
+                _this.user.RememberPassword = e.target.checked;
+                _this.setState({ passwordRemberded: e.target.checked });
+            };
+            var user = _this.user = props.user || {};
+            _this.opacity = 30;
+            _this.state = {
+                nameInputing: user.Username,
+                pswdInputing: user.Password,
+                passwordRemberded: user.RemberPassword,
+                waiting: false
+            };
+            return _this;
+        }
+        SigninView.prototype.componentDidMount = function () {
+            var _this = this;
+            var elem = document.getElementById("signin-bg");
+            elem.style.opacity = (this.opacity / 100).toString();
+            elem.style.filter = "alpha(opacity=" + this.opacity + ")";
+            this.timer = setTimeout(function () {
+                _this.timer = setInterval(function () {
+                    if (_this.opacity < 100) {
+                        _this.opacity += 10;
+                        elem.style.opacity = (_this.opacity / 100).toString();
+                        elem.style.filter = "alpha(opacity=" + _this.opacity + ")";
+                    }
+                    else {
+                        clearInterval(_this.timer);
+                        _this.timer = 0;
+                    }
+                }, 3000);
+            }, 500);
+        };
+        SigninView.prototype.componentWillUnmount = function () {
+            clearTimeout(this.timer);
+            clearInterval(this.timer);
+            this.timer = 0;
+        };
+        SigninView.prototype.checkInputs = function () {
+            var error = [];
+            if (!this.user.Username) {
+                error.push(react_1["default"].createElement("div", { key: error.length }, "\u8BF7\u586B\u5199\u7528\u6237\u540D"));
+            }
+            if (!this.user.Password) {
+                error.push(react_1["default"].createElement("div", { key: error.length }, "\u8BF7\u586B\u5199\u5BC6\u7801"));
+            }
+            return error;
+        };
+        SigninView.prototype.render = function () {
+            var inputForm = react_1["default"].createElement("div", null,
+                react_1["default"].createElement("div", { className: this.state.nameInputing ? 'data-field inputing' : 'data-field' },
+                    react_1["default"].createElement("label", { className: 'data-label', htmlFor: "signin-Username" }, "\u7528\u6237\u540D"),
+                    react_1["default"].createElement("span", { className: 'data-input' },
+                        react_1["default"].createElement(antd_1.Icon, { type: "user" }),
+                        react_1["default"].createElement("input", { type: "text", name: "Username", id: "signin-Username", onFocus: this.nameFocusin, onBlur: this.nameFocusout })),
+                    react_1["default"].createElement(antd_1.Tooltip, { placement: "right", title: '请输入用户名' },
+                        react_1["default"].createElement(antd_1.Icon, { type: "question-circle" }))),
+                react_1["default"].createElement("div", { className: this.state.pswdInputing ? 'data-field inputing' : 'data-field' },
+                    react_1["default"].createElement("label", { className: 'data-label', htmlFor: "signin-Password" }, "\u5BC6\u7801"),
+                    react_1["default"].createElement("span", { className: 'data-input' },
+                        react_1["default"].createElement(antd_1.Icon, { type: "key" }),
+                        react_1["default"].createElement("input", { type: "password", name: "Password", id: "signin-Password", onFocus: this.pswdFocusin, onBlur: this.pswdFocusout })),
+                    react_1["default"].createElement(antd_1.Tooltip, { placement: "right", title: '请输入密码' },
+                        react_1["default"].createElement(antd_1.Icon, { type: "question-circle" }))),
+                react_1["default"].createElement("div", { className: 'data-field noLabel' },
+                    react_1["default"].createElement(antd_1.Checkbox, { onChange: this.remeberPassChange, checked: this.state.passwordRemberded }, "\u8BB0\u4F4F\u5BC6\u7801")),
+                react_1["default"].createElement("div", { className: 'data-actions' },
+                    react_1["default"].createElement(antd_1.Button, { text: "\u767B\u9646", type: "primary", onClick: this.onSubmit },
+                        "\u767B\u9646",
+                        react_1["default"].createElement(antd_1.Icon, { type: "unlock" })),
+                    this.state.errorMessage && this.state.errorMessage.length ? react_1["default"].createElement("div", { className: 'error' },
+                        react_1["default"].createElement(antd_1.Alert, { message: this.state.errorMessage, type: "error", showIcon: true, closable: true })) : null));
+            var loadingForm = react_1["default"].createElement("div", null,
+                react_1["default"].createElement("img", { src: "images/loading.gif" }),
+                react_1["default"].createElement("div", null, "\u6B63\u5728\u767B\u9646.."));
+            return react_1["default"].createElement("div", { id: 'signin' },
+                react_1["default"].createElement("img", { className: 'bg', id: "signin-bg", src: "images/login-bg.jpg" }),
+                react_1["default"].createElement(Center, { id: 'signinInfo', adjust: '-100px' },
+                    react_1["default"].createElement("h1", null,
+                        react_1["default"].createElement(antd_1.Icon, { type: "lock" }),
+                        "\u767B \u9646 "),
+                    this.state.waiting ? loadingForm : inputForm));
+        };
+        return SigninView;
+    }(react_1["default"].Component));
+    exports.SigninView = SigninView;
     var CascadingView = /** @class */ (function (_super) {
         __extends(CascadingView, _super);
         function CascadingView(props) {
