@@ -1,63 +1,31 @@
 
 import  React, { Component } from 'lib/react/react';
-import * as ReactDOM from 'lib/react/react-dom';
-import { Menu, Icon, Button,Modal   } from 'lib/antd/antd';
-import { createStore } from 'lib/redux/redux';
-import { Provider, connect } from 'lib/redux/react-redux';
+import { Menu, Icon, Modal  } from 'lib/antd/antd';
+import {  connect } from 'lib/redux/react-redux';
+import * as _Auth from 'lib/Auth';
+import * as axios from 'lib/axios';
+import {cloneObject} from 'lib/utils';
+//import * as config from 'conf/config';
 
-import {mergemo,$mountable,CascadingView, ContentView, IMountArguments, SigninView} from 'ui';
+import {mergemo,getCookie,$mountable,CascadingView, ContentView, IMountArguments, Center} from 'lib/ui';
+
 
 declare var Deferred : any;
 declare var Promise : any;
 declare var define:any;
 
+
 const SubMenu = Menu.SubMenu;
+let Auth:Component = _Auth as Component;
 
+interface IMenuItem{
+  Id:string;
+  Name?:string;
+  Icon?:string;
+  Url?:string;
+  Children?:IMenuItem[];
+}
 
-
-let json = [
-  {
-    Id:"1",
-    Name:"弹出模态框",
-    Icon:"mail",
-    url:'[dispatch]:{"type":"dialog","text":"hello react."}'
-  },
-  {
-    Id:"2",
-    Name:"加载test/my模块",
-    Url:"test/my",
-    Icon:"mail"
-  },
-  {
-    Id:"22",
-    Name:"加载test/dialog模块",
-    Url:"test/dialog",
-    Icon:"mail"
-  },
-  {
-    Id:"3",
-    Name:"c",
-    Icon:"mail",
-    ChildNodes:[
-      {
-        Id:"5",
-        Name:"dialog2",
-        Url:"test/dialog2",
-        Icon:"mail"
-      },
-      {
-        Id:"6",
-        Name:"6",
-        Icon:"mail"
-      }
-    ]
-  },
-  {
-    Id:"4",
-    Name:"d",
-    Icon:"mail"
-  }
-];
 
 interface IMenuModel{
   data:any[],
@@ -85,7 +53,7 @@ class MainMenuView extends Component{
     super(props);
   }
   render(){
-    const { onClick,model} = this.props;
+    const { onClick} = this.props;
     const {data,defaultSelectedKeys,defaultOpenKeys,collapsed} = this.props;
     
     return <Menu
@@ -111,8 +79,8 @@ class MainMenuView extends Component{
     for(let i =0,j=children.length;i<j;i++){
       let node = children[i];
       let name = this._buildMenuName(node,menuClickHandler);
-      if(node.ChildNodes && node.ChildNodes.length){
-        let subs = this._buildMenu(node.ChildNodes,menuClickHandler);
+      if(node.Children && node.Children.length){
+        let subs = this._buildMenu(node.Children,menuClickHandler);
         result.push(<SubMenu key={node.Id} title={<span><Icon type={node.Icon|| "email"} />{name}</span>}>
         {subs}
         </SubMenu>);
@@ -156,11 +124,7 @@ let Dialog = connect((model:IAppModel)=>{return model.dialog},(dispatch)=>{
   }
 })(DialogView);
 
-let Signin = connect((model:IAppModel)=>{return model.user},(dispatch)=>{
-  return {
-    onSigninSuccess:(userInfo)=>{dispatch({user:userInfo,type:'user.signinSuccess'});}
-  }
-})(SigninView);
+
 
 
 let WorkArea = connect((model:IAppModel)=>model.workarea,(dispatch)=>{
@@ -168,14 +132,13 @@ let WorkArea = connect((model:IAppModel)=>model.workarea,(dispatch)=>{
 })(CascadingView);
 
 
-
 export class AppView extends Component{
   props:any;
   render(){
-    const {menu,dialog,user,menu_collapsed} = this.props;
+    const {menu,dialog,auth,onAuthSuccess} = this.props;
     const dialogView = dialog.visible?<Dialog />:null;
-    if(!user || !user.Id) return <Signin />;
-    return <div  className={menu_collapsed?"layout layout-collapsed":"layout"}>
+    if(auth.enable) return <Auth {...auth} onAuthSuccess={onAuthSuccess}></Auth>;
+    return <div  className={menu.collapsed?"layout layout-collapsed":"layout"}>
         <div className="sider">
           <MainMenu></MainMenu>
         </div>
@@ -190,13 +153,15 @@ export class AppView extends Component{
 
 let App = connect((state)=>{return {...state}},(dispatch)=>{
   return {
-    onOk:()=>dispatch({type:"dialog.ok"}),
+    onAuthSuccess:(data)=>dispatch({type:"auth.success",data:data}),
     onCancel:()=>dispatch({type:"dialog.cancel"})
   }
 })(AppView);
 
 
+
 let controller ={
+  
   "menu.click":(model,action)=>{
     let node = action.node;
     let url = node.Url;
@@ -239,21 +204,61 @@ let controller ={
     action.superStore = appStore;
     return {...model,workarea:{pages:[action]}};
   },
-  "user.signinSuccess":(model,action)=>{
-    return {...model,user:action.user}
+  "auth":(model, action)=>{
+    return {auth:{enable:true}};
+  },
+  
+  "auth.success":(model,action)=>{
+    let menus = buildMenuModel(action.data);
+    return {
+      menu:{
+        data:menus
+      },
+      user:{data:action.data.User},
+      auth:{data:action.data.Auth,enable:false}
+    };
   }
 };
-const initModel ={
-  menu:{
-    data:json
-  },
-  dialog:{width:100},
-  workarea:{
-    pages:[]
-  },
-  user:{}
-};
+function buildMenuModel(authData){
+  let menus :{[id:string]:IMenuItem}={};
+  let perms = authData.Permissions;
+  let roots :IMenuItem[]=[];
+  for(let i =0,j=perms.length;i<j;i++){
+    let perm = perms[i];
+    let node = menus[perm.Id]=buildMenuItem(perm,menus[perm.Id]);
+    if(perm.ParentId){
+      let pnode:IMenuItem = menus[perm.ParentId] || (menus[perm.ParentId]={Id:perm.ParentId});
+      if(!pnode.Children)pnode.Children=[];
+      pnode.Children.push(node);
+    }else {
+      roots.push(node);
+    }
+    
+  }
+  return roots;
+}
+function buildMenuItem(perm,item?:IMenuItem){
+  item ||(item={Id:perm.Id});
+  item.Name = perm.Name;
+  item.Icon = perm.Icon || "mail";
+  if(perm.Url) item.Url = perm.Url;
+  else if(perm.ControllerName){
+    perm.Url = perm.ControllerName + '/' + (perm.ActionName||"");
+  }
+  return item;
+}
 
+axios.defaults.headers.common = {'X-Requested-With': 'XMLHttpRequest','X-Requested-DataType':'json','X-Response-DataType':'json'};
+axios.interceptors.response.use((response) =>{
+  if(response.status==='401'){
+    setTimeout(()=>{appStore.dispach({type:'user.signin'})},0);
+    throw response;
+  }
+  return response.data;
+},(err)=>{
+  console.error(err);
+  alert(err);
+});
 const api ={
   dialog:(opts)=>{
     let deferred = new Deferred();
@@ -261,15 +266,22 @@ const api ={
     appStore.dispatch(action);
     return deferred.promise();
   },
-  getStore:()=>appStore
-};
+  GET:(url,data) :IThenable=>{
+    return axios.get(url,data);
+  },
+  POST : (url,data):IThenable=>{
+    return axios.post(url,data);
+  },
+  store:null
+}; 
 define("app",api);
+let defaultModel = {}
 let appStore;
-let MOD= $mountable(AppView,{
-  model :initModel,
+let MOD= $mountable(App,{
+  model :defaultModel,
   mapStateToProps:null,
   onCreating:(reduxParams:IMountArguments)=>{
-    appStore = reduxParams.store
+    appStore = api.store = reduxParams.store
   },
   mapDispatchToProps:(dispatch)=>{
     return {
@@ -279,6 +291,16 @@ let MOD= $mountable(AppView,{
   },
   controller:controller
 });
+let $mount = MOD.$mount;
+MOD.$mount =(props:any,targetElement:HTMLElement,superStore,transport?:any)=>{
+  return new Promise((resolve,reject)=>{
+    let authConfig = props.auth= cloneObject(config.auth);
+    authConfig.authview_resolve = resolve;
+    authConfig.enable = true;
+    $mount(props,targetElement);
+  });
+  
+}
 export default MOD;
 
 

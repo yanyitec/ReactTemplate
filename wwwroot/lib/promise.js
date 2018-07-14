@@ -234,8 +234,8 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
                 }
             }
             var rejectCallback = typeof onRejected !== 'function' ? null : function (settledValue) {
-                var result = (promiseState.__promise_options.useApply) ? onRejected.apply(null, arguments) : onRejected.call(null, settledValue);
-                reject(result);
+                var result = onRejected.call(null, settledValue);
+                reject(settledValue);
                 return result;
             };
             if (rejectCallback) {
@@ -249,8 +249,29 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
             }
             return thenPromise;
         };
-        PromiseA.prototype.done = function (onFullfilled) { return this.then(onFullfilled); };
-        PromiseA.prototype.fail = function (onRejected) { return this.then(null, onRejected); };
+        PromiseA.prototype.done = function (onFullfilled) {
+            if (this.__promise_fullfill_callbacks) {
+                this.__promise_fullfill_callbacks.push(onFullfilled);
+                return this;
+            }
+            if (this.__promise_status == PromiseStates.fullfilled) {
+                if (this.__promise_options && this.__promise_options.useApply) {
+                    onFullfilled.apply(null, this.__promise_settled_value);
+                }
+                else {
+                    onFullfilled.call(null, this.__promise_settled_value);
+                }
+            }
+            return this;
+        };
+        PromiseA.prototype.fail = function (onRejected) {
+            if (this.__promise_reject_callbacks) {
+                this.__promise_reject_callbacks.push(onRejected);
+                return this;
+            }
+            onRejected.call(null, this.__promise_settled_value);
+            return this;
+        };
         /**
          *
          * 返回一个fullfilled状态的promise,其值为参数
@@ -286,8 +307,13 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
          * PromiseA.all(tasks);
          * 用法2：
          * PromiseA.all(promise,{},(resolve,reject)=>resolve(1));
-         *
          * 两种用法效果相同
+         *
+         * 用法3:
+         * let tasks = [promise,{},(resolve,reject)=>resolve(1)];
+         * PromiseA.all(tasks,(task,index,value)=>{
+         *  //sniffer the mediate result
+         * });
          * @static
          * @param {*} [_arg] 1 如果是函数，就当作Promise的executor构建Promise；2 如果是Promise，直接检查状态;3 其他的当作 ResolvedPromise去传递
          * @returns {IPromise}
@@ -296,9 +322,11 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
         PromiseA.all = function (_arg, _opts) {
             var arg = [];
             var opts;
+            var sniffer;
             if (arguments.length >= 1 && typeof _arg === "object" && _arg.length !== undefined) {
                 arg = _arg;
-                opts = _opts;
+                sniffer = typeof _opts === 'function' ? _opts : null;
+                opts = sniffer ? undefined : _opts;
             }
             else {
                 arg = Array.prototype.slice.call(arguments);
@@ -306,6 +334,8 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
             }
             if (arg.length == 0)
                 return PromiseA.resolve([], opts);
+            if (!sniffer && opts)
+                sniffer = opts.sniffer;
             return new PromiseA(function (resolve, reject) {
                 var results = [];
                 var taskcount = arg.length;
@@ -313,6 +343,8 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
                     //if(i!==undefined)
                     results[i] = value;
                     taskcount -= 1;
+                    if (sniffer)
+                        sniffer(arg[i], i, value);
                     if (taskcount === 0)
                         resolve(results);
                 }
@@ -434,6 +466,74 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
         return Deferred;
     }(PromiseA));
     PromiseA.Deferred = Deferred;
+    var Observable = /** @class */ (function () {
+        function Observable() {
+            var _this = this;
+            this.subscribe = function (nameOrObserver, observer) {
+                var t = typeof nameOrObserver;
+                var name;
+                if (t === 'string' || nameOrObserver === null) {
+                    name = nameOrObserver || '';
+                }
+                else if (t === 'function') {
+                    name = '';
+                }
+                else
+                    throw new Error("observer must be a function");
+                var events = _this.__observable_events || (_this.__observable_events = {});
+                var observers = events[name] || (events[name] = []);
+                observers.push(observer);
+                if (!name)
+                    _this.__observable_observers = observers;
+                return _this;
+            };
+            this.unsubscribe = function (nameOrObserver, observer) {
+                var t = typeof nameOrObserver;
+                var name;
+                if (t === 'string' || nameOrObserver === null) {
+                    name = nameOrObserver || '';
+                }
+                else if (t === 'function') {
+                    name = '';
+                }
+                else
+                    throw new Error("observer must be a function");
+                var events = _this.__observable_events;
+                if (events) {
+                    var observers = events[name];
+                    if (observers) {
+                        for (var i = 0, j = observers.length; i < j; i++) {
+                            var existed = observers.shift();
+                            if (existed !== observer)
+                                observers.push(existed);
+                        }
+                    }
+                }
+                return _this;
+            };
+            this.notify = function (name, evt) {
+                var observers;
+                if (!name)
+                    observers = _this.__observable_observers;
+                else if (_this.__observable_events) {
+                    observers = _this.__observable_events[name];
+                }
+                if (!observers)
+                    return _this;
+                for (var i = 0, j = observers.length; i < j; i++) {
+                    var existed = observers.shift();
+                    var result = existed.call(_this, evt);
+                    if (result === false)
+                        break;
+                    if (result === null)
+                        continue;
+                    observers.push(existed);
+                }
+                return _this;
+            };
+        }
+        return Observable;
+    }());
     exports.PromiseA = exports.Promise = global.PromiseA = global.Promise = PromiseA;
     //if(!global.Promise) global.Promise = PromiseA;
     exports.Deferred = global.Deferred = Deferred;

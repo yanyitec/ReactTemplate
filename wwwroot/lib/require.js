@@ -8,7 +8,7 @@ var ModuleStates;
     ModuleStates[ModuleStates["error"] = 4] = "error";
 })(ModuleStates || (ModuleStates = {}));
 (function (global, factory) {
-    eval("typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports,global) :\n\ttypeof define === 'function' && define.amd ? define(['exports'], factory) :\n\t(factory(global.require = {},global));");
+    eval("typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports,global) :\n\ttypeof define === 'function' && define.amd ? define(['exports'], factory) :\n\t(factory(global.exports = {},global));");
 })(this, function (exports, global) {
     if (!global) {
         try {
@@ -18,19 +18,23 @@ var ModuleStates;
             global = {};
         }
     }
-    var requirejs = function (modname) {
+    var requirejs = function (modname, _opts) {
         var modnames = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            modnames[_i - 1] = arguments[_i];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            modnames[_i - 2] = arguments[_i];
         }
         var mod_m = requirejs;
         var useApply = false;
+        var opts;
         if (typeof modname === "string") {
+            modnames.unshift(_opts);
             modnames.unshift(modname);
             useApply = true;
         }
-        else
+        else {
             modnames = modname;
+            opts = _opts;
+        }
         var mods = [];
         for (var i = 0, j = modnames.length; i < j; i++) {
             var modname_1 = modnames[i];
@@ -45,9 +49,10 @@ var ModuleStates;
                 mod = new Module("", global);
             else
                 mod = mod_m.ensure(modname_1);
+            mod.require_key = modname_1;
             mods.push(mod);
         }
-        return Promise.all(mods, { useApply: useApply, callbackSync: false });
+        return Promise.all(mods, opts || { useApply: useApply, callbackSync: false });
     };
     var modules = requirejs.$modules = [];
     var prefixes = requirejs.$prefixes = {};
@@ -150,7 +155,7 @@ var ModuleStates;
             if (requirejs.$bas_url[requirejs.$bas_url.length - 1] != '/')
                 requirejs.$bas_url += '/';
         }
-        return requirejs;
+        return cfg;
     };
     var bas_url;
     var boot_url;
@@ -209,6 +214,8 @@ var ModuleStates;
     }
     var ModuleNames = /** @class */ (function () {
         function ModuleNames(key, onNameParsed, prefixSetting) {
+            if (!key)
+                throw new Error('模块名必须是非空字符串');
             this.key = (key = trim(key));
             if (onNameParsed && onNameParsed(this.key, "keys", this) === false)
                 return;
@@ -262,7 +269,7 @@ var ModuleStates;
                             else {
                                 if (!is_url(url_1))
                                     url_1 = requirejs.$bas_url + url_1;
-                                if (onNameParsed && onNameParsed(url_1, "urls", this) === false)
+                                if (onNameParsed && onNameParsed(url1, "urls", this) === false)
                                     return;
                                 urls.push(url_1);
                             }
@@ -313,7 +320,7 @@ var ModuleStates;
                     if (typeof name === "string") {
                         names = new ModuleNames(name);
                     }
-                    this.keys = [names.key];
+                    this.key = names.key;
                     this.aliases = names.aliases;
                     this.urls = names.urls;
                 }
@@ -374,6 +381,7 @@ var ModuleStates;
                         _this._deferred.resolve(_this.value = result);
                     }
                     define_context = undefined;
+                    global.exports = {};
                 }
             });
         };
@@ -383,7 +391,7 @@ var ModuleStates;
     function define(name, dependences, defination) {
         var deps;
         var nt = typeof name;
-        var define_exports = { "__define_exports__": true };
+        var define_exports = global.exports = { "__define_exports__": true };
         var dctx = define_context = {
             exports: define_exports
         };
@@ -448,24 +456,36 @@ var ModuleStates;
     }
     define.amd = true;
     requirejs.define = define;
-    function loadModuleRes(urls, nocache, mod, visitedUrls, callback) {
+    function loadModuleRes(urls, rlz_version, mod, visitedUrls, callback) {
         var url = urls.shift();
-        if (nocache) {
+        var ext = extname(url);
+        var loader = ext == '.css' ? loadStylesheet : loadScript;
+        if (rlz_version) {
             if (url.indexOf("?") >= 0)
                 url += '&';
             else
                 url += '?';
-            url += "v=" + nocache;
+            url += "v=" + rlz_version;
         }
         if (!url)
             callback(undefined, { message: "load failed", urls: visitedUrls });
-        loadScript({ url: url }).then(function (res) { return callback({ url: urls, visited: visitedUrls, res: res }); }, function () { return loadModuleRes(urls, nocache, mod, visitedUrls, callback); });
+        loader({ url: url }).then(function (res) { return callback({ url: urls, visited: visitedUrls, res: res }); }, function () { return loadModuleRes(urls, rlz_version, mod, visitedUrls, callback); });
     }
     function loadScript(res) {
         res.elementFactory = function (url) {
             var elem = document.createElement("script");
             elem.type = res["type"] || "text/javascript";
             elem.src = url;
+            return elem;
+        };
+        return loadRes(res);
+    }
+    function loadStylesheet(res) {
+        res.elementFactory = function (url) {
+            var elem = document.createElement("link");
+            elem.type = res["type"] || "text/css";
+            elem.rel = "stylesheet";
+            elem.href = url;
             return elem;
         };
         return loadRes(res);

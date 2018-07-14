@@ -12,6 +12,11 @@
  * 参考资料:
  *  https://www.jianshu.com/p/459a856c476f
  */
+interface IObservable {
+    subscribe(nameOrObserver: string | Function, observer?: Function): IObservable;
+    unsubscribe(nameOrObserver: string | Function, observer?: Function): IObservable;
+    notify(name: string, evt?: any): IObservable;
+}
 /**
  * 是一个定义了 then 方法的对象或函数，也被称作“拥有 then 方法”；
  *
@@ -36,6 +41,7 @@ interface IPromise extends IThenable {
 interface IPromiseOptions {
     useApply?: boolean;
     callbackSync?: boolean;
+    sniffer?: Function;
 }
 interface IResolvable {
     resolve: (value?: any) => IResolvable;

@@ -8,7 +8,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "lib/react/react", "app", "ui"], function (require, exports, React, app, ui_1) {
+define(["require", "exports", "lib/react/react", "app", "lib/ui"], function (require, exports, React, app, ui_1) {
     "use strict";
     exports.__esModule = true;
     var My = /** @class */ (function (_super) {

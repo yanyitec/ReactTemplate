@@ -15,25 +15,34 @@ html,body{
     margin:0;
     padding:0;
 } 
-#signin{
+#autharea{
     position:fixed;
     box-sizing: border-box;
     border:0;
     margin:0;
     padding:0;
     width:100%;
-    img{
+    .bg{
         width:100%;
+        height:100%;
+        background-color:#999;
+        opacity: 0.8;
         filter:blur(5px);
         background-image:linear-gradient(90deg,#fb3 11px,transparent 0),
         linear-gradient(90deg,#ab4 23px,transparent 0),
         linear-gradient(90deg,#655 41px,transparent 0);
         background-size: 41px 100%,61px 100%,83px 100%;
     }
+    #auth_processing{
+        text-align: center;
+        img{
+            margin:10px auto;
+        }
+    }
 }
 
-#signinInfo{
-    position:absolute;
+
+#auth-form{
     max-width:500px;
     max-height:500px;
     background-color:#fff;

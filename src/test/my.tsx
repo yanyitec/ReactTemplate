@@ -1,7 +1,7 @@
 import * as React from 'lib/react/react';
 import * as ReactDOM from 'lib/react/react-dom';
 import * as app from 'app';
-import { $mountable } from 'ui';
+import { $mountable } from 'lib/ui';
 
 export default class My extends React.Component{
     onLoadModal=(url?:string)=>{

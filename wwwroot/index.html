@@ -5,25 +5,21 @@
         <link href="lib/antd/antd.css" rel="stylesheet">
         <link href="app.css" rel="stylesheet">
         <script src="lib/promise.js"></script>
-        <script src="lib/require.js"></script>
+        <script src="lib/require.js" require-boot='boot'></script>
     </head>
     <body>
-        <div id="app"></div>
+        <div id='boot' style='position:absolute;width:100%;'>
+            <div style='text-align: center;margin:50px auto;width:80%;max-width:450px;min-width:300px;'>
+                <img src="images/loading.gif" />
+                <ul id='bootMessage' style='text-align: left;padding:10px;margin-top:30px;height:200px;overflow:hidden;' onmouseover="this.style.overflow='auto'" onmouseout="this.style.overflow='hidden'">
+                    <li>启动中...</li>
+                </ul>
+            </div>
+            
+        </div>
+        <div id="app" style='visibility: hidden'></div>
     </body>
     <script>
-    require(
-        "axios@lib/axios"
-        ,"react@lib/react/react"
-        ,"react-dom@lib/react/react-dom"
-        ,"prop-types@lib/react/prop-types"
-        ,"redux@lib/redux/redux"
-        ,"react-redux@lib/redux/react-redux"
-        ,"moment@lib/antd/moment"
-        ,"antd@lib/antd/antd"
-        ,"app"
-    ).then((axios,react,ReactDOM,propTypes,redux,react_redux,moment,antd,App)=>{
-        //console.log(App);
-        App.$mount({},document.getElementById("app"));
-    });
+   
     </script>
 </html>

@@ -16,54 +16,12 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
-define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/react-redux", "ui"], function (require, exports, react_1, antd_1, react_redux_1, ui_1) {
+define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/react-redux", "lib/Auth", "lib/axios", "lib/utils", "lib/ui"], function (require, exports, react_1, antd_1, react_redux_1, _Auth, axios, utils_1, ui_1) {
     "use strict";
     var _this = this;
     exports.__esModule = true;
     var SubMenu = antd_1.Menu.SubMenu;
-    var json = [
-        {
-            Id: "1",
-            Name: "弹出模态框",
-            Icon: "mail",
-            url: '[dispatch]:{"type":"dialog","text":"hello react."}'
-        },
-        {
-            Id: "2",
-            Name: "加载test/my模块",
-            Url: "test/my",
-            Icon: "mail"
-        },
-        {
-            Id: "22",
-            Name: "加载test/dialog模块",
-            Url: "test/dialog",
-            Icon: "mail"
-        },
-        {
-            Id: "3",
-            Name: "c",
-            Icon: "mail",
-            ChildNodes: [
-                {
-                    Id: "5",
-                    Name: "dialog2",
-                    Url: "test/dialog2",
-                    Icon: "mail"
-                },
-                {
-                    Id: "6",
-                    Name: "6",
-                    Icon: "mail"
-                }
-            ]
-        },
-        {
-            Id: "4",
-            Name: "d",
-            Icon: "mail"
-        }
-    ];
+    var Auth = _Auth;
     var MainMenuView = /** @class */ (function (_super) {
         __extends(MainMenuView, _super);
         function MainMenuView(props) {
@@ -81,8 +39,8 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
                 for (var i = 0, j = children.length; i < j; i++) {
                     var node = children[i];
                     var name_1 = _this._buildMenuName(node, menuClickHandler);
-                    if (node.ChildNodes && node.ChildNodes.length) {
-                        var subs = _this._buildMenu(node.ChildNodes, menuClickHandler);
+                    if (node.Children && node.Children.length) {
+                        var subs = _this._buildMenu(node.Children, menuClickHandler);
                         result.push(react_1["default"].createElement(SubMenu, { key: node.Id, title: react_1["default"].createElement("span", null,
                                 react_1["default"].createElement(antd_1.Icon, { type: node.Icon || "email" }),
                                 name_1) }, subs));
@@ -98,8 +56,8 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             return _this;
         }
         MainMenuView.prototype.render = function () {
-            var _a = this.props, onClick = _a.onClick, model = _a.model;
-            var _b = this.props, data = _b.data, defaultSelectedKeys = _b.defaultSelectedKeys, defaultOpenKeys = _b.defaultOpenKeys, collapsed = _b.collapsed;
+            var onClick = this.props.onClick;
+            var _a = this.props, data = _a.data, defaultSelectedKeys = _a.defaultSelectedKeys, defaultOpenKeys = _a.defaultOpenKeys, collapsed = _a.collapsed;
             return react_1["default"].createElement(antd_1.Menu, { defaultSelectedKeys: defaultSelectedKeys, defaultOpenKeys: defaultOpenKeys, mode: "inline", theme: "dark", inlineCollapsed: collapsed }, this._buildMenu(data, onClick));
         };
         return MainMenuView;
@@ -128,11 +86,6 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             onCancel: function () { return dispatch({ type: "dialog.cancel" }); }
         };
     })(DialogView);
-    var Signin = react_redux_1.connect(function (model) { return model.user; }, function (dispatch) {
-        return {
-            onSigninSuccess: function (userInfo) { dispatch({ user: userInfo, type: 'user.signinSuccess' }); }
-        };
-    })(ui_1.SigninView);
     var WorkArea = react_redux_1.connect(function (model) { return model.workarea; }, function (dispatch) {
         return {};
     })(ui_1.CascadingView);
@@ -142,11 +95,11 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             return _super !== null && _super.apply(this, arguments) || this;
         }
         AppView.prototype.render = function () {
-            var _a = this.props, menu = _a.menu, dialog = _a.dialog, user = _a.user, menu_collapsed = _a.menu_collapsed;
+            var _a = this.props, menu = _a.menu, dialog = _a.dialog, auth = _a.auth, onAuthSuccess = _a.onAuthSuccess;
             var dialogView = dialog.visible ? react_1["default"].createElement(Dialog, null) : null;
-            if (!user || !user.Id)
-                return react_1["default"].createElement(Signin, null);
-            return react_1["default"].createElement("div", { className: menu_collapsed ? "layout layout-collapsed" : "layout" },
+            if (auth.enable)
+                return react_1["default"].createElement(Auth, __assign({}, auth, { onAuthSuccess: onAuthSuccess }));
+            return react_1["default"].createElement("div", { className: menu.collapsed ? "layout layout-collapsed" : "layout" },
                 react_1["default"].createElement("div", { className: "sider" },
                     react_1["default"].createElement(MainMenu, null)),
                 react_1["default"].createElement("div", { className: 'header' }, "header"),
@@ -159,7 +112,7 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
     exports.AppView = AppView;
     var App = react_redux_1.connect(function (state) { return __assign({}, state); }, function (dispatch) {
         return {
-            onOk: function () { return dispatch({ type: "dialog.ok" }); },
+            onAuthSuccess: function (data) { return dispatch({ type: "auth.success", data: data }); },
             onCancel: function () { return dispatch({ type: "dialog.cancel" }); }
         };
     })(AppView);
@@ -209,20 +162,61 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             action.superStore = appStore;
             return __assign({}, model, { workarea: { pages: [action] } });
         },
-        "user.signinSuccess": function (model, action) {
-            return __assign({}, model, { user: action.user });
+        "auth": function (model, action) {
+            return { auth: { enable: true } };
+        },
+        "auth.success": function (model, action) {
+            var menus = buildMenuModel(action.data);
+            return {
+                menu: {
+                    data: menus
+                },
+                user: { data: action.data.User },
+                auth: { data: action.data.Auth, enable: false }
+            };
         }
     };
-    var initModel = {
-        menu: {
-            data: json
-        },
-        dialog: { width: 100 },
-        workarea: {
-            pages: []
-        },
-        user: {}
-    };
+    function buildMenuModel(authData) {
+        var menus = {};
+        var perms = authData.Permissions;
+        var roots = [];
+        for (var i = 0, j = perms.length; i < j; i++) {
+            var perm = perms[i];
+            var node = menus[perm.Id] = buildMenuItem(perm, menus[perm.Id]);
+            if (perm.ParentId) {
+                var pnode = menus[perm.ParentId] || (menus[perm.ParentId] = { Id: perm.ParentId });
+                if (!pnode.Children)
+                    pnode.Children = [];
+                pnode.Children.push(node);
+            }
+            else {
+                roots.push(node);
+            }
+        }
+        return roots;
+    }
+    function buildMenuItem(perm, item) {
+        item || (item = { Id: perm.Id });
+        item.Name = perm.Name;
+        item.Icon = perm.Icon || "mail";
+        if (perm.Url)
+            item.Url = perm.Url;
+        else if (perm.ControllerName) {
+            perm.Url = perm.ControllerName + '/' + (perm.ActionName || "");
+        }
+        return item;
+    }
+    axios.defaults.headers.common = { 'X-Requested-With': 'XMLHttpRequest', 'X-Requested-DataType': 'json', 'X-Response-DataType': 'json' };
+    axios.interceptors.response.use(function (response) {
+        if (response.status === '401') {
+            setTimeout(function () { appStore.dispach({ type: 'user.signin' }); }, 0);
+            throw response;
+        }
+        return response.data;
+    }, function (err) {
+        console.error(err);
+        alert(err);
+    });
     var api = {
         dialog: function (opts) {
             var deferred = new Deferred();
@@ -230,15 +224,22 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             appStore.dispatch(action);
             return deferred.promise();
         },
-        getStore: function () { return appStore; }
+        GET: function (url, data) {
+            return axios.get(url, data);
+        },
+        POST: function (url, data) {
+            return axios.post(url, data);
+        },
+        store: null
     };
     define("app", api);
+    var defaultModel = {};
     var appStore;
-    var MOD = ui_1.$mountable(AppView, {
-        model: initModel,
+    var MOD = ui_1.$mountable(App, {
+        model: defaultModel,
         mapStateToProps: null,
         onCreating: function (reduxParams) {
-            appStore = reduxParams.store;
+            appStore = api.store = reduxParams.store;
         },
         mapDispatchToProps: function (dispatch) {
             return {
@@ -248,5 +249,14 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
         },
         controller: controller
     });
+    var $mount = MOD.$mount;
+    MOD.$mount = function (props, targetElement, superStore, transport) {
+        return new Promise(function (resolve, reject) {
+            var authConfig = props.auth = utils_1.cloneObject(config.auth);
+            authConfig.authview_resolve = resolve;
+            authConfig.enable = true;
+            $mount(props, targetElement);
+        });
+    };
     exports["default"] = MOD;
 });

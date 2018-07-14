@@ -33,7 +33,7 @@ interface IRequire {
      * @returns {IRequire}
      * @memberof IRequire
      */
-    config(config?: IRequireConfig): IRequire;
+    config(config?: IRequireConfig): IRequireConfig;
     /**
      * 查找模块
      *
@@ -91,7 +91,7 @@ interface IModule extends IPromise {
      */
     res: IRes;
     aliveUrl: string;
-    keys: string[];
+    key: string;
     /**
      * 模块名
      *

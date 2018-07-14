@@ -15,7 +15,11 @@
 
  
 
-
+interface IObservable{
+    subscribe(nameOrObserver:string|Function,observer?:Function):IObservable;
+    unsubscribe(nameOrObserver:string|Function,observer?:Function):IObservable;
+    notify(name:string,evt?:any):IObservable;
+}
 
 /**
  * 是一个定义了 then 方法的对象或函数，也被称作“拥有 then 方法”；
@@ -44,6 +48,7 @@ interface IPromise extends IThenable{
 interface IPromiseOptions{
     useApply?:boolean;
     callbackSync?:boolean;
+    sniffer?:Function;
 }
 
 interface IResolvable{
@@ -318,8 +323,8 @@ class PromiseA implements IPromise{
         }
         
         let rejectCallback = typeof onRejected !== 'function'?null:function(settledValue:any):any{
-            let result = (promiseState.__promise_options.useApply) ? onRejected.apply(null,arguments):onRejected.call(null,settledValue);
-            reject(result);
+            let result = onRejected.call(null,settledValue);
+            reject(settledValue);
             return result;
         };
         if(rejectCallback){
@@ -334,9 +339,31 @@ class PromiseA implements IPromise{
         return thenPromise;
     }
 
-    done(onFullfilled:(settledValue:any)=>any):IPromise{ return this.then(onFullfilled)}
+    done(onFullfilled:(settledValue:any)=>any):IPromise{
+        if(this.__promise_fullfill_callbacks){
+            this.__promise_fullfill_callbacks.push(onFullfilled);
+            return this;
+        }
+        if(this.__promise_status== PromiseStates.fullfilled){
+            if(this.__promise_options && this.__promise_options.useApply){
+                onFullfilled.apply(null,this.__promise_settled_value);
+            }else{
+                onFullfilled.call(null, this.__promise_settled_value);
+            }
+        }
+        
+        return this;
+    }
 
-    fail(onRejected:(reason:any)=>any):IPromise{ return this.then(null,onRejected)}
+    fail(onRejected:(reason:any)=>any):IPromise{
+        if(this.__promise_reject_callbacks){
+            this.__promise_reject_callbacks.push(onRejected);
+            return this;
+        }
+        onRejected.call(null, this.__promise_settled_value);
+        
+        return this;
+    }
 
     promise:(target?:any)=>IPromise;
     /**
@@ -379,24 +406,32 @@ class PromiseA implements IPromise{
      * PromiseA.all(tasks);
      * 用法2：
      * PromiseA.all(promise,{},(resolve,reject)=>resolve(1));
-     * 
      * 两种用法效果相同
+     * 
+     * 用法3:
+     * let tasks = [promise,{},(resolve,reject)=>resolve(1)];
+     * PromiseA.all(tasks,(task,index,value)=>{
+     *  //sniffer the mediate result
+     * });
      * @static
      * @param {*} [_arg] 1 如果是函数，就当作Promise的executor构建Promise；2 如果是Promise，直接检查状态;3 其他的当作 ResolvedPromise去传递
      * @returns {IPromise}
      * @memberof PromiseA
      */
-    static all(_arg?:any,_opts?:IPromiseOptions|string|boolean):IPromise{
+    static all(_arg?:any,_opts?:IPromiseOptions|string|boolean|Function):IPromise{
         let arg:any[] = [];
         let opts:IPromiseOptions|string|boolean;
+        let sniffer ;
         if(arguments.length>=1 && typeof _arg==="object" && _arg.length!==undefined){
             arg = _arg;
-            opts = _opts;
+            sniffer = typeof _opts ==='function' ? _opts as Function:null;
+            opts = sniffer ? undefined : _opts as IPromiseOptions|string|boolean;
         }else {
             arg = Array.prototype.slice.call(arguments);
             opts="useApply";
         }
         if(arg.length==0)return PromiseA.resolve([],opts);
+        if(!sniffer && opts) sniffer =( opts as IPromiseOptions).sniffer;
         return new PromiseA((resolve,reject)=>{
             let results=[];
             let taskcount = arg.length;
@@ -404,6 +439,7 @@ class PromiseA implements IPromise{
                 //if(i!==undefined)
                 results[i] = value;
                 taskcount-=1;
+                if(sniffer) sniffer(arg[i],i,value);
                 if(taskcount===0) resolve(results);
             }
             
@@ -526,6 +562,68 @@ class Deferred extends PromiseA implements IDeferred{
 }
 PromiseA.Deferred = Deferred as any;
 
+
+class Observable implements IObservable{
+    private __observable_events:{[name:string]:Function[]};
+    private __observable_observers:Function[];
+    constructor(){
+        this.subscribe =(nameOrObserver:string|Function,observer?:Function):IObservable=>{
+            let t = typeof nameOrObserver;
+            let name :string;
+            if(t==='string'|| nameOrObserver===null){
+                name = nameOrObserver as string || '';
+            }else if(t==='function'){
+                name = '';
+            }else throw new Error("observer must be a function");
+            
+            let events = this.__observable_events || (this.__observable_events={});
+            let observers = events[name] ||(events[name]=[]);
+            observers.push(observer);
+            if(!name) this.__observable_observers = observers;
+            return this;
+        }
+        this.unsubscribe = (nameOrObserver:string|Function,observer?:Function):IObservable=>{
+            let t = typeof nameOrObserver;
+            let name :string;
+            if(t==='string'|| nameOrObserver===null){
+                name = nameOrObserver as string || '';
+            }else if(t==='function'){
+                name = '';
+            }else throw new Error("observer must be a function");
+    
+            let events = this.__observable_events;
+            if(events){
+                let observers = events[name];
+                if(observers){
+                    for(let i =0,j=observers.length;i<j;i++){
+                        let existed = observers.shift();
+                        if(existed!==observer) observers.push(existed);
+                    }
+                }
+            }
+            return this;
+        };
+        this.notify = (name:string,evt?:any):IObservable=>{
+            let observers :Function[];
+            if(!name) observers = this.__observable_observers;
+            else if(this.__observable_events){
+                observers = this.__observable_events[name];
+            }
+            if(!observers) return this;
+            for(let i =0,j=observers.length;i<j;i++){
+                let existed = observers.shift();
+                let result = existed.call(this,evt);
+                if(result===false) break;
+                if(result===null)continue;
+                observers.push(existed);
+            }
+            return this;
+        };
+    }
+    subscribe:(nameOrObserver:string|Function,observer?:Function)=>IObservable;
+    unsubscribe:(nameOrObserver:string|Function,observer?:Function)=>IObservable;
+    notify:(name:string,evt?:any)=>IObservable;
+}
 
 
 

@@ -23,6 +23,8 @@ interface IRequireConfig{
 }
 
 
+
+
 /**
  * 一个require 等同用模块管理器
  *
@@ -38,7 +40,7 @@ interface IRequire{
      * @returns {IRequire}
      * @memberof IRequire
      */
-    config(config?:IRequireConfig):IRequire;
+    config(config?:IRequireConfig):IRequireConfig;
     
     
     
@@ -109,7 +111,7 @@ interface IModule extends IPromise{
          */
         res:IRes;
         aliveUrl:string;
-        keys:string[];
+        key:string;
         /**
          * 模块名
          *
@@ -151,15 +153,19 @@ interface IRes{
 (function(global,factory){
     eval(`typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports,global) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(factory(global.require = {},global));`);
+	(factory(global.exports = {},global));`);
 })(this,(exports,global):IRequire=>{
     if(!global){  try{global = window;}catch(ex){global={}}}
 
-    let requirejs:IRequire = function(modname:string|string[],...modnames:string[]):IPromise{
+    let requirejs:IRequire = function(modname:string|string[],_opts:IPromiseOptions|string|boolean|Function,...modnames:string[]):IPromise{
         const mod_m :IRequire = requirejs as IRequire;
         let useApply:boolean = false;
-        if(typeof modname==="string"){ modnames.unshift(modname); useApply=true;}
-        else modnames = modname as string[];
+        let opts :any;
+        if(typeof modname==="string"){ modnames.unshift(_opts as string);modnames.unshift(modname); useApply=true;}
+        else{
+            modnames = modname as string[];
+            opts = _opts ;
+        } 
         let mods : IModule[]=[];
         for(let i =0,j=modnames.length;i<j;i++){
             let modname = modnames[i];
@@ -169,10 +175,11 @@ interface IRes{
             else if(modname==="exports") mod = new Module("",define_context?define_context.exports:"#undefined");
             else if(modname==="global") mod = new Module("",global);
             else mod = mod_m.ensure(modname);
+            (mod as any).require_key = modname;
             mods.push(mod);
         }
  
-        return (Promise as any).all(mods,{useApply:useApply,callbackSync:false});
+        return (Promise as any).all(mods,opts || {useApply:useApply,callbackSync:false});
     } as IRequire;
     
     let modules = requirejs.$modules = [];
@@ -243,7 +250,7 @@ interface IRes{
         mod.load();
         return mod;
     }
-    requirejs.config = (cfg:IRequireConfig):IRequire=>{
+    requirejs.config = (cfg:IRequireConfig):IRequireConfig=>{
         let prefixs = cfg.prefixes;
         if(prefixs){
             for(let prefixname in prefixs){
@@ -265,7 +272,7 @@ interface IRes{
             if(requirejs.$bas_url[requirejs.$bas_url.length-1]!='/') requirejs.$bas_url += '/';
         }
     
-        return requirejs;
+        return cfg;
     }
     let bas_url:string;
     let boot_url:string;
@@ -330,6 +337,7 @@ interface IRes{
         aliases:string[];
         urls:string[];
         constructor(key:string,onNameParsed?:(name:string,type:string,names:ModuleNames)=>boolean,prefixSetting?:{[index:string]:string|string[]}){
+            if(!key) throw new Error('模块名必须是非空字符串');
             this.key = (key=trim(key));
             if(onNameParsed && onNameParsed(this.key,"keys",this)===false) return;
             let aliases :string[] = this.aliases = [key];
@@ -374,7 +382,7 @@ interface IRes{
                                 urls.push(url);
                             }else {
                                 if(!is_url(url)) url = requirejs.$bas_url + url;
-                                if(onNameParsed && onNameParsed(url,"urls",this)===false) return;
+                                if(onNameParsed && onNameParsed(url1,"urls",this)===false) return;
                                 urls.push(url);
                             }
                             
@@ -437,7 +445,7 @@ interface IRes{
          */
         res:IRes;
         aliveUrl:string;
-        keys:string[];
+        key:string;
         /**
          * 模块名
          *
@@ -463,7 +471,7 @@ interface IRes{
                     if(typeof name==="string"){
                         names = new ModuleNames(name);
                     }
-                    this.keys = [names.key];
+                    this.key = names.key;
                     this.aliases = names.aliases;
                     this.urls = names.urls;
                 }
@@ -527,6 +535,7 @@ interface IRes{
                         (this._deferred as any).resolve(this.value = result);
                     }
                     define_context=undefined;
+                    global.exports = {};
                 }
                 
                 
@@ -547,7 +556,7 @@ interface IRes{
         let deps:string[];
         let nt = typeof name;
 
-        let define_exports:any = {"__define_exports__":true};
+        let define_exports:any  = global.exports = {"__define_exports__":true};
         let dctx:IDefineContext = define_context = {
             exports: define_exports
         };
@@ -612,26 +621,38 @@ interface IRes{
     
     
     
-    function loadModuleRes(urls:string[],nocache:string,mod:Module,visitedUrls:string[],callback:(result?:any,error?:any)=>void):void{
+    function loadModuleRes(urls:string[],rlz_version:string,mod:Module,visitedUrls:string[],callback:(result?:any,error?:any)=>void):void{
         let url = urls.shift();
-        if(nocache){
+        let ext = extname(url);
+        let loader = ext=='.css'?loadStylesheet:loadScript;
+        if(rlz_version){
             if(url.indexOf("?")>=0) url += '&';
             else url += '?';
-            url += "v=" + nocache;
+            url += "v=" + rlz_version;
         }
         if(!url) callback(undefined,{message:"load failed",urls:visitedUrls});
-        (loadScript({url:url}) as any).then(
+        (loader({url:url}) as any).then(
             (res)=>callback({url:urls,visited:visitedUrls,res:res})
-            ,()=> loadModuleRes(urls,nocache,mod,visitedUrls,callback)
+            ,()=> loadModuleRes(urls,rlz_version,mod,visitedUrls,callback)
         );
     }
     
     
-    function loadScript(res:IRes){
+    function loadScript(res:IRes):IPromise{
         res.elementFactory = (url:string):HTMLElement=>{
             let elem :HTMLScriptElement = document.createElement("script") as HTMLScriptElement;
             elem.type = res["type"]|| "text/javascript";
             elem.src= url;
+            return elem;
+        };
+        return loadRes(res);
+    }
+    function loadStylesheet(res:IRes):IPromise{
+        res.elementFactory = (url:string):HTMLElement=>{
+            let elem :HTMLLinkElement = document.createElement("link") as HTMLLinkElement;
+            elem.type = res["type"]|| "text/css";
+            elem.rel="stylesheet";
+            elem.href= url;
             return elem;
         };
         return loadRes(res);
@@ -667,6 +688,8 @@ interface IRes{
         getHead = ()=>head;
         return head;
     }
+
+    
     
     function array_exists(arr:any,item:any):boolean{
         for(let i=0,j=(arr as any[]).length;i<j;i++) {
