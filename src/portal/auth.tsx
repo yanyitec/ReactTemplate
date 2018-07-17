@@ -5,41 +5,68 @@ import * as axios from 'lib/axios';
 import {getCookie,setCookie,Center} from 'lib/ui';
 
 
-interface IAuthData{
+export interface IAuthInfo{
     Username?:string;
     Password?:string;
     RememberMe?:boolean;
-    AccessToken?:boolean;
+    AccessToken?:string;
 }
-interface IAuthState extends IAuthData{
-    nameInputing?:boolean|string;
-    pswdInputing?:boolean|string;
-    errorMessages?:string[];
-    processing?:boolean;
+export interface IAuthPermission{
+    Id:string;
+    Name?:string,
+    SystemId?:string;
+    Url?:string;
+    Icon?:string;
+    ControllerName?:string;
+    ActionName?:string;
+    ParentId?:string;
 }
-interface IAuthModel{
+export interface IAuthData{
+    AccessToken:string;
+    Info:IAuthInfo;
+    Permissions:IAuthPermission[];
+    Profile:any;
+    User:any;
+    
+}
+
+export interface IAuthState {
     enable:boolean;
-    data?:IAuthData;
+    data?:IAuthInfo;
     auth_type?:string;
     url?:string;
     auth_dataType?:string;
     authview_resolve?:Function;
+}
+
+export interface IAuthNotice {
     onAuthSuccess?:Function;
 }
+
+export interface IAuthInternalState extends IAuthInfo{
+    nameInputing?:boolean|string;
+    pswdInputing?:boolean|string;
+    errorMessages?:string[];
+    processing?:boolean;
+    
+}
+
+
+
 
 const AUTH_COOKIE_NAME = 'AUTH';
   
 export default class Auth extends Component{
     refs:any;
-    props:IAuthModel;
+    props:IAuthState & IAuthNotice;
     setState:any;
     forceUpdate:any;
-    state:IAuthState;
+    state:IAuthInternalState;
     context:any;
     timer:any;
     iframe:HTMLIFrameElement;
     view_resolve:Function;
-    constructor(props:IAuthModel){
+    constructor(props:IAuthState & IAuthNotice){
         super(props);
         if(!props.enable) return;
         this.view_resolve = props.authview_resolve;
@@ -59,11 +86,12 @@ export default class Auth extends Component{
         this.state = {
           processing:true,
           nameInputing:authInfo.Username,
-          pswdInputing:authInfo.Password
+          pswdInputing:authInfo.Password,
+          Username:authInfo.Username,
+          Password:authInfo.Password,
+          RememberMe:authInfo.RememberMe
         };
-        for(let n in authInfo){
-          this.state[n] = authInfo[n];
-        }
+        
   
         if(authInfo.AccessToken || (authInfo.RememberMe && authInfo.Username && authInfo.Password)){
           this.doAuth();
@@ -101,7 +129,7 @@ export default class Auth extends Component{
             RememberMe : this.state.RememberMe,
             AccessToken: response.AccessToken
         };
-        setCookie(AUTH_COOKIE_NAME,JSON.stringify(authInfo),"s20");
+        setCookie(AUTH_COOKIE_NAME,JSON.stringify(authInfo),"m20");
         this.setState({enable:false});
         if(this.props.onAuthSuccess){
             this.props.onAuthSuccess(response);

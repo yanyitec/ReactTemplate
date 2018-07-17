@@ -1,104 +1,40 @@
 
 import  React, { Component } from 'lib/react/react';
-import { Menu, Icon, Modal  } from 'lib/antd/antd';
+import { Menu, Icon, Modal,Button,Dropdown  } from 'lib/antd/antd';
 import {  connect } from 'lib/redux/react-redux';
-import * as _Auth from 'lib/Auth';
+
 import * as axios from 'lib/axios';
 import {cloneObject} from 'lib/utils';
+import {viewType,attach} from 'lib/ui';
+import Mainmenu,{IMainMenuState,IMenuItem} from 'portal/menu';
+import Auth,{IAuthState} from 'portal/auth';
+
 //import * as config from 'conf/config';
 
 import {mergemo,getCookie,$mountable,CascadingView, ContentView, IMountArguments, Center} from 'lib/ui';
-
 
 declare var Deferred : any;
 declare var Promise : any;
 declare var define:any;
 
-
-const SubMenu = Menu.SubMenu;
-let Auth:Component = _Auth as Component;
-
-interface IMenuItem{
-  Id:string;
-  Name?:string;
-  Icon?:string;
-  Url?:string;
-  Children?:IMenuItem[];
-}
-
-
-interface IMenuModel{
-  data:any[],
-  defaultSelectedKeys:boolean,
-  defaultOpenKeys:boolean,
-  collapsed:boolean
-}
-interface IDialogModel{
-  visible:boolean,opts:{title:string,content:any,url:string,width:any,height:any}
-}
-interface IWorkAreaModel{
-  pages:any[]
-}
-
-interface IAppModel{
-  menu:IMenuModel;
-  dialog:IDialogModel;
-  workarea:IWorkAreaModel;
+interface IAppState{
+  auth:IAuthState;
+  menu:IMainMenuState;
+  dialog:any;
+  workarea:any;
   user:any;
+  viewType:string;
 }
 
-class MainMenuView extends Component{
-  props:any;
-  constructor(props){
-    super(props);
-  }
-  render(){
-    const { onClick} = this.props;
-    const {data,defaultSelectedKeys,defaultOpenKeys,collapsed} = this.props;
-    
-    return <Menu
-        defaultSelectedKeys={defaultSelectedKeys}
-        defaultOpenKeys={defaultOpenKeys}
-        mode="inline"
-        theme="dark"
-        inlineCollapsed={collapsed}
-      >
-        {this._buildMenu(data,onClick)}
-    </Menu>;
-  }
 
-  _buildMenuName=(node,menuClickHandler) => {
-    if(node.Url){
-      return <span onClick={()=>menuClickHandler(node)}>{node.Name}</span>
-    }else{
-      return <span>{node.Name}</span>;
-    }
-  }
-  _buildMenu=(children,menuClickHandler)=>{
-    let result = [];
-    for(let i =0,j=children.length;i<j;i++){
-      let node = children[i];
-      let name = this._buildMenuName(node,menuClickHandler);
-      if(node.Children && node.Children.length){
-        let subs = this._buildMenu(node.Children,menuClickHandler);
-        result.push(<SubMenu key={node.Id} title={<span><Icon type={node.Icon|| "email"} />{name}</span>}>
-        {subs}
-        </SubMenu>);
-      }else{ 
-        result.push(<Menu.Item key={node.Id}>
-          <Icon type={node.Icon|| "email"} />
-          {name}
-        </Menu.Item>);
-      }
-    }
-    return result;
-  }
-}
-let MainMenu = connect((model:IAppModel)=>{return model.menu},(dispatch)=>{
+
+
+let MainMenu = connect((model:IAppState)=>{return model.menu},(dispatch)=>{
   return {
-    onClick:(node)=>dispatch({type:"menu.click",node:node})
+    onItemClick:(item)=>dispatch({type:"menu.click",item:item}),
+    onToggleIcon:()=>dispatch({type:'menu.toggleFold'})
   }
-})(MainMenuView);
+})(Mainmenu);
 
 export class DialogView extends Component{
   props:any;
@@ -117,7 +53,7 @@ export class DialogView extends Component{
   }
 }
 
-let Dialog = connect((model:IAppModel)=>{return model.dialog},(dispatch)=>{
+let Dialog = connect((model:IAppState)=>{return model.dialog},(dispatch)=>{
   return {
     onOk:()=>dispatch({type:"dialog.ok"}),
     onCancel:()=>dispatch({type:"dialog.cancel"})
@@ -127,88 +63,207 @@ let Dialog = connect((model:IAppModel)=>{return model.dialog},(dispatch)=>{
 
 
 
-let WorkArea = connect((model:IAppModel)=>model.workarea,(dispatch)=>{
+let WorkArea = connect((model:IAppState)=>model.workarea,(dispatch)=>{
   return {};
 })(CascadingView);
+
+function buildNormalQuicks(user,customActions){
+  let userDiv,customDiv;
+  if(user && user.data){
+    let userMenuItems = [
+      <Menu.Item key="10000"><Icon type="idcard" /> 重登陆</Menu.Item>,
+      <Menu.Item key="20000"><Icon type="key" /> 修改密码</Menu.Item>,
+      <Menu.Item key="30000"><Icon type="profile" /> 个性化</Menu.Item>,
+      <Menu.Item key="40000"><Icon type="logout" /> 退出</Menu.Item>,
+    ];
+    let userMenu = <Menu>{userMenuItems}</Menu>;
+    userDiv  = <div className='user'><Button.Group >
+      <Button  type='dashed'><Icon type="user" /><a>{user.data.DisplayName||user.data.Username || ' '}</a></Button>
+      <Dropdown overlay={userMenu} placement="bottomRight">
+        <Button>
+        <Icon type="setting" />
+        </Button>
+      </Dropdown>
+      <Button><Icon type="poweroff" /></Button>
+    </Button.Group></div>;
+
+  }
+  
+  
+  if(customActions && customActions.length){
+    let customActionItems=[];
+    for(let i =customActions.length-1,j=0;i>=0;i--){
+      let actionInfo = customActions[i];
+      customActionItems.unshift(<Button type={actionInfo.type || 'primary'} onClick={actionInfo.onClick}><Icon type={actionInfo.icon} /> {actionInfo.text}</Button>);
+    }
+    customDiv = <div className='actions'><Button.Group >{customActionItems}</Button.Group></div>;
+  }
+
+  return <div id='layout-quicks'>
+    {userDiv}
+    {customDiv}
+  </div>
+}
+
+function buildMinQuicks(user,customActions){
+  let customActionItems,customDiv;
+  if(user && user.data){
+    customActionItems = [
+      <Menu.Item key="10000"><Icon type="idcard" /> 重登陆</Menu.Item>,
+      <Menu.Item key="20000"><Icon type="key" /> 修改密码</Menu.Item>,
+      <Menu.Item key="30000"><Icon type="profile" /> 个性化</Menu.Item>,
+      <Menu.Item key="40000"><Icon type="logout" /> 退出</Menu.Item>,
+    ];
+  }
+  
+  
+  if(customActions && customActions.length){
+    let idprefix = (customActions.idprefix|| Math.random().toString())+"_";
+    if(customActions && customActions.length) customActionItems.unshift(<Menu.Divider />);
+    for(let i =customActions.length-1,j=0;i>=0;i--){
+      let actionInfo = customActions[i];
+      customActionItems.unshift(<Menu.Item key={idprefix + i}><Icon type={actionInfo.icon } /> {actionInfo.text }</Menu.Item>);
+    }
+    
+  }
+
+  let customMenu = <Menu>{customActionItems}</Menu>;
+  return <div id='layout-quicks'>
+    <Dropdown overlay={customMenu} placement="bottomRight">
+      <Button size='small' theme='dark'>
+        <Icon type="ellipsis" />
+      </Button>
+    </Dropdown>
+  </div>;
+}
 
 
 export class AppView extends Component{
   props:any;
   render(){
-    const {menu,dialog,auth,onAuthSuccess} = this.props;
-    const dialogView = dialog.visible?<Dialog />:null;
-    if(auth.enable) return <Auth {...auth} onAuthSuccess={onAuthSuccess}></Auth>;
-    return <div  className={menu.collapsed?"layout layout-collapsed":"layout"}>
-        <div className="sider">
-          <MainMenu></MainMenu>
+    const {menu,dialog,auth,user,customActions,viewType
+      ,onAuthSuccess,onMenuToggleMin} = this.props;
+ 
+    let layoutLogo;
+    if(viewType==='xs'){
+      layoutLogo = <div id='layout-logo'>
+        <a className={menu.mode==='min'?'toggle collapsed':'toggle'} onClick={onMenuToggleMin}><Icon type={menu.mode=='min'?"menu-unfold":"menu-fold"} /></a>
+      </div>;
+    }else {
+      layoutLogo = <div id='layout-logo'>
+        <a className={menu.mode==='min'?'toggle collapsed':'toggle'} onClick={onMenuToggleMin}><Icon type={menu.mode=='min'?"caret-down":"caret-up"} /></a>
+        <div className='logo-image'><img src='images/logo.png' onClick={onMenuToggleMin} /></div>
+      </div>;
+    }   
+
+    return <div  id='layout' className ={'layout-' + viewType}>
+      <div id='layout-header'>
+        {layoutLogo}
+        {viewType=='xs' || viewType=='sm'?buildMinQuicks(user,customActions):buildNormalQuicks(user,customActions)}
+        
+      </div>
+      <div id='layout-content' className={"menu-" + menu.mode}>
+        <div id='layout-sider'><MainMenu id='main-menu' className={menu.hidden?'hidden':''}></MainMenu></div>
+        <div id='layout-body'>
+          <div id='layout-navs'></div>
+          <div id='layout-workarea'><WorkArea id="workarea" /></div>
         </div>
-        <div className='header'>header</div>
-        <div className="content">
-          <WorkArea id="workarea" />
-        </div>
-        {dialogView}
-    </div>
+      </div>
+      {dialog.enable===true?<Dialog />:null}
+      {auth.enable===true?<Auth {...auth} onAuthSuccess={onAuthSuccess}></Auth>:null}
+    </div>;
   }
 }
 
 let App = connect((state)=>{return {...state}},(dispatch)=>{
   return {
     onAuthSuccess:(data)=>dispatch({type:"auth.success",data:data}),
-    onCancel:()=>dispatch({type:"dialog.cancel"})
+    onMenuToggleMin:()=>dispatch({type:"menu.toggleMin"}) 
   }
 })(AppView);
 
 
 
 let controller ={
+  "resize":(state:IAppState,action)=>{
+    if(rszDelayTick){
+      clearTimeout(rszDelayTick);rszDelayTick=0;
+    }
+    let vtype = viewType();
+    let menuMode = state.menu.mode || 'normal';
+    let beforeMode = state.menu.beforeMode;
+    if(vtype==='xs'){
+      beforeMode = 'normal';
+      menuMode = 'min';
+    }
+    if(!beforeMode) beforeMode='normal';
+    return {
+      viewType:vtype,
+      menu:{mode:menuMode,beforeMode :beforeMode}
+    };
+  },
+  "menu.toggleFold":(state:IAppState,action)=>{
+    return {
+      menu:{mode:state.menu.mode==='fold'?'normal':'fold'}
+    }
+  },
+  "menu.toggleMin":(state:IAppState,action)=>{
+    let beforeMode = state.menu.beforeMode;
+    if(beforeMode===undefined) beforeMode = state.menu.mode || 'normal';
+    
+    return {
+      menu:{mode:state.menu.mode==='min'?beforeMode:'min',beforeMode:beforeMode }
+    }
+  },
   
-  "menu.click":(model,action)=>{
+
+  "menu.click":(state,action)=>{
     let node = action.node;
     let url = node.Url;
-    if(!url) return model;
+    if(!url) return state;
     if(url.indexOf("[dispatch]:")>=0){
       let actionJson = url.substr("[dispatch]:".length);
       let action = JSON.parse(actionJson);
       let handler = controller[action.type];
-      if(handler) return handler.call(this,model,action);
-      return model;
+      if(handler) return handler.call(this,state,action);
+      return state;
     }
-    return controller.navigate.call(this,model,{
+    return controller.navigate.call(this,state,{
       type:"navigate",
       module:url
     });
-    return model;
+    return state;
   },
-  "dialog":(model,action)=>{
+  "dialog":(state,action)=>{
     action.visible = true;
     if(!action.deferred) action.deferred = new Deferred();
     action.transport = {'__transport__':'dialog'};
-    return mergemo(model,{
+    return mergemo(state,{
       dialog:action
     });
   },
-  "dialog.ok":(model,action)=>{
-    model.dialog.deferred.resolve({status:"ok",result:model.dialog.transport.exports});
-    return mergemo(model,{
+  "dialog.ok":(state,action)=>{
+    state.dialog.deferred.resolve({status:"ok",result:state.dialog.transport.exports});
+    return mergemo(state,{
       dialog:{visible:false,deferred:null,$transport:null}
     });
   },
-  "dialog.cancel":(model,action)=>{
-    model.dialog.deferred.resolve({status:"cancel"});
-    return mergemo(model,{
+  "dialog.cancel":(state,action)=>{
+    state.dialog.deferred.resolve({status:"cancel"});
+    return mergemo(state,{
       dialog:{visible:false,deferred:null}
     });
   },
-  "navigate":(model,action)=>{
+  "navigate":(state,action)=>{
     action.transport={"__transport__":"app.navigate"};
     action.superStore = appStore;
-    return {...model,workarea:{pages:[action]}};
+    return {...state,workarea:{pages:[action]}};
   },
-  "auth":(model, action)=>{
+  "auth":(state, action)=>{
     return {auth:{enable:true}};
   },
   
-  "auth.success":(model,action)=>{
+  "auth.success":(state,action)=>{
     let menus = buildMenuModel(action.data);
     return {
       menu:{
@@ -248,6 +303,16 @@ function buildMenuItem(perm,item?:IMenuItem){
   return item;
 }
 
+let rszDelayTick;
+attach(window,"resize",()=>{
+  if(appStore) {
+    if(rszDelayTick) clearTimeout(rszDelayTick);
+    rszDelayTick = setTimeout(() => {
+      appStore.dispatch({type:'resize'});
+    }, 200);
+  }
+})
+
 axios.defaults.headers.common = {'X-Requested-With': 'XMLHttpRequest','X-Requested-DataType':'json','X-Response-DataType':'json'};
 axios.interceptors.response.use((response) =>{
   if(response.status==='401'){
@@ -275,7 +340,14 @@ const api ={
   store:null
 }; 
 define("app",api);
-let defaultModel = {}
+let view_type = viewType();
+let defaultModel = {
+  viewType:view_type,
+  menu:{
+    mode:view_type=='xs'?'min':'normal',
+    beforeMode:'normal'
+  }
+}
 let appStore;
 let MOD= $mountable(App,{
   model :defaultModel,

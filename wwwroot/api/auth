@@ -3,6 +3,7 @@
     "User":{
         "Id":"x",
         "Username":"aa",
+        "DisplayName":"Yanyi",
         "Password":"a"
     },
     "Permissions":[
@@ -23,7 +24,7 @@
             "SystemId":"Module1"
         }
         ,{
-            "Id":2,
+            "Id":3,
             "Name":"模块2",
             "Data":{},
             "ActionName":"Module2",
@@ -31,7 +32,7 @@
             "SystemId":"Module2"
         }
         ,{
-            "Id":3,
+            "Id":4,
             "Name":"模块1-3",
             "ParentId":1,
             "Data":{},
@@ -40,7 +41,7 @@
             "SystemId":"Module1"
         }
         ,{
-            "Id":4,
+            "Id":5,
             "Name":"模块1-4",
             "ParentId":1,
             "Data":{},
@@ -49,7 +50,7 @@
             "SystemId":"Module1"
         }
         ,{
-            "Id":5,
+            "Id":6,
             "Name":"模块1-5",
             "ParentId":1,
             "Data":{},
@@ -58,7 +59,7 @@
             "SystemId":"Module1"
         }
         ,{
-            "Id":6,
+            "Id":7,
             "Name":"模块1-4-6",
             "ParentId":4,
             "Data":{},

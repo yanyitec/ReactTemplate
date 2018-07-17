@@ -361,13 +361,13 @@ mark {
 }
 @font-face {
   font-family: 'anticon';
-  src: url('font-antd.eot');
+  src: url('antd-font.eot');
   /* IE9*/
-  src: url('font-antd.woff') format('woff'), 
+  src: url('antd-font.woff') format('woff'), 
   /* chrome、firefox、opera、Safari, Android, iOS 4.2+*/ 
-  url('font-antd.ttf') format('truetype'), 
+  url('antd-font.ttf') format('truetype'), 
   /* iOS 4.1- */ 
-  url('font-antd.svg#iconfont') format('svg');
+  url('antd-font.svg#iconfont') format('svg');
 }
 .anticon {
   display: inline-block;

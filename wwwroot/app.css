@@ -3,7 +3,12 @@ body {
   padding: 0;
   margin: 0;
 }
-.border-box {
+.tight-border-box,
+#autharea,
+#layout,
+#layout #layout-header,
+#layout #layout-header > #layout-logo,
+#layout #layout-header > #layout-logo .logo-image {
   box-sizing: border-box;
   border: 0;
   margin: 0;
@@ -11,11 +16,10 @@ body {
 }
 #autharea {
   position: fixed;
-  box-sizing: border-box;
-  border: 0;
-  margin: 0;
-  padding: 0;
   width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
 }
 #autharea .bg {
   width: 100%;
@@ -95,59 +99,114 @@ body {
   width: 240px;
   margin-bottom: 10px;
 }
-.layout {
+#layout {
   position: relative;
   width: 100%;
 }
-.layout > .sider {
-  box-sizing: border-box;
-  border: 0;
-  margin: 0;
-  padding: 0;
-  width: 150px;
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 3;
-  background-color: #ddd;
-}
-.layout > .header {
-  box-sizing: border-box;
-  border: 0;
-  margin: 0;
-  padding: 0;
+#layout #layout-header {
+  height: 50px;
+  overflow: hidden;
   width: 100%;
-  padding-left: 160px;
-  position: fixed;
+  background-color: #001529;
+  border-bottom: 1px solid #1890ff;
+  display: block;
+  position: relative;
+}
+#layout #layout-header > #layout-logo {
+  display: table-row;
+}
+#layout #layout-header > #layout-logo .toggle {
+  background-color: #000000;
+  font-size: 10px;
+  width: 10px;
+  display: table-cell;
+}
+#layout #layout-header > #layout-logo .logo-image {
+  padding: 10px;
+  display: table-cell;
+}
+#layout #layout-header > #layout-logo .logo-image img {
+  height: 30px;
+  width: 170px;
+}
+#layout #layout-header #layout-quicks {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  display: table-row;
+}
+#layout #layout-header #layout-quicks > * {
+  display: table-cell;
+  padding: 0 10px;
+}
+#layout #layout-header #layout-quicks .user a {
+  font-size: 13px;
+}
+#layout #layout-content {
+  display: table-row;
+  width: 100%;
+}
+#layout #layout-content #layout-sider {
+  display: table-cell;
+  width: 200px;
+}
+#layout #layout-content #layout-body {
+  display: table-cell;
+  position: relative;
+  padding-left: 200px;
+}
+#layout #layout-content.menu-min #layout-sider {
+  display: none;
+}
+#layout #layout-content.menu-min #layout-body {
+  padding-left: 0;
+}
+#layout #layout-content.menu-min #main-menu {
+  position: absolute;
+}
+#layout #layout-content.menu-fold #layout-sider {
+  width: 45px;
+}
+#layout #layout-content.menu-fold #layout-body {
+  padding-left: 50px;
+}
+#layout #layout-content.menu-fold .toggle-menu {
+  width: 45px;
+  overflow: hidden;
+}
+#layout.layout-xs > #layout-header {
   height: 40px;
-  top: 0;
-  left: 0;
-  z-index: 2;
-  background-color: #ccc;
 }
-.layout > .content {
-  box-sizing: border-box;
-  border: 0;
-  margin: 0;
-  padding: 5px;
-  width: 100%;
-  padding-left: 160px;
-  padding-top: 50px;
+#layout.layout-xs > #layout-header > #layout-logo {
+  width: 40px;
+  height: 40px;
+  display: block;
 }
-.layout-collapsed > .sider {
-  width: 50px;
+#layout.layout-xs > #layout-header > #layout-logo > a.toggle {
+  display: block;
+  font-size: 24px;
+  padding: 7px;
 }
-.layout-collapsed > .header {
-  padding-left: 60px;
+#main-menu.hidden {
+  display: none;
 }
-.layout-collapsed > .content {
-  padding-left: 60px;
+#main-menu div.toggle-menu {
+  text-align: right;
+  font-size: 14px;
+  background-color: #001529;
+  padding: 10px 15px 5px 15px;
+}
+#main-menu div.toggle-menu .anticon {
+  color: #ffffff;
 }
 .ant-menu-inline-collapsed {
-  width: 50px;
+  width: 45px;
 }
 .ant-menu-inline-collapsed > .ant-menu-item,
 .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
 .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
   padding: 0 15px !important;
 }
+/* 小屏幕（平板，大于等于 768px） */
+/* 中等屏幕（桌面显示器，大于等于 992px） */
+/* 大屏幕（大桌面显示器，大于等于 1200px） */

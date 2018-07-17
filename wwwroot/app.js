@@ -16,57 +16,16 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
-define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/react-redux", "lib/Auth", "lib/axios", "lib/utils", "lib/ui"], function (require, exports, react_1, antd_1, react_redux_1, _Auth, axios, utils_1, ui_1) {
+define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/react-redux", "lib/axios", "lib/utils", "lib/ui", "portal/menu", "portal/auth", "lib/ui"], function (require, exports, react_1, antd_1, react_redux_1, axios, utils_1, ui_1, menu_1, auth_1, ui_2) {
     "use strict";
     var _this = this;
     exports.__esModule = true;
-    var SubMenu = antd_1.Menu.SubMenu;
-    var Auth = _Auth;
-    var MainMenuView = /** @class */ (function (_super) {
-        __extends(MainMenuView, _super);
-        function MainMenuView(props) {
-            var _this = _super.call(this, props) || this;
-            _this._buildMenuName = function (node, menuClickHandler) {
-                if (node.Url) {
-                    return react_1["default"].createElement("span", { onClick: function () { return menuClickHandler(node); } }, node.Name);
-                }
-                else {
-                    return react_1["default"].createElement("span", null, node.Name);
-                }
-            };
-            _this._buildMenu = function (children, menuClickHandler) {
-                var result = [];
-                for (var i = 0, j = children.length; i < j; i++) {
-                    var node = children[i];
-                    var name_1 = _this._buildMenuName(node, menuClickHandler);
-                    if (node.Children && node.Children.length) {
-                        var subs = _this._buildMenu(node.Children, menuClickHandler);
-                        result.push(react_1["default"].createElement(SubMenu, { key: node.Id, title: react_1["default"].createElement("span", null,
-                                react_1["default"].createElement(antd_1.Icon, { type: node.Icon || "email" }),
-                                name_1) }, subs));
-                    }
-                    else {
-                        result.push(react_1["default"].createElement(antd_1.Menu.Item, { key: node.Id },
-                            react_1["default"].createElement(antd_1.Icon, { type: node.Icon || "email" }),
-                            name_1));
-                    }
-                }
-                return result;
-            };
-            return _this;
-        }
-        MainMenuView.prototype.render = function () {
-            var onClick = this.props.onClick;
-            var _a = this.props, data = _a.data, defaultSelectedKeys = _a.defaultSelectedKeys, defaultOpenKeys = _a.defaultOpenKeys, collapsed = _a.collapsed;
-            return react_1["default"].createElement(antd_1.Menu, { defaultSelectedKeys: defaultSelectedKeys, defaultOpenKeys: defaultOpenKeys, mode: "inline", theme: "dark", inlineCollapsed: collapsed }, this._buildMenu(data, onClick));
-        };
-        return MainMenuView;
-    }(react_1.Component));
     var MainMenu = react_redux_1.connect(function (model) { return model.menu; }, function (dispatch) {
         return {
-            onClick: function (node) { return dispatch({ type: "menu.click", node: node }); }
+            onItemClick: function (item) { return dispatch({ type: "menu.click", item: item }); },
+            onToggleIcon: function () { return dispatch({ type: 'menu.toggleFold' }); }
         };
-    })(MainMenuView);
+    })(menu_1["default"]);
     var DialogView = /** @class */ (function (_super) {
         __extends(DialogView, _super);
         function DialogView() {
@@ -74,7 +33,7 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
         }
         DialogView.prototype.render = function () {
             var _a = this.props, title = _a.title, width = _a.width, height = _a.height, onOk = _a.onOk, onCancel = _a.onCancel;
-            var contentView = react_1["default"].createElement(ui_1.ContentView, this.props, null);
+            var contentView = react_1["default"].createElement(ui_2.ContentView, this.props, null);
             return react_1["default"].createElement(antd_1.Modal, { title: title, visible: true, onOk: onOk, onCancel: onCancel, confirmLoading: false }, contentView);
         };
         return DialogView;
@@ -88,24 +47,121 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
     })(DialogView);
     var WorkArea = react_redux_1.connect(function (model) { return model.workarea; }, function (dispatch) {
         return {};
-    })(ui_1.CascadingView);
+    })(ui_2.CascadingView);
+    function buildNormalQuicks(user, customActions) {
+        var userDiv, customDiv;
+        if (user && user.data) {
+            var userMenuItems = [
+                react_1["default"].createElement(antd_1.Menu.Item, { key: "10000" },
+                    react_1["default"].createElement(antd_1.Icon, { type: "idcard" }),
+                    " \u91CD\u767B\u9646"),
+                react_1["default"].createElement(antd_1.Menu.Item, { key: "20000" },
+                    react_1["default"].createElement(antd_1.Icon, { type: "key" }),
+                    " \u4FEE\u6539\u5BC6\u7801"),
+                react_1["default"].createElement(antd_1.Menu.Item, { key: "30000" },
+                    react_1["default"].createElement(antd_1.Icon, { type: "profile" }),
+                    " \u4E2A\u6027\u5316"),
+                react_1["default"].createElement(antd_1.Menu.Item, { key: "40000" },
+                    react_1["default"].createElement(antd_1.Icon, { type: "logout" }),
+                    " \u9000\u51FA"),
+            ];
+            var userMenu = react_1["default"].createElement(antd_1.Menu, null, userMenuItems);
+            userDiv = react_1["default"].createElement("div", { className: 'user' },
+                react_1["default"].createElement(antd_1.Button.Group, null,
+                    react_1["default"].createElement(antd_1.Button, { type: 'dashed' },
+                        react_1["default"].createElement(antd_1.Icon, { type: "user" }),
+                        react_1["default"].createElement("a", null, user.data.DisplayName || user.data.Username || ' ')),
+                    react_1["default"].createElement(antd_1.Dropdown, { overlay: userMenu, placement: "bottomRight" },
+                        react_1["default"].createElement(antd_1.Button, null,
+                            react_1["default"].createElement(antd_1.Icon, { type: "setting" }))),
+                    react_1["default"].createElement(antd_1.Button, null,
+                        react_1["default"].createElement(antd_1.Icon, { type: "poweroff" }))));
+        }
+        if (customActions && customActions.length) {
+            var customActionItems = [];
+            for (var i = customActions.length - 1, j = 0; i >= 0; i--) {
+                var actionInfo = customActions[i];
+                customActionItems.unshift(react_1["default"].createElement(antd_1.Button, { type: actionInfo.type || 'primary', onClick: actionInfo.onClick },
+                    react_1["default"].createElement(antd_1.Icon, { type: actionInfo.icon }),
+                    " ",
+                    actionInfo.text));
+            }
+            customDiv = react_1["default"].createElement("div", { className: 'actions' },
+                react_1["default"].createElement(antd_1.Button.Group, null, customActionItems));
+        }
+        return react_1["default"].createElement("div", { id: 'layout-quicks' },
+            userDiv,
+            customDiv);
+    }
+    function buildMinQuicks(user, customActions) {
+        var customActionItems, customDiv;
+        if (user && user.data) {
+            customActionItems = [
+                react_1["default"].createElement(antd_1.Menu.Item, { key: "10000" },
+                    react_1["default"].createElement(antd_1.Icon, { type: "idcard" }),
+                    " \u91CD\u767B\u9646"),
+                react_1["default"].createElement(antd_1.Menu.Item, { key: "20000" },
+                    react_1["default"].createElement(antd_1.Icon, { type: "key" }),
+                    " \u4FEE\u6539\u5BC6\u7801"),
+                react_1["default"].createElement(antd_1.Menu.Item, { key: "30000" },
+                    react_1["default"].createElement(antd_1.Icon, { type: "profile" }),
+                    " \u4E2A\u6027\u5316"),
+                react_1["default"].createElement(antd_1.Menu.Item, { key: "40000" },
+                    react_1["default"].createElement(antd_1.Icon, { type: "logout" }),
+                    " \u9000\u51FA"),
+            ];
+        }
+        if (customActions && customActions.length) {
+            var idprefix = (customActions.idprefix || Math.random().toString()) + "_";
+            if (customActions && customActions.length)
+                customActionItems.unshift(react_1["default"].createElement(antd_1.Menu.Divider, null));
+            for (var i = customActions.length - 1, j = 0; i >= 0; i--) {
+                var actionInfo = customActions[i];
+                customActionItems.unshift(react_1["default"].createElement(antd_1.Menu.Item, { key: idprefix + i },
+                    react_1["default"].createElement(antd_1.Icon, { type: actionInfo.icon }),
+                    " ",
+                    actionInfo.text));
+            }
+        }
+        var customMenu = react_1["default"].createElement(antd_1.Menu, null, customActionItems);
+        return react_1["default"].createElement("div", { id: 'layout-quicks' },
+            react_1["default"].createElement(antd_1.Dropdown, { overlay: customMenu, placement: "bottomRight" },
+                react_1["default"].createElement(antd_1.Button, { size: 'small', theme: 'dark' },
+                    react_1["default"].createElement(antd_1.Icon, { type: "ellipsis" }))));
+    }
     var AppView = /** @class */ (function (_super) {
         __extends(AppView, _super);
         function AppView() {
             return _super !== null && _super.apply(this, arguments) || this;
         }
         AppView.prototype.render = function () {
-            var _a = this.props, menu = _a.menu, dialog = _a.dialog, auth = _a.auth, onAuthSuccess = _a.onAuthSuccess;
-            var dialogView = dialog.visible ? react_1["default"].createElement(Dialog, null) : null;
-            if (auth.enable)
-                return react_1["default"].createElement(Auth, __assign({}, auth, { onAuthSuccess: onAuthSuccess }));
-            return react_1["default"].createElement("div", { className: menu.collapsed ? "layout layout-collapsed" : "layout" },
-                react_1["default"].createElement("div", { className: "sider" },
-                    react_1["default"].createElement(MainMenu, null)),
-                react_1["default"].createElement("div", { className: 'header' }, "header"),
-                react_1["default"].createElement("div", { className: "content" },
-                    react_1["default"].createElement(WorkArea, { id: "workarea" })),
-                dialogView);
+            var _a = this.props, menu = _a.menu, dialog = _a.dialog, auth = _a.auth, user = _a.user, customActions = _a.customActions, viewType = _a.viewType, onAuthSuccess = _a.onAuthSuccess, onMenuToggleMin = _a.onMenuToggleMin;
+            var layoutLogo;
+            if (viewType === 'xs') {
+                layoutLogo = react_1["default"].createElement("div", { id: 'layout-logo' },
+                    react_1["default"].createElement("a", { className: menu.mode === 'min' ? 'toggle collapsed' : 'toggle', onClick: onMenuToggleMin },
+                        react_1["default"].createElement(antd_1.Icon, { type: menu.mode == 'min' ? "menu-unfold" : "menu-fold" })));
+            }
+            else {
+                layoutLogo = react_1["default"].createElement("div", { id: 'layout-logo' },
+                    react_1["default"].createElement("a", { className: menu.mode === 'min' ? 'toggle collapsed' : 'toggle', onClick: onMenuToggleMin },
+                        react_1["default"].createElement(antd_1.Icon, { type: menu.mode == 'min' ? "caret-down" : "caret-up" })),
+                    react_1["default"].createElement("div", { className: 'logo-image' },
+                        react_1["default"].createElement("img", { src: 'images/logo.png', onClick: onMenuToggleMin })));
+            }
+            return react_1["default"].createElement("div", { id: 'layout', className: 'layout-' + viewType },
+                react_1["default"].createElement("div", { id: 'layout-header' },
+                    layoutLogo,
+                    viewType == 'xs' || viewType == 'sm' ? buildMinQuicks(user, customActions) : buildNormalQuicks(user, customActions)),
+                react_1["default"].createElement("div", { id: 'layout-content', className: "menu-" + menu.mode },
+                    react_1["default"].createElement("div", { id: 'layout-sider' },
+                        react_1["default"].createElement(MainMenu, { id: 'main-menu', className: menu.hidden ? 'hidden' : '' })),
+                    react_1["default"].createElement("div", { id: 'layout-body' },
+                        react_1["default"].createElement("div", { id: 'layout-navs' }),
+                        react_1["default"].createElement("div", { id: 'layout-workarea' },
+                            react_1["default"].createElement(WorkArea, { id: "workarea" })))),
+                dialog.enable === true ? react_1["default"].createElement(Dialog, null) : null,
+                auth.enable === true ? react_1["default"].createElement(auth_1["default"], __assign({}, auth, { onAuthSuccess: onAuthSuccess })) : null);
         };
         return AppView;
     }(react_1.Component));
@@ -113,59 +169,91 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
     var App = react_redux_1.connect(function (state) { return __assign({}, state); }, function (dispatch) {
         return {
             onAuthSuccess: function (data) { return dispatch({ type: "auth.success", data: data }); },
-            onCancel: function () { return dispatch({ type: "dialog.cancel" }); }
+            onMenuToggleMin: function () { return dispatch({ type: "menu.toggleMin" }); }
         };
     })(AppView);
     var controller = {
-        "menu.click": function (model, action) {
+        "resize": function (state, action) {
+            if (rszDelayTick) {
+                clearTimeout(rszDelayTick);
+                rszDelayTick = 0;
+            }
+            var vtype = ui_1.viewType();
+            var menuMode = state.menu.mode || 'normal';
+            var beforeMode = state.menu.beforeMode;
+            if (vtype === 'xs') {
+                beforeMode = 'normal';
+                menuMode = 'min';
+            }
+            if (!beforeMode)
+                beforeMode = 'normal';
+            return {
+                viewType: vtype,
+                menu: { mode: menuMode, beforeMode: beforeMode }
+            };
+        },
+        "menu.toggleFold": function (state, action) {
+            return {
+                menu: { mode: state.menu.mode === 'fold' ? 'normal' : 'fold' }
+            };
+        },
+        "menu.toggleMin": function (state, action) {
+            var beforeMode = state.menu.beforeMode;
+            if (beforeMode === undefined)
+                beforeMode = state.menu.mode || 'normal';
+            return {
+                menu: { mode: state.menu.mode === 'min' ? beforeMode : 'min', beforeMode: beforeMode }
+            };
+        },
+        "menu.click": function (state, action) {
             var node = action.node;
             var url = node.Url;
             if (!url)
-                return model;
+                return state;
             if (url.indexOf("[dispatch]:") >= 0) {
                 var actionJson = url.substr("[dispatch]:".length);
                 var action_1 = JSON.parse(actionJson);
                 var handler = controller[action_1.type];
                 if (handler)
-                    return handler.call(_this, model, action_1);
-                return model;
+                    return handler.call(_this, state, action_1);
+                return state;
             }
-            return controller.navigate.call(_this, model, {
+            return controller.navigate.call(_this, state, {
                 type: "navigate",
                 module: url
             });
-            return model;
+            return state;
         },
-        "dialog": function (model, action) {
+        "dialog": function (state, action) {
             action.visible = true;
             if (!action.deferred)
                 action.deferred = new Deferred();
             action.transport = { '__transport__': 'dialog' };
-            return ui_1.mergemo(model, {
+            return ui_2.mergemo(state, {
                 dialog: action
             });
         },
-        "dialog.ok": function (model, action) {
-            model.dialog.deferred.resolve({ status: "ok", result: model.dialog.transport.exports });
-            return ui_1.mergemo(model, {
+        "dialog.ok": function (state, action) {
+            state.dialog.deferred.resolve({ status: "ok", result: state.dialog.transport.exports });
+            return ui_2.mergemo(state, {
                 dialog: { visible: false, deferred: null, $transport: null }
             });
         },
-        "dialog.cancel": function (model, action) {
-            model.dialog.deferred.resolve({ status: "cancel" });
-            return ui_1.mergemo(model, {
+        "dialog.cancel": function (state, action) {
+            state.dialog.deferred.resolve({ status: "cancel" });
+            return ui_2.mergemo(state, {
                 dialog: { visible: false, deferred: null }
             });
         },
-        "navigate": function (model, action) {
+        "navigate": function (state, action) {
             action.transport = { "__transport__": "app.navigate" };
             action.superStore = appStore;
-            return __assign({}, model, { workarea: { pages: [action] } });
+            return __assign({}, state, { workarea: { pages: [action] } });
         },
-        "auth": function (model, action) {
+        "auth": function (state, action) {
             return { auth: { enable: true } };
         },
-        "auth.success": function (model, action) {
+        "auth.success": function (state, action) {
             var menus = buildMenuModel(action.data);
             return {
                 menu: {
@@ -206,6 +294,16 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
         }
         return item;
     }
+    var rszDelayTick;
+    ui_1.attach(window, "resize", function () {
+        if (appStore) {
+            if (rszDelayTick)
+                clearTimeout(rszDelayTick);
+            rszDelayTick = setTimeout(function () {
+                appStore.dispatch({ type: 'resize' });
+            }, 200);
+        }
+    });
     axios.defaults.headers.common = { 'X-Requested-With': 'XMLHttpRequest', 'X-Requested-DataType': 'json', 'X-Response-DataType': 'json' };
     axios.interceptors.response.use(function (response) {
         if (response.status === '401') {
@@ -233,9 +331,16 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
         store: null
     };
     define("app", api);
-    var defaultModel = {};
+    var view_type = ui_1.viewType();
+    var defaultModel = {
+        viewType: view_type,
+        menu: {
+            mode: view_type == 'xs' ? 'min' : 'normal',
+            beforeMode: 'normal'
+        }
+    };
     var appStore;
-    var MOD = ui_1.$mountable(App, {
+    var MOD = ui_2.$mountable(App, {
         model: defaultModel,
         mapStateToProps: null,
         onCreating: function (reduxParams) {

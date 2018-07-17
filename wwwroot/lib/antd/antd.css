@@ -361,9 +361,13 @@ mark {
 }
 @font-face {
   font-family: 'anticon';
-  src: url('https://at.alicdn.com/t/font_148784_v4ggb6wrjmkotj4i.eot');
+  src: url('antd-font.eot');
   /* IE9*/
-  src: url('https://at.alicdn.com/t/font_148784_v4ggb6wrjmkotj4i.woff') format('woff'), /* chrome、firefox、opera、Safari, Android, iOS 4.2+*/ url('https://at.alicdn.com/t/font_148784_v4ggb6wrjmkotj4i.ttf') format('truetype'), /* iOS 4.1- */ url('https://at.alicdn.com/t/font_148784_v4ggb6wrjmkotj4i.svg#iconfont') format('svg');
+  src: url('antd-font.woff') format('woff'), 
+  /* chrome、firefox、opera、Safari, Android, iOS 4.2+*/ 
+  url('antd-font.ttf') format('truetype'), 
+  /* iOS 4.1- */ 
+  url('antd-font.svg#iconfont') format('svg');
 }
 .anticon {
   display: inline-block;
