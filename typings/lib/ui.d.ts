@@ -1,4 +1,4 @@
-/// <reference types="react" />
+﻿/// <reference types="react" />
 import React, { Component } from 'lib/react/react';
 export declare let mergemo: (old: any, newModel: any) => any;
 export declare let attach: (elem: any, evt: any, handler: any) => void;
@@ -17,7 +17,9 @@ export interface IMountArguments {
     model?: any;
     mapStateToProps?: any;
     mapDispatchToProps?: any;
-    controller?: {};
+    action_handlers?: {
+        [index: string]: (state: any, action: any) => any;
+    };
     store?: any;
     onCreating?: (mountArguments: IMountArguments) => void;
     superStore?: any;
@@ -83,7 +85,12 @@ export declare class Center extends React.Component {
     componentWillUnmount(): void;
 }
 export declare class CascadingView extends React.Component {
+    refs: any;
     props: any;
+    setState: any;
+    forceUpdate: any;
+    state: any;
+    context: any;
     constructor(props: any);
     render(): JSX.Element;
 }

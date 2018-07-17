@@ -1,21 +1,26 @@
+﻿alert('config');
 define(["require", "exports"], function (require, exports) {
     "use strict";
     exports.__esModule = true;
+    debugger;
     exports["default"] = {
         //启动模块名/配置,这些配置可能会在启动过程中修改
         entry: {
             module: 'app',
             auth: {
-                visible: true
+                enable: true
             },
+            user: {},
             menu: {
-                data: [],
-                collapsed: false
+                data: {},
+                roots: []
+            },
+            nav: {
+                data: null
             },
             workarea: {
                 pages: []
             },
-            user: {},
             dialog: { width: 100 }
         },
         //登录/界权设置
@@ -24,7 +29,9 @@ define(["require", "exports"], function (require, exports) {
         },
         //预加载模块配置
         preloads: [
+            "lib/ui"
             //通信
+            ,
             "axios@lib/axios"
             //react & redux
             ,
@@ -37,9 +44,10 @@ define(["require", "exports"], function (require, exports) {
             ,
             "moment@lib/antd/moment",
             "antd@lib/antd/antd",
-            "lib/ui",
-            "lib/auth"
+            "portal/auth",
+            "portal/menu"
         ],
+        release_version: "1.0.0",
         //ajax配置
         ajax: {}
     };

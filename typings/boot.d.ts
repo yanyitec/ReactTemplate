@@ -1,4 +1,4 @@
-declare var require: any;
+﻿declare var require: any;
 declare var Promise: Function;
 declare let bootMsg: HTMLElement;
 declare let showMessage: (message: string, color?: any) => void;

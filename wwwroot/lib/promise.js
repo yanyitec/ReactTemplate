@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 /**
  * Name : Promise/A+
  * Author : yiy

@@ -1,4 +1,4 @@
-/// <reference types="react" />
+﻿/// <reference types="react" />
 import { Component } from 'lib/react/react';
 export declare class DialogView extends Component {
     props: any;
@@ -8,5 +8,5 @@ export declare class AppView extends Component {
     props: any;
     render(): JSX.Element;
 }
-declare let MOD: any;
-export default MOD;
+declare let App: any;
+export default App;

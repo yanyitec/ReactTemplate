@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 var ModuleStates;
 (function (ModuleStates) {
     ModuleStates[ModuleStates["init"] = 0] = "init";
@@ -154,6 +154,9 @@ var ModuleStates;
             requirejs.$bas_url = cfg.bas;
             if (requirejs.$bas_url[requirejs.$bas_url.length - 1] != '/')
                 requirejs.$bas_url += '/';
+        }
+        if (cfg.release_version) {
+            requirejs.release_version = cfg.release_version;
         }
         return cfg;
     };
@@ -355,7 +358,8 @@ var ModuleStates;
             if (!loading_urls)
                 loading_urls = this._loading_urls = array_clone(this.urls);
             var visitedUrls = [];
-            loadModuleRes(loading_urls, "", this, visitedUrls, function (result, error) {
+            var release_version = requirejs.release_version || Math.random().toString();
+            loadModuleRes(loading_urls, release_version, this, visitedUrls, function (result, error) {
                 _this._loading_urls = undefined;
                 if (error) {
                     console.error(error);
@@ -497,7 +501,7 @@ var ModuleStates;
         return new MyPromise(function (resolve, reject) {
             if (elem.onreadystatechange !== undefined) {
                 elem.onreadystatechange = function () {
-                    if (elem.readyState == 4 || elem.readyState == "complete") {
+                    if (elem.readyState == 4 || elem.readyState == "complete" || elem.readyState == "loaded") {
                         resolve(res);
                     }
                 };

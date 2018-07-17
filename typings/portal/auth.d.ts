@@ -1,4 +1,4 @@
-/// <reference types="react" />
+﻿/// <reference types="react" />
 import { Component } from 'lib/react/react';
 export interface IAuthInfo {
     Username?: string;

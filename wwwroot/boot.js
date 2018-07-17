@@ -1,4 +1,4 @@
-"use strict";
+﻿
 var bootMsg = document.getElementById("bootMessage");
 var showMessage = function (message, color) {
     if (!message)
@@ -24,6 +24,7 @@ var donecount = 0;
 var config;
 showMessage('加载主配置...');
 require(['config@conf/config'], sniffer).then(function (_config) {
+    
     //taskcount+=1;
     config = _config[0];
     taskcount += 2;
@@ -40,6 +41,7 @@ require(['config@conf/config'], sniffer).then(function (_config) {
     //加载预加载项与入口模块
     .then(function (_config) {
     config = _config;
+    require.config(config);
     var entry = config.entry;
     if (!entry) {
         showError("配置错误，请联系管理员。(未定义入口{entry:any})");

@@ -1,17 +1,20 @@
-declare const _default: {
+﻿declare const _default: {
     entry: {
         module: string;
         auth: {
-            visible: boolean;
+            enable: boolean;
         };
+        user: {};
         menu: {
-            data: any[];
-            collapsed: boolean;
+            data: {};
+            roots: any[];
+        };
+        nav: {
+            data: any;
         };
         workarea: {
             pages: any[];
         };
-        user: {};
         dialog: {
             width: number;
         };
@@ -20,6 +23,7 @@ declare const _default: {
         url: string;
     };
     preloads: string[];
+    release_version: string;
     ajax: {};
 };
 export default _default;

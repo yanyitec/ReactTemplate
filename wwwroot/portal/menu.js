@@ -1,4 +1,4 @@
-var __extends = (this && this.__extends) || (function () {
+﻿var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
         function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
@@ -46,18 +46,19 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/ui"], fun
             return _this;
         }
         MainMenuView.prototype.render = function () {
-            var _a = this.props, data = _a.data, defaultSelectedKeys = _a.defaultSelectedKeys, defaultOpenKeys = _a.defaultOpenKeys, mode = _a.mode, hidden = _a.hidden, className = _a.className, onItemClick = _a.onItemClick, onToggleIcon = _a.onToggleIcon;
+            var _a = this.props, roots = _a.roots, defaultSelectedKeys = _a.defaultSelectedKeys, defaultOpenKeys = _a.defaultOpenKeys, mode = _a.mode, hidden = _a.hidden, className = _a.className, onMenuClick = _a.onMenuClick, onMenuToggleFold = _a.onMenuToggleFold, onMouseOut = _a.onMouseOut, onMouseOver = _a.onMouseOver;
+            //let data= roots;
             var className1 = className || "";
             if (hidden)
                 className1 += ' hidden';
             if (mode === 'fold')
                 className1 += ' fold';
             var vt = ui_1.viewType();
-            return react_1["default"].createElement("div", { id: this.props.id || "", className: hidden ? 'hidden' : '' },
+            return react_1["default"].createElement("div", { id: this.props.id || "", style: { display: hidden ? 'none' : 'block' } },
                 mode === 'min' || mode == 'horizontal' || vt === 'xs' ? null :
-                    react_1["default"].createElement("div", { className: 'toggle-menu', onClick: onToggleIcon },
+                    react_1["default"].createElement("div", { className: 'toggle-menu', onClick: onMenuToggleFold },
                         react_1["default"].createElement(antd_1.Icon, { type: mode === 'fold' ? 'menu-unfold' : 'menu-fold' })),
-                react_1["default"].createElement(antd_1.Menu, { className: 'menus', defaultSelectedKeys: defaultSelectedKeys, defaultOpenKeys: defaultOpenKeys, mode: 'inline', theme: "dark", inlineCollapsed: mode == 'fold' ? true : false }, this._buildMenu(data, onItemClick)));
+                react_1["default"].createElement(antd_1.Menu, { className: 'menus', defaultSelectedKeys: defaultSelectedKeys, defaultOpenKeys: defaultOpenKeys, mode: mode == 'min' ? 'vertical' : 'inline', onMouseOver: onMouseOver, onMouseOut: onMouseOut, theme: "dark", inlineCollapsed: mode == 'fold' ? true : false }, this._buildMenu(roots, onMenuClick)));
         };
         return MainMenuView;
     }(react_1.Component));

@@ -3,17 +3,21 @@ export default {
     entry:{
         module:'app',
         auth:{
-            visible:true
+            enable:true
         },
+        user:{},
         menu:{
-          data:[],
-          collapsed:false
+          data:{},
+          roots:[]
+        },
+        nav:{
+            data:null
         },
        
         workarea:{
           pages:[]
         },
-        user:{},
+        
         dialog:{width:100}
     },
     //登录/界权设置
@@ -23,8 +27,9 @@ export default {
 
     //预加载模块配置
     preloads:[
+        "lib/ui"
         //通信
-        "axios@lib/axios"
+        ,"axios@lib/axios"
     
         //react & redux
         ,"react@lib/react/react"
@@ -37,9 +42,11 @@ export default {
         ,"moment@lib/antd/moment"
         ,"antd@lib/antd/antd"
 
-        ,"lib/ui"
-        ,"lib/auth"
+        
+        ,"portal/auth"
+        ,"portal/menu"
     ],
+    release_version:"1.0.0",
     //ajax配置
     ajax:{}
 }

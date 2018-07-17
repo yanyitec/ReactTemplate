@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Name : Promise/A+
  * Author : yiy
  * Description : Promise 实现 遵循promise/A+规范

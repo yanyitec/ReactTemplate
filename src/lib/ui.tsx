@@ -3,7 +3,7 @@ declare var require:Function;
 import * as axios from 'lib/axios';
 import React,{Component} from 'lib/react/react';
 import * as ReactDOM from 'lib/react/react-dom';
-import { createStore } from 'lib/redux/redux';
+import { createStore,applyMiddleware } from 'lib/redux/redux';
 import { Provider, connect } from 'lib/redux/react-redux';
 import { mergeDiff } from 'lib/utils';
 import {Icon,Tooltip,Checkbox,Alert,Button} from 'lib/antd/antd';
@@ -91,19 +91,38 @@ export let viewType = function(onChange?:(type)=>void):string{
     if(onChange && typeof onChange ==='function') {
         viewTypeChangeHandlers.push(onChange);
     }
-    let w= window.innerWidth || document.documentElement.clientWidth;
-    for(let t in viewTypes){
-        if(w>=viewTypes[t]) return t;
-    }
-    return 'xs';
+    return view_type;
+    
 }
+let view_type;
+let viewTypeResizeHandler = ()=>{
+    let w= window.innerWidth || document.documentElement.clientWidth;
+    let vt;
+    for(let t in viewTypes){
+        if(w>=viewTypes[t]) {
+            vt=t;break;
+        }
+    }
+    if(!vt) vt='xs';
+    if(view_type!=vt){
+        view_type = vt;
+        for(let i=0,j=viewTypeChangeHandlers.length;i<j;i++){
+            let handler = viewTypeChangeHandlers.shift();
+            let rs = handler.call(window,vt);
+            if(rs!=='#remove') viewTypeChangeHandlers.push(handler);
+        }
+    }
+};
+attach(window,'resize',viewTypeResizeHandler);
+viewTypeResizeHandler();
+
 
 
 export interface IMountArguments{
     model?:any,
     mapStateToProps?:any;
     mapDispatchToProps?:any;
-    controller?:{};
+    action_handlers?:{[index:string]:(state:any,action:any)=>any};
     store?:any;
     onCreating?:(mountArguments:IMountArguments)=>void;
     superStore?:any;
@@ -123,7 +142,7 @@ export interface IOnCreateInstanceEvent{
 
 export let $mountable = (Component:any,mountArguments?:IMountArguments)=>{
     mountArguments ||(mountArguments={});
-    if(!mountArguments.controller){
+    if(!mountArguments.action_handlers){
         (Component as any).$mount = (props:any,targetElement:HTMLElement,superStore?:any,transport?:any)=>{
             (props||(props={}));
             transport ||(transport={'__transport__':"$mount("+Component.toString()+")"});
@@ -144,24 +163,41 @@ export let $mountable = (Component:any,mountArguments?:IMountArguments)=>{
         if(typeof mountArguments.model==='function') initModel = mountArguments.model(props,transport);
         else initModel = mountArguments.model;
         initModel = mergeDiff(props,initModel);
-        let controller = mountArguments.controller;
+        let action_handlers = mountArguments.action_handlers;
         let reducers = {};
 
         const store =mountArguments.store = transport.store = transport.store || createStore((model,action)=>{
-            let handler = controller[action.type];
+            let handler = action_handlers[action.type];
             let newModel;
             if(handler){
                 newModel =handler(model,action);
+                if(action.payload && typeof action.payload.then==='function'){
+                    action.payload.then(   (result)=>{ store.dispatch(result); } );
+                }
                 return mergeDiff(model,newModel);
-            } return model;
+            } 
+            console.warn('disatch a unknown action',action);
+            return model;
         },initModel);
         let mapStateToProps= mountArguments.mapStateToProps;
-        if(mapStateToProps===null){
+        if(!mapStateToProps){
             mapStateToProps =(state)=>{return {...state}};
         }
         store.superStore = superStore;
         store.transport = transport;
-        let mapDispatchToProps = mountArguments.mapDispatchToProps;
+        let mapDispatchToProps = mountArguments.mapDispatchToProps ;    
+        if(!mapDispatchToProps && action_handlers){
+            mapDispatchToProps = (dispatch)=>(dispatch)=>{
+                let dispatchers = {};
+                for(let actionName in action_handlers){
+                    dispatchers[actionName] = ((actionName,actionHandler,dispatch)=>{
+                    return (evtData)=>dispatch({type:actionName,data:evtData});
+                    })(actionName,action_handlers[actionName],dispatch);
+                }
+                return dispatchers;
+            };
+        }
+        
         let Redux = mountArguments.Redux = connect(mapStateToProps,mapDispatchToProps)(Component);
         mountArguments.targetElement = targetElement;
         if(mountArguments.onCreating) mountArguments.onCreating(mountArguments);
@@ -393,7 +429,12 @@ export class Center extends React.Component{
 
 
 export class CascadingView extends React.Component{
+    refs:any;
     props:any;
+    setState:any;
+    forceUpdate:any;
+    state:any;
+    context:any;
    
     constructor(props){
         super(props);
@@ -406,7 +447,7 @@ export class CascadingView extends React.Component{
             page.key =i;
             pageViews.push(React.createElement(ContentView,page,null));
         }
-        return <div className="cascading" id={this.props.id}>{pageViews}</div>;
+        return <div className="cascading" id={this.props.id||""}>{pageViews}</div>;
 
     }
 }

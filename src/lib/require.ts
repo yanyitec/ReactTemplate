@@ -20,6 +20,7 @@ declare var Promise:Function;
 interface IRequireConfig{
     prefixes?:{[name:string]:string|string[]};
     bas:string;
+    release_version?:string;
 }
 
 
@@ -271,6 +272,9 @@ interface IRes{
             requirejs.$bas_url = cfg.bas;
             if(requirejs.$bas_url[requirejs.$bas_url.length-1]!='/') requirejs.$bas_url += '/';
         }
+        if(cfg.release_version){
+            requirejs.release_version = cfg.release_version;
+        }
     
         return cfg;
     }
@@ -508,7 +512,8 @@ interface IRes{
             let loading_urls = this._loading_urls;
             if(!loading_urls) loading_urls = this._loading_urls = array_clone(this.urls);
             let visitedUrls:string[] = [];
-            loadModuleRes(loading_urls,"",this,visitedUrls,(result,error)=>{
+            let release_version = requirejs.release_version|| Math.random().toString();
+            loadModuleRes(loading_urls,release_version,this,visitedUrls,(result,error)=>{
                 this._loading_urls=undefined;
 
                 if(error) {
@@ -664,7 +669,7 @@ interface IRes{
         return new MyPromise((resolve,reject)=>{
             if((elem as any).onreadystatechange!==undefined){
                 (elem as any).onreadystatechange = function(){
-                    if((elem as any).readyState==4 || (elem as any).readyState=="complete"){
+                    if((elem as any).readyState==4 || (elem as any).readyState=="complete" || (elem as any).readyState=="loaded"){
                         resolve(res);
                     }
                 }

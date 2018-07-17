@@ -59,4 +59,10 @@ export function mergeDiff(dest,src,prop?:string) {
     return mergeDiff(destValue,srcValue);
 }
 utils.mergeDiff = mergeDiff;
+
+if(!(String.prototype as any).startsWith){
+    (String.prototype as any).startsWith = function(strx){
+        return  this.indexOf(strx)==0;
+    } 
+}
 export default utils;

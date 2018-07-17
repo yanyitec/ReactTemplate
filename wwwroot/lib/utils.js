@@ -1,4 +1,4 @@
-define(["require", "exports"], function (require, exports) {
+﻿define(["require", "exports"], function (require, exports) {
     "use strict";
     exports.__esModule = true;
     var utils = {};
@@ -76,5 +76,10 @@ define(["require", "exports"], function (require, exports) {
     }
     exports.mergeDiff = mergeDiff;
     utils.mergeDiff = mergeDiff;
+    if (!String.prototype.startsWith) {
+        String.prototype.startsWith = function (strx) {
+            return this.indexOf(strx) == 0;
+        };
+    }
     exports["default"] = utils;
 });

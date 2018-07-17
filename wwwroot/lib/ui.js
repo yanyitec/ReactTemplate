@@ -1,4 +1,4 @@
-var __extends = (this && this.__extends) || (function () {
+﻿var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
         function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
@@ -102,16 +102,35 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
         if (onChange && typeof onChange === 'function') {
             viewTypeChangeHandlers.push(onChange);
         }
-        var w = window.innerWidth || document.documentElement.clientWidth;
-        for (var t in viewTypes) {
-            if (w >= viewTypes[t])
-                return t;
-        }
-        return 'xs';
+        return view_type;
     };
+    var view_type;
+    var viewTypeResizeHandler = function () {
+        var w = window.innerWidth || document.documentElement.clientWidth;
+        var vt;
+        for (var t in viewTypes) {
+            if (w >= viewTypes[t]) {
+                vt = t;
+                break;
+            }
+        }
+        if (!vt)
+            vt = 'xs';
+        if (view_type != vt) {
+            view_type = vt;
+            for (var i = 0, j = viewTypeChangeHandlers.length; i < j; i++) {
+                var handler = viewTypeChangeHandlers.shift();
+                var rs = handler.call(window, vt);
+                if (rs !== '#remove')
+                    viewTypeChangeHandlers.push(handler);
+            }
+        }
+    };
+    exports.attach(window, 'resize', viewTypeResizeHandler);
+    viewTypeResizeHandler();
     exports.$mountable = function (Component, mountArguments) {
         mountArguments || (mountArguments = {});
-        if (!mountArguments.controller) {
+        if (!mountArguments.action_handlers) {
             Component.$mount = function (props, targetElement, superStore, transport) {
                 (props || (props = {}));
                 transport || (transport = { '__transport__': "$mount(" + Component.toString() + ")" });
@@ -134,24 +153,39 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
             else
                 initModel = mountArguments.model;
             initModel = utils_1.mergeDiff(props, initModel);
-            var controller = mountArguments.controller;
+            var action_handlers = mountArguments.action_handlers;
             var reducers = {};
             var store = mountArguments.store = transport.store = transport.store || redux_1.createStore(function (model, action) {
-                var handler = controller[action.type];
+                var handler = action_handlers[action.type];
                 var newModel;
                 if (handler) {
                     newModel = handler(model, action);
+                    if (action.payload && typeof action.payload.then === 'function') {
+                        action.payload.then(function (result) { store.dispatch(result); });
+                    }
                     return utils_1.mergeDiff(model, newModel);
                 }
+                console.warn('disatch a unknown action', action);
                 return model;
             }, initModel);
             var mapStateToProps = mountArguments.mapStateToProps;
-            if (mapStateToProps === null) {
+            if (!mapStateToProps) {
                 mapStateToProps = function (state) { return __assign({}, state); };
             }
             store.superStore = superStore;
             store.transport = transport;
             var mapDispatchToProps = mountArguments.mapDispatchToProps;
+            if (!mapDispatchToProps && action_handlers) {
+                mapDispatchToProps = function (dispatch) { return function (dispatch) {
+                    var dispatchers = {};
+                    for (var actionName in action_handlers) {
+                        dispatchers[actionName] = (function (actionName, actionHandler, dispatch) {
+                            return function (evtData) { return dispatch({ type: actionName, data: evtData }); };
+                        })(actionName, action_handlers[actionName], dispatch);
+                    }
+                    return dispatchers;
+                }; };
+            }
             var Redux = mountArguments.Redux = react_redux_1.connect(mapStateToProps, mapDispatchToProps)(Component);
             mountArguments.targetElement = targetElement;
             if (mountArguments.onCreating)
@@ -394,7 +428,7 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
                 page.key = i;
                 pageViews.push(react_1["default"].createElement(ContentView, page, null));
             }
-            return react_1["default"].createElement("div", { className: "cascading", id: this.props.id }, pageViews);
+            return react_1["default"].createElement("div", { className: "cascading", id: this.props.id || "" }, pageViews);
         };
         return CascadingView;
     }(react_1["default"].Component));

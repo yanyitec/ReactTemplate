@@ -7,18 +7,21 @@
 
 html,body{
     padding:0;margin:0;  
+    overflow: auto;
 } 
 
-.tight-border-box{
+.layout-container{
     box-sizing: border-box;
     border:0;
     margin:0;
     padding:0;
+    position: relative;
 } 
 
 #autharea{
-    &:extend(.tight-border-box);
+    &:extend(.layout-container);
     position:fixed;
+    z-index:99999;
     width:100%;
     height:100%;
     left:0;
@@ -117,21 +120,23 @@ html,body{
 }
 
 #layout{
-    &:extend(.tight-border-box);
+    &:extend(.layout-container);
     position:relative;
     width:100%;
     #layout-header{
-        &:extend(.tight-border-box);
+        &:extend(.layout-container);
         height:50px;
         overflow:hidden;
         width:100%;
         background-color:rgb(0, 21, 41);
         border-bottom: 1px solid #1890ff;
         display: block;
-        position: relative;
-        
+        position: fixed;
+        top:0;
+        left:0;
+        z-index:1;
         &>#layout-logo{
-            &:extend(.tight-border-box);
+            &:extend(.layout-container);
             display: table-row;
             & .toggle{
 
@@ -141,7 +146,7 @@ html,body{
                 display: table-cell;
             }
             & .logo-image{
-                &:extend(.tight-border-box);
+                &:extend(.layout-container);
                 
                 padding:10px;
                 display: table-cell;
@@ -174,27 +179,42 @@ html,body{
        
     }
     #layout-content{
-        display:table-row;
+        &:extend(.layout-container);
+        position: relative;
         width:100%;
         #layout-sider{
-            display:table-cell;
+            position:fixed;
+            z-index:1;
+            top:50px;
             width:200px;
         }
         #layout-body{
-            display: table-cell;
+            &:extend(.layout-container);
             position: relative;
+            z-index:-1;
             padding-left:200px;
+            padding-top:80px;
+            width:100%;
+            #layout-nav{
+                &:extend(.layout-container);
+                position:fixed;
+                z-index:1;
+                top:50px;
+                left:200px;
+                padding:5px;
+                height:20px;
+            }
         }
     }
     #layout-content.menu-min {
         #layout-sider{
-            display:none;
+           
         }
         #layout-body{
             padding-left:0;
-        }
-        #main-menu{
-            position:absolute;
+            #layout-nav{
+                left:0;
+            }
         }
         
     }
@@ -203,7 +223,10 @@ html,body{
             width:45px;
         }
         #layout-body{
-            padding-left:50px;
+            padding-left:45px;
+            #layout-nav{
+                left:45px;
+            }
         }
         .toggle-menu{
             width:45px;
@@ -225,6 +248,12 @@ html,body{
                     padding:7px;
                 }
             }
+        }
+        #layout-sider{
+            top:40px;
+        }
+        #layout-body{
+            padding-top:40px;
         }
         
     }
@@ -264,7 +293,9 @@ html,body{
 @screen-md-min : 992;
 @screen-lg-min : 1200;
 
+@media (max-width: @screen-sm-min) {
 
+}
 /* 小屏幕（平板，大于等于 768px） */
 @media (min-width: @screen-sm-min) {
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Name : RequireJS
  * Author : yiy
  * Description : umd 的一个实现
@@ -17,6 +17,7 @@ interface IRequireConfig {
         [name: string]: string | string[];
     };
     bas: string;
+    release_version?: string;
 }
 /**
  * 一个require 等同用模块管理器

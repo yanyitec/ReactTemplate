@@ -43,6 +43,7 @@ require(['config@conf/config'],sniffer).then((_config)=>{
 //加载预加载项与入口模块
 .then((_config)=>{
     config = _config;
+    require.config(config);
     let entry = config.entry;
     if(!entry){
         showError("配置错误，请联系管理员。(未定义入口{entry:any})");

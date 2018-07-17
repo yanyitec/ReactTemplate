@@ -13,7 +13,7 @@
         "jsx":"react",
         //"allowJs":true, //是否允许编译js文件，默认false
         "alwaysStrict":true, //是否总是以严格模式解析文件，并未每个源文件生成use strict语句
-        
+        "emitBOM":true
         //"outFile": "lib/require.js"
     },
     //"files":["ts/promise.ts","ts/require.ts"],

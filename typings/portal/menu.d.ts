@@ -1,32 +1,42 @@
-/// <reference types="react" />
+﻿/// <reference types="react" />
 import { Component } from 'lib/react/react';
 export interface IMenuItem {
     Id: string;
     Name?: string;
     Icon?: string;
     Url?: string;
+    ParentId?: string;
     Children?: IMenuItem[];
 }
 export interface IMainMenuState {
-    data: IMenuItem[];
-    defaultSelectedKeys: string[];
-    defaultOpenKeys: string[];
-    mode: string;
-    beforeMode: string;
-    hidden: boolean;
+    id?: string;
+    data?: {
+        [index: string]: IMenuItem;
+    };
+    roots?: IMenuItem[];
+    defaultSelectedKeys?: string[];
+    defaultOpenKeys?: string[];
+    mode?: string;
+    beforeMode?: string;
+    hidden?: boolean;
     className?: string;
-    timer: number;
+    waitForHidden?: number;
 }
-export interface IMainMenuNotice {
-    onItemClick: Function;
-    onToggleIcon: Function;
+export interface IMainMenuAction {
+    onMenuClick: Function;
+    onMenuToggleFold: Function;
+    onMouseOver: Function;
+    onMouseOut: Function;
 }
 export default class MainMenuView extends Component {
-    props: IMainMenuState & IMainMenuNotice;
+    props: IMainMenuState & IMainMenuAction;
     collapsed: boolean;
     state: any;
-    setState: Function;
-    constructor(props: IMainMenuState & IMainMenuNotice);
+    setState: any;
+    forceUpdate: any;
+    context: any;
+    refs: any;
+    constructor(props: IMainMenuState & IMainMenuAction);
     render(): JSX.Element;
     _buildMenuName: (node: any, menuClickHandler: any) => JSX.Element;
     _buildMenu: (children: any, menuClickHandler: any) => any[];

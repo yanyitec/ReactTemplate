@@ -1,4 +1,4 @@
-var __extends = (this && this.__extends) || (function () {
+﻿var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
         function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
@@ -20,12 +20,6 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
     "use strict";
     var _this = this;
     exports.__esModule = true;
-    var MainMenu = react_redux_1.connect(function (model) { return model.menu; }, function (dispatch) {
-        return {
-            onItemClick: function (item) { return dispatch({ type: "menu.click", item: item }); },
-            onToggleIcon: function () { return dispatch({ type: 'menu.toggleFold' }); }
-        };
-    })(menu_1["default"]);
     var DialogView = /** @class */ (function (_super) {
         __extends(DialogView, _super);
         function DialogView() {
@@ -45,9 +39,77 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             onCancel: function () { return dispatch({ type: "dialog.cancel" }); }
         };
     })(DialogView);
-    var WorkArea = react_redux_1.connect(function (model) { return model.workarea; }, function (dispatch) {
-        return {};
-    })(ui_2.CascadingView);
+    function NavView(appProps) {
+        var props = appProps.nav;
+        var nodes = appProps.menu.data;
+        if (!props || !nodes)
+            return null;
+        var node = props.data;
+        var onNavClick = appProps.onNavClick;
+        var simple = props.simple;
+        var buildCrumbItem = function (node) {
+            if (simple) {
+                return react_1["default"].createElement(antd_1.Breadcrumb.Item, { key: node.Id, onClick: function () { return onNavClick(node); } },
+                    node.Icon ? react_1["default"].createElement(antd_1.Icon, { type: node.Icon }) : null,
+                    node.Name);
+            }
+            var items = [];
+            var p = node && node.ParentId ? nodes[node.ParentId] : undefined;
+            if (p && p.Children) {
+                for (var i = 0, j = p.Children.length; i < j; i++) {
+                    (function (nd, index) {
+                        if (nd.Id === node.Id)
+                            return;
+                        items.push(react_1["default"].createElement(antd_1.Menu.Item, { key: nd.Id, onClick: function () { return onNavClick(nd); } },
+                            nd.Icon ? react_1["default"].createElement(antd_1.Icon, { type: nd.Icon }) : null,
+                            react_1["default"].createElement("span", null, nd.Name)));
+                    })(p.Children[i], i);
+                }
+            }
+            var menu = items.length == 0 ? null : react_1["default"].createElement(antd_1.Menu, null, items);
+            return react_1["default"].createElement(antd_1.Breadcrumb.Item, { key: node.Id, onClick: function () { return onNavClick(node); } },
+                react_1["default"].createElement(antd_1.Dropdown, { overlay: menu, placement: "bottomLeft" },
+                    react_1["default"].createElement("span", null,
+                        node.Icon ? react_1["default"].createElement(antd_1.Icon, { type: node.Icon }) : null,
+                        node.Name)));
+        }; //end buildDropdown;
+        var items = [];
+        var nd = node;
+        while (nd) {
+            items.unshift(buildCrumbItem(nd));
+            nd = nodes[nd.ParentId];
+        }
+        items.unshift(react_1["default"].createElement(antd_1.Breadcrumb.Item, { key: "$KEY_HOME", onClick: function () { return onNavClick({ Id: "Home", Name: "首页" }); } },
+            react_1["default"].createElement(antd_1.Icon, { type: 'home' }),
+            "\u9996\u9875"));
+        return react_1["default"].createElement(antd_1.Breadcrumb, null, items);
+    }
+    function NavXSView(appProps) {
+        var props = appProps.nav;
+        var nodes = appProps.menu.data;
+        if (!props || !nodes || !props.data)
+            return null;
+        var node = props.data;
+        var onNavClick = appProps.onNavClick;
+        var items = [];
+        var nd = node;
+        while (nd) {
+            (function (nd) {
+                items.push(react_1["default"].createElement(antd_1.Menu.Item, { onClick: function () { return onNavClick(nd); } },
+                    nd.Icon ? react_1["default"].createElement(antd_1.Icon, { type: nd.Icon }) : null,
+                    nd.Name));
+            })(nd);
+            nd = nodes[nd.ParentId];
+        }
+        items.unshift(react_1["default"].createElement(antd_1.Menu.Item, { onClick: function () { return onNavClick({ Id: "Home", Name: "首页" }); } },
+            react_1["default"].createElement(antd_1.Icon, { type: 'home' }),
+            "\u9996\u9875"));
+        var menu = react_1["default"].createElement(antd_1.Menu, null, items);
+        return react_1["default"].createElement(antd_1.Dropdown, { overlay: menu, placement: "bottomCenter" },
+            react_1["default"].createElement("span", null,
+                node.Icon ? react_1["default"].createElement(antd_1.Icon, { type: node.Icon }) : null,
+                node.Name));
+    }
     function buildNormalQuicks(user, customActions) {
         var userDiv, customDiv;
         if (user && user.data) {
@@ -135,44 +197,40 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             return _super !== null && _super.apply(this, arguments) || this;
         }
         AppView.prototype.render = function () {
-            var _a = this.props, menu = _a.menu, dialog = _a.dialog, auth = _a.auth, user = _a.user, customActions = _a.customActions, viewType = _a.viewType, onAuthSuccess = _a.onAuthSuccess, onMenuToggleMin = _a.onMenuToggleMin;
+            var _a = this.props, menu = _a.menu, dialog = _a.dialog, auth = _a.auth, workarea = _a.workarea, nav = _a.nav, user = _a.user, customActions = _a.customActions, viewType = _a.viewType;
             var layoutLogo;
             if (viewType === 'xs') {
                 layoutLogo = react_1["default"].createElement("div", { id: 'layout-logo' },
-                    react_1["default"].createElement("a", { className: menu.mode === 'min' ? 'toggle collapsed' : 'toggle', onClick: onMenuToggleMin },
+                    react_1["default"].createElement("a", { className: menu.mode === 'min' ? 'toggle collapsed' : 'toggle', onClick: this.props["menu.toggleMin"] },
                         react_1["default"].createElement(antd_1.Icon, { type: menu.mode == 'min' ? "menu-unfold" : "menu-fold" })));
             }
             else {
                 layoutLogo = react_1["default"].createElement("div", { id: 'layout-logo' },
-                    react_1["default"].createElement("a", { className: menu.mode === 'min' ? 'toggle collapsed' : 'toggle', onClick: onMenuToggleMin },
+                    react_1["default"].createElement("a", { className: menu.mode === 'min' ? 'toggle collapsed' : 'toggle', onClick: this.props["menu.toggleMin"], onMouseOver: menu.mode === 'min' ? this.props["menu.show"] : null, onMouseOut: menu.mode === 'min' ? this.props["menu.hide"] : null },
                         react_1["default"].createElement(antd_1.Icon, { type: menu.mode == 'min' ? "caret-down" : "caret-up" })),
                     react_1["default"].createElement("div", { className: 'logo-image' },
-                        react_1["default"].createElement("img", { src: 'images/logo.png', onClick: onMenuToggleMin })));
+                        react_1["default"].createElement("img", { src: 'images/logo.png', onClick: this.props["menu.toggleMin"] })));
             }
             return react_1["default"].createElement("div", { id: 'layout', className: 'layout-' + viewType },
                 react_1["default"].createElement("div", { id: 'layout-header' },
                     layoutLogo,
+                    viewType == 'xs' ? react_1["default"].createElement(NavXSView, { nav: nav, menu: menu, onNavClick: this.props["nav.click"] }) : null,
                     viewType == 'xs' || viewType == 'sm' ? buildMinQuicks(user, customActions) : buildNormalQuicks(user, customActions)),
                 react_1["default"].createElement("div", { id: 'layout-content', className: "menu-" + menu.mode },
                     react_1["default"].createElement("div", { id: 'layout-sider' },
-                        react_1["default"].createElement(MainMenu, { id: 'main-menu', className: menu.hidden ? 'hidden' : '' })),
+                        react_1["default"].createElement(menu_1["default"], __assign({ id: 'main-menu' }, menu, { className: menu.hidden ? 'hidden' : '', onMenuClick: this.props["menu.click"], onMenuToggleFold: this.props["menu.toggleFold"], onMouseOver: menu.mode === 'min' ? this.props["menu.show"] : null, onMouseOut: menu.mode === 'min' ? this.props["menu.hide"] : null }))),
                     react_1["default"].createElement("div", { id: 'layout-body' },
-                        react_1["default"].createElement("div", { id: 'layout-navs' }),
+                        viewType != 'xs' ? react_1["default"].createElement("div", { id: 'layout-nav' },
+                            react_1["default"].createElement(NavView, { nav: nav, menu: menu, onNavClick: this.props["nav.click"], simple: viewType == 'sm' })) : null,
                         react_1["default"].createElement("div", { id: 'layout-workarea' },
-                            react_1["default"].createElement(WorkArea, { id: "workarea" })))),
+                            react_1["default"].createElement(ui_2.CascadingView, __assign({ id: "workarea" }, workarea))))),
                 dialog.enable === true ? react_1["default"].createElement(Dialog, null) : null,
-                auth.enable === true ? react_1["default"].createElement(auth_1["default"], __assign({}, auth, { onAuthSuccess: onAuthSuccess })) : null);
+                auth.enable === true ? react_1["default"].createElement(auth_1["default"], __assign({}, auth, { onAuthSuccess: this.props["auth.success"] })) : null);
         };
         return AppView;
     }(react_1.Component));
     exports.AppView = AppView;
-    var App = react_redux_1.connect(function (state) { return __assign({}, state); }, function (dispatch) {
-        return {
-            onAuthSuccess: function (data) { return dispatch({ type: "auth.success", data: data }); },
-            onMenuToggleMin: function () { return dispatch({ type: "menu.toggleMin" }); }
-        };
-    })(AppView);
-    var controller = {
+    var action_handlers = {
         "resize": function (state, action) {
             if (rszDelayTick) {
                 clearTimeout(rszDelayTick);
@@ -193,8 +251,9 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             };
         },
         "menu.toggleFold": function (state, action) {
+            var mode = state.menu.mode === 'fold' ? 'normal' : 'fold';
             return {
-                menu: { mode: state.menu.mode === 'fold' ? 'normal' : 'fold' }
+                menu: { mode: mode, hidden: false, beforeMode: mode }
             };
         },
         "menu.toggleMin": function (state, action) {
@@ -202,8 +261,27 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             if (beforeMode === undefined)
                 beforeMode = state.menu.mode || 'normal';
             return {
-                menu: { mode: state.menu.mode === 'min' ? beforeMode : 'min', beforeMode: beforeMode }
+                menu: { mode: state.menu.mode === 'min' ? beforeMode : 'min', beforeMode: beforeMode, hidden: state.menu.mode === 'min' ? false : true }
             };
+        },
+        "menu.show": function (state, action) {
+            if (state.menu.waitForHidden) {
+                clearTimeout(state.menu.waitForHidden);
+            }
+            console.log('menu.show');
+            return { menu: { hidden: false, waitForHidden: 0 } };
+        },
+        "menu.hide": function (state, action) {
+            if (state.menu.waitForHidden && action.hideImmediate) {
+                clearTimeout(state.menu.waitForHidden);
+                return { menu: { hidden: true, waitForHidden: 0 } };
+            }
+            var waitForHiden = setTimeout(function () {
+                deferred.resolve({ type: "menu.hide", hideImmediate: true });
+            }, 200);
+            var deferred = new Deferred();
+            action.payload = deferred;
+            return { menu: { waitForHidden: waitForHiden } };
         },
         "menu.click": function (state, action) {
             var node = action.node;
@@ -213,18 +291,20 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             if (url.indexOf("[dispatch]:") >= 0) {
                 var actionJson = url.substr("[dispatch]:".length);
                 var action_1 = JSON.parse(actionJson);
-                var handler = controller[action_1.type];
+                var handler = action_handlers[action_1.type];
                 if (handler)
                     return handler.call(_this, state, action_1);
                 return state;
             }
-            return controller.navigate.call(_this, state, {
+            return action_handlers.navigate.call(_this, state, {
                 type: "navigate",
                 module: url
             });
             return state;
         },
-        "dialog": function (state, action) {
+        "nav.click": function (state, action) {
+        },
+        "dialog.show": function (state, action) {
             action.visible = true;
             if (!action.deferred)
                 action.deferred = new Deferred();
@@ -250,14 +330,15 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             action.superStore = appStore;
             return __assign({}, state, { workarea: { pages: [action] } });
         },
-        "auth": function (state, action) {
+        "auth.auth": function (state, action) {
             return { auth: { enable: true } };
         },
         "auth.success": function (state, action) {
-            var menus = buildMenuModel(action.data);
+            var _a = buildMenuModel(action.data), roots = _a.roots, nodes = _a.nodes;
             return {
                 menu: {
-                    data: menus
+                    data: nodes,
+                    roots: roots
                 },
                 user: { data: action.data.User },
                 auth: { data: action.data.Auth, enable: false }
@@ -275,16 +356,18 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
                 var pnode = menus[perm.ParentId] || (menus[perm.ParentId] = { Id: perm.ParentId });
                 if (!pnode.Children)
                     pnode.Children = [];
+                //node.Parent = pnode;
                 pnode.Children.push(node);
             }
             else {
                 roots.push(node);
             }
         }
-        return roots;
+        return { roots: roots, nodes: menus };
     }
     function buildMenuItem(perm, item) {
         item || (item = { Id: perm.Id });
+        item.ParentId = perm.ParentId;
         item.Name = perm.Name;
         item.Icon = perm.Icon || "mail";
         if (perm.Url)
@@ -337,25 +420,21 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
         menu: {
             mode: view_type == 'xs' ? 'min' : 'normal',
             beforeMode: 'normal'
+        },
+        auth: {
+            enable: true
         }
     };
     var appStore;
-    var MOD = ui_2.$mountable(App, {
+    var App = ui_2.$mountable(AppView, {
         model: defaultModel,
-        mapStateToProps: null,
         onCreating: function (reduxParams) {
             appStore = api.store = reduxParams.store;
         },
-        mapDispatchToProps: function (dispatch) {
-            return {
-                onOk: function () { return dispatch({ type: "dialog.ok" }); },
-                onCancel: function () { return dispatch({ type: "dialog.cancel" }); }
-            };
-        },
-        controller: controller
+        action_handlers: action_handlers
     });
-    var $mount = MOD.$mount;
-    MOD.$mount = function (props, targetElement, superStore, transport) {
+    var $mount = App.$mount;
+    App.$mount = function (props, targetElement, superStore, transport) {
         return new Promise(function (resolve, reject) {
             var authConfig = props.auth = utils_1.cloneObject(config.auth);
             authConfig.authview_resolve = resolve;
@@ -363,5 +442,5 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             $mount(props, targetElement);
         });
     };
-    exports["default"] = MOD;
+    exports["default"] = App;
 });

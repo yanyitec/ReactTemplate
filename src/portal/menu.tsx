@@ -8,59 +8,70 @@ export interface IMenuItem{
     Name?:string;
     Icon?:string;
     Url?:string;
+    ParentId?:string;
     Children?:IMenuItem[];
 }
   
   
 export interface IMainMenuState{
-    data:IMenuItem[];
-    defaultSelectedKeys:string[];
-    defaultOpenKeys:string[];
-    mode:string; // icon = 只显示图标,min = 最小化 ,normal
-    beforeMode:string; //min 之前的Mode
-    hidden:boolean;
+    id?:string;
+    data?:{[index:string]:IMenuItem};
+    roots?:IMenuItem[];
+    defaultSelectedKeys?:string[];
+    defaultOpenKeys?:string[];
+    mode?:string; // icon = 只显示图标,min = 最小化 ,normal
+    beforeMode?:string; //min 之前的Mode
+    hidden?:boolean;
     className?:string;
-    timer:number;
+    waitForHidden?:number;
 }
-export interface IMainMenuNotice{
-    onItemClick:Function;
-    onToggleIcon:Function;
+export interface IMainMenuAction{
+    onMenuClick:Function;
+    onMenuToggleFold:Function;
+    onMouseOver:Function,
+    onMouseOut:Function
 }
 
   const SubMenu = Menu.SubMenu;
   export default class MainMenuView extends Component{
-    props:IMainMenuState & IMainMenuNotice;
+    props:IMainMenuState & IMainMenuAction;
     collapsed:boolean;
     state: any;
-    setState:Function;
+    setState:any;
+    forceUpdate:any;
+    context:any;
+    refs:any;
     
-    constructor(props:IMainMenuState & IMainMenuNotice){
+    constructor(props:IMainMenuState & IMainMenuAction){
       super(props);
     }
     
     render(){
-        const {data,defaultSelectedKeys,defaultOpenKeys,mode,hidden,className
-            ,onItemClick,onToggleIcon
+        const {roots,defaultSelectedKeys,defaultOpenKeys,mode,hidden,className
+            ,onMenuClick,onMenuToggleFold,onMouseOut,onMouseOver
         } = this.props;
+        //let data= roots;
         let className1 = className || "";
         if(hidden) className1 += ' hidden';
         if(mode==='fold') className1 += ' fold';
         let vt = viewType();
       
-        return <div id={(this.props as  any).id||""} className ={hidden?'hidden':''}>
+        return <div id={(this.props as  any).id||""} style={{display: hidden?'none':'block'}}>
             {   mode==='min' || mode=='horizontal' || vt==='xs'?null: 
-                <div className='toggle-menu' onClick={onToggleIcon as any}>
+                <div className='toggle-menu' onClick={onMenuToggleFold as any}>
                     <Icon  type={mode==='fold'?'menu-unfold':'menu-fold'}/>
                 </div>
             }
             <Menu className='menus'
                 defaultSelectedKeys={defaultSelectedKeys}
                 defaultOpenKeys={defaultOpenKeys}
-                mode='inline'
+                mode={mode=='min'?'vertical':'inline'}
+                onMouseOver = {onMouseOver}
+                onMouseOut = {onMouseOut}
                 theme="dark"
                 inlineCollapsed={mode=='fold'?true:false}
             >
-                {this._buildMenu(data,onItemClick)}
+                {this._buildMenu(roots,onMenuClick)}
             </Menu>
         </div>;
     }

@@ -1,12 +1,12 @@
 
 import  React, { Component } from 'lib/react/react';
-import { Menu, Icon, Modal,Button,Dropdown  } from 'lib/antd/antd';
+import { Menu, Icon, Modal,Button,Dropdown,Breadcrumb  } from 'lib/antd/antd';
 import {  connect } from 'lib/redux/react-redux';
 
 import * as axios from 'lib/axios';
 import {cloneObject} from 'lib/utils';
 import {viewType,attach} from 'lib/ui';
-import Mainmenu,{IMainMenuState,IMenuItem} from 'portal/menu';
+import MainMenuView,{IMainMenuState,IMenuItem, IMainMenuAction} from 'portal/menu';
 import Auth,{IAuthState} from 'portal/auth';
 
 //import * as config from 'conf/config';
@@ -17,24 +17,30 @@ declare var Deferred : any;
 declare var Promise : any;
 declare var define:any;
 
-interface IAppState{
-  auth:IAuthState;
-  menu:IMainMenuState;
-  dialog:any;
-  workarea:any;
-  user:any;
-  viewType:string;
+interface INavState{
+  disable?:boolean;
+  simple?:boolean;
+  data?:IMenuItem;
+  
+}
+interface INavAction{
+  onNavClick:(data)=>any;
 }
 
-
-
-
-let MainMenu = connect((model:IAppState)=>{return model.menu},(dispatch)=>{
-  return {
-    onItemClick:(item)=>dispatch({type:"menu.click",item:item}),
-    onToggleIcon:()=>dispatch({type:'menu.toggleFold'})
-  }
-})(Mainmenu);
+interface IAppState{
+  auth?:IAuthState;
+  menu?:IMainMenuState;
+  nav?:INavState;
+  dialog?:any;
+  workarea?:any;
+  user?:any;
+  viewType?:string;
+  [index:string]:any;
+}
+interface IAppAction extends IMainMenuAction,INavAction{
+    onAuthSuccess:(data)=>any;
+    onMenuToggleMin:()=>any;    
+}
 
 export class DialogView extends Component{
   props:any;
@@ -60,12 +66,88 @@ let Dialog = connect((model:IAppState)=>{return model.dialog},(dispatch)=>{
   }
 })(DialogView);
 
+function NavView(appProps:IAppState & INavAction & {simple:boolean}){
+  let props = appProps.nav;
+  let nodes = appProps.menu.data;
+  if(!props || !nodes ) return null;
+  let node = props.data;
+  let onNavClick = appProps.onNavClick;
+  let simple = props.simple;
+  let buildCrumbItem = function(node:IMenuItem){
+    if(simple){
+      return <Breadcrumb.Item key={node.Id} onClick={()=>onNavClick(node)}>
+        {node.Icon?<Icon type={node.Icon} />:null}
+         {node.Name}
+      </Breadcrumb.Item>;
+    }
+    let items = [];
+    let p = node && node.ParentId?nodes[node.ParentId]:undefined;
+    if(p && p.Children){
+      for(let i =0,j=p.Children.length;i<j;i++){
+        ((nd,index)=>{
+          if(nd.Id===node.Id)return;
+          items.push(<Menu.Item key={nd.Id} onClick={()=>onNavClick(nd)}>
+          {nd.Icon?<Icon type={nd.Icon} />:null}
+          <span>{nd.Name}</span>
+        </Menu.Item>);
+        })(p.Children[i],i);
+      }
+    }
+    let menu = items.length==0?null:<Menu>{items}</Menu>;
+    return <Breadcrumb.Item key={node.Id} onClick={()=>onNavClick(node)}>
+      <Dropdown overlay={menu} placement="bottomLeft">
+        <span>
+          {node.Icon?<Icon type={node.Icon} />:null}
+          {node.Name} 
+        </span>
+      </Dropdown>
+    </Breadcrumb.Item>
+  };//end buildDropdown;
+  let items = [];
+  let nd = node;
+  while(nd){
+    items.unshift(buildCrumbItem(nd));
+    nd = nodes[nd.ParentId];
+  }
+  items.unshift(<Breadcrumb.Item key="$KEY_HOME" onClick={()=>onNavClick({Id:"Home",Name:"首页"})}>
+     <Icon type='home' />
+     首页
+    </Breadcrumb.Item>);
 
+  return <Breadcrumb>{items}</Breadcrumb>;
+}
+function NavXSView(appProps:IAppState & INavAction){
+  let props = appProps.nav;
+  let nodes = appProps.menu.data;
+  if(!props || !nodes || !props.data) return null;
+  let node = props.data;
+  let onNavClick = appProps.onNavClick;
+  let items = [];
+  let nd = node;
+  while(nd){
+    ((nd)=>{
+      items.push(<Menu.Item onClick={()=>onNavClick(nd)}>
+      {nd.Icon?<Icon type={nd.Icon} />:null}
+      {nd.Name}
+    </Menu.Item>);
+    })(nd);
+    nd = nodes[nd.ParentId];
+  }
 
-
-let WorkArea = connect((model:IAppState)=>model.workarea,(dispatch)=>{
-  return {};
-})(CascadingView);
+  items.unshift(<Menu.Item onClick={()=>onNavClick({Id:"Home",Name:"首页"})}>
+     <Icon type='home' />
+     首页
+    </Menu.Item>);
+  
+  let menu = <Menu>{items}</Menu>;
+  return <Dropdown overlay={menu} placement="bottomCenter">
+  <span>
+    {node.Icon?<Icon type={node.Icon} />:null}
+    {node.Name} 
+  </span>
+</Dropdown>
+}
+  
 
 function buildNormalQuicks(user,customActions){
   let userDiv,customDiv;
@@ -141,50 +223,57 @@ function buildMinQuicks(user,customActions){
 export class AppView extends Component{
   props:any;
   render(){
-    const {menu,dialog,auth,user,customActions,viewType
-      ,onAuthSuccess,onMenuToggleMin} = this.props;
+    const {menu,dialog,auth,workarea,nav,user,customActions,viewType} = this.props;
  
     let layoutLogo;
     if(viewType==='xs'){
       layoutLogo = <div id='layout-logo'>
-        <a className={menu.mode==='min'?'toggle collapsed':'toggle'} onClick={onMenuToggleMin}><Icon type={menu.mode=='min'?"menu-unfold":"menu-fold"} /></a>
+        <a className={menu.mode==='min'?'toggle collapsed':'toggle'} onClick={this.props["menu.toggleMin"]}><Icon type={menu.mode=='min'?"menu-unfold":"menu-fold"} /></a>
       </div>;
     }else {
       layoutLogo = <div id='layout-logo'>
-        <a className={menu.mode==='min'?'toggle collapsed':'toggle'} onClick={onMenuToggleMin}><Icon type={menu.mode=='min'?"caret-down":"caret-up"} /></a>
-        <div className='logo-image'><img src='images/logo.png' onClick={onMenuToggleMin} /></div>
+        <a className={menu.mode==='min'?'toggle collapsed':'toggle'} onClick={this.props["menu.toggleMin"]} 
+          onMouseOver={menu.mode==='min'?this.props["menu.show"]:null}
+          onMouseOut={menu.mode==='min'?this.props["menu.hide"]:null}
+        >
+          <Icon type={menu.mode=='min'?"caret-down":"caret-up"} />
+        </a>
+        <div className='logo-image'><img src='images/logo.png' onClick={this.props["menu.toggleMin"]} /></div>
       </div>;
     }   
 
     return <div  id='layout' className ={'layout-' + viewType}>
       <div id='layout-header'>
         {layoutLogo}
+        {viewType=='xs'?<NavXSView nav={nav} menu={menu} onNavClick={this.props["nav.click"]}/>:null}
         {viewType=='xs' || viewType=='sm'?buildMinQuicks(user,customActions):buildNormalQuicks(user,customActions)}
         
       </div>
       <div id='layout-content' className={"menu-" + menu.mode}>
-        <div id='layout-sider'><MainMenu id='main-menu' className={menu.hidden?'hidden':''}></MainMenu></div>
+        <div id='layout-sider'>
+          <MainMenuView id='main-menu' {...menu} className={menu.hidden?'hidden':''} 
+            onMenuClick={this.props["menu.click"]} 
+            onMenuToggleFold={this.props["menu.toggleFold"]} 
+            onMouseOver ={menu.mode==='min'?this.props["menu.show"]:null}
+            onMouseOut={menu.mode==='min'?this.props["menu.hide"]:null}
+          />
+        </div>
         <div id='layout-body'>
-          <div id='layout-navs'></div>
-          <div id='layout-workarea'><WorkArea id="workarea" /></div>
+          { viewType!='xs'?<div id='layout-nav'><NavView nav={nav} menu={menu} onNavClick={this.props["nav.click"]} simple={viewType=='sm'} /></div>:null }
+          <div id='layout-workarea'><CascadingView id="workarea" {...workarea} /></div>
         </div>
       </div>
       {dialog.enable===true?<Dialog />:null}
-      {auth.enable===true?<Auth {...auth} onAuthSuccess={onAuthSuccess}></Auth>:null}
+      {auth.enable===true?<Auth {...auth} onAuthSuccess={this.props["auth.success"]}></Auth>:null}
     </div>;
   }
 }
 
-let App = connect((state)=>{return {...state}},(dispatch)=>{
-  return {
-    onAuthSuccess:(data)=>dispatch({type:"auth.success",data:data}),
-    onMenuToggleMin:()=>dispatch({type:"menu.toggleMin"}) 
-  }
-})(AppView);
 
 
 
-let controller ={
+
+let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
   "resize":(state:IAppState,action)=>{
     if(rszDelayTick){
       clearTimeout(rszDelayTick);rszDelayTick=0;
@@ -203,8 +292,9 @@ let controller ={
     };
   },
   "menu.toggleFold":(state:IAppState,action)=>{
+    let mode = state.menu.mode==='fold'?'normal':'fold';
     return {
-      menu:{mode:state.menu.mode==='fold'?'normal':'fold'}
+      menu:{mode:mode,hidden:false,beforeMode :mode}
     }
   },
   "menu.toggleMin":(state:IAppState,action)=>{
@@ -212,10 +302,28 @@ let controller ={
     if(beforeMode===undefined) beforeMode = state.menu.mode || 'normal';
     
     return {
-      menu:{mode:state.menu.mode==='min'?beforeMode:'min',beforeMode:beforeMode }
+      menu:{mode:state.menu.mode==='min'?beforeMode:'min',beforeMode:beforeMode,hidden:state.menu.mode==='min'?false:true }
     }
   },
-  
+  "menu.show":(state:IAppState,action)=>{
+    if(state.menu.waitForHidden){
+      clearTimeout(state.menu.waitForHidden);
+    }
+    console.log('menu.show');
+    return {menu:{hidden:false,waitForHidden:0}};
+  },
+  "menu.hide":(state:IAppState,action)=>{
+    if(state.menu.waitForHidden && action.hideImmediate){
+      clearTimeout(state.menu.waitForHidden);
+      return {menu:{hidden:true,waitForHidden:0}}
+    }
+    let waitForHiden = setTimeout(()=>{
+      deferred.resolve({type:"menu.hide",hideImmediate:true});
+    },200);
+    let deferred = new Deferred();
+    action.payload = deferred;
+    return {menu:{waitForHidden:waitForHiden}};
+  },
 
   "menu.click":(state,action)=>{
     let node = action.node;
@@ -224,17 +332,20 @@ let controller ={
     if(url.indexOf("[dispatch]:")>=0){
       let actionJson = url.substr("[dispatch]:".length);
       let action = JSON.parse(actionJson);
-      let handler = controller[action.type];
+      let handler = action_handlers[action.type];
       if(handler) return handler.call(this,state,action);
       return state;
     }
-    return controller.navigate.call(this,state,{
+    return action_handlers.navigate.call(this,state,{
       type:"navigate",
       module:url
     });
     return state;
   },
-  "dialog":(state,action)=>{
+  "nav.click":(state,action)=>{
+
+  },
+  "dialog.show":(state,action)=>{
     action.visible = true;
     if(!action.deferred) action.deferred = new Deferred();
     action.transport = {'__transport__':'dialog'};
@@ -259,21 +370,25 @@ let controller ={
     action.superStore = appStore;
     return {...state,workarea:{pages:[action]}};
   },
-  "auth":(state, action)=>{
+  "auth.auth":(state, action)=>{
     return {auth:{enable:true}};
   },
   
   "auth.success":(state,action)=>{
-    let menus = buildMenuModel(action.data);
+    let{roots, nodes} = buildMenuModel(action.data);
     return {
       menu:{
-        data:menus
+        data:nodes,
+        roots:roots
       },
       user:{data:action.data.User},
       auth:{data:action.data.Auth,enable:false}
     };
   }
 };
+
+
+
 function buildMenuModel(authData){
   let menus :{[id:string]:IMenuItem}={};
   let perms = authData.Permissions;
@@ -284,16 +399,18 @@ function buildMenuModel(authData){
     if(perm.ParentId){
       let pnode:IMenuItem = menus[perm.ParentId] || (menus[perm.ParentId]={Id:perm.ParentId});
       if(!pnode.Children)pnode.Children=[];
+      //node.Parent = pnode;
       pnode.Children.push(node);
     }else {
       roots.push(node);
     }
     
   }
-  return roots;
+  return {roots:roots,nodes:menus};
 }
 function buildMenuItem(perm,item?:IMenuItem){
   item ||(item={Id:perm.Id});
+  item.ParentId = perm.ParentId;
   item.Name = perm.Name;
   item.Icon = perm.Icon || "mail";
   if(perm.Url) item.Url = perm.Url;
@@ -346,25 +463,21 @@ let defaultModel = {
   menu:{
     mode:view_type=='xs'?'min':'normal',
     beforeMode:'normal'
+  },
+  auth:{
+    enable:true
   }
 }
 let appStore;
-let MOD= $mountable(App,{
+let App= $mountable(AppView,{
   model :defaultModel,
-  mapStateToProps:null,
   onCreating:(reduxParams:IMountArguments)=>{
     appStore = api.store = reduxParams.store
   },
-  mapDispatchToProps:(dispatch)=>{
-    return {
-      onOk:()=>dispatch({type:"dialog.ok"}),
-      onCancel:()=>dispatch({type:"dialog.cancel"})
-    }
-  },
-  controller:controller
+  action_handlers:action_handlers
 });
-let $mount = MOD.$mount;
-MOD.$mount =(props:any,targetElement:HTMLElement,superStore,transport?:any)=>{
+let $mount = App.$mount;
+App.$mount =(props:any,targetElement:HTMLElement,superStore,transport?:any)=>{
   return new Promise((resolve,reject)=>{
     let authConfig = props.auth= cloneObject(config.auth);
     authConfig.authview_resolve = resolve;
@@ -373,7 +486,7 @@ MOD.$mount =(props:any,targetElement:HTMLElement,superStore,transport?:any)=>{
   });
   
 }
-export default MOD;
+export default App;
 
 
 
