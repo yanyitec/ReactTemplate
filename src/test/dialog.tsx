@@ -27,10 +27,10 @@ export class My extends React.Component{
     onMaster=(evt)=>{
         //每个控件里面都可以用context获取到store
         //this.context.store.dispatch({type:'my.alert',text:"我是dialog.tsx发出的信息"});
-        this.props.$store.superStore.dispatch({type:'my.alert',text:"我是dialog.tsx发出的信息"});
+        this.context.store.superStore.dispatch({type:'my.alert',text:"我是dialog.tsx发出的信息"});
     }
     onApp=(evt)=>{
-        this.props.$store.root().dispatch({type:'menu.toggleCollapsed'});
+        this.context.store.root().dispatch({type:'menu.toggleCollapsed'});
     }
     render(){
         if(this.transport)this.transport.getModalResult = ()=>{

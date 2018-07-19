@@ -1,5 +1,5 @@
 let utils:any={};
-export function cloneObject(src:any){
+export function deepClone(src:any){
     if(!src) return src;
     let dest:any;
     if(Object.prototype.toString.call(src)==="[object Array]") dest = [];
@@ -7,12 +7,12 @@ export function cloneObject(src:any){
     for(let n in src){
         let value = src[n];
         if(typeof value==='object'){
-            dest[n] = cloneObject(value);
+            dest[n] = deepClone(value);
         }else dest[n] = value;
     }
     return dest;
 }
-utils.cloneObject = cloneObject;
+utils.deepClone = deepClone;
 //合并model
 export function mergeDiff(dest,src,prop?:string) {
     if(prop===undefined){

@@ -448,6 +448,7 @@ var ModuleStates;
                     if (defineResult === undefined) {
                         if (define_exports["default"])
                             defineResult = define_exports["default"];
+                        //else defineResult = define_exports;
                     }
                     if (!defineResult)
                         defineResult = define_exports;

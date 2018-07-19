@@ -206,25 +206,27 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             }
             else {
                 layoutLogo = react_1["default"].createElement("div", { id: 'layout-logo' },
-                    react_1["default"].createElement("a", { className: menu.mode === 'min' ? 'toggle collapsed' : 'toggle', onClick: this.props["menu.toggleMin"], onMouseOver: menu.mode === 'min' ? this.props["menu.show"] : null, onMouseOut: menu.mode === 'min' ? this.props["menu.hide"] : null },
+                    react_1["default"].createElement("a", { className: menu.mode === 'min' ? 'toggle collapsed' : 'toggle', onClick: this.props["menu.toggleMin"], onMouseEnter: menu.mode === 'min' ? this.props["menu.show"] : null, onMouseOut: menu.mode === 'min' ? this.props["menu.hide"] : null },
                         react_1["default"].createElement(antd_1.Icon, { type: menu.mode == 'min' ? "caret-down" : "caret-up" })),
                     react_1["default"].createElement("div", { className: 'logo-image' },
                         react_1["default"].createElement("img", { src: 'images/logo.png', onClick: this.props["menu.toggleMin"] })));
             }
-            return react_1["default"].createElement("div", { id: 'layout', className: 'viewport-' + state.viewport + ' menu-mode-' + menu.mode },
+            var contentMode = menu.mode;
+            if (menu.collapsed || menu.mode === 'min')
+                contentMode = 'collapsed';
+            return react_1["default"].createElement("div", { id: 'layout' },
                 react_1["default"].createElement("div", { id: 'layout-header' },
                     state.logo_hidden ? null : react_1["default"].createElement("span", { id: 'layout-logo' },
                         react_1["default"].createElement("img", { src: "themes/" + state.theme + "/images/logo.png" })),
                     react_1["default"].createElement("span", { id: 'layout-menu-toggle', onClick: this.props["menu.toggleCollapsed"], onMouseOver: this.props["menu.show"], onMouseOut: this.props["menu.hide"] },
                         react_1["default"].createElement(antd_1.Icon, { type: "appstore" })),
-                    react_1["default"].createElement(menu_1["default"], __assign({ id: 'layout-menu-main' }, menu, { onMenuClick: this.props["menu.click"], onMenuToggleFold: this.props["menu.toggleFold"], onMouseOver: this.props["menu.show"], onMouseOut: this.props["menu.hide"] }))),
-                react_1["default"].createElement("div", { id: 'layout-content', className: "menu-" + menu.mode },
-                    react_1["default"].createElement("div", { id: 'layout-sider' }),
+                    react_1["default"].createElement(menu_1["default"], __assign({ id: 'layout-menu-main' }, menu, { className: contentMode, onMenuClick: this.props["menu.click"], onMenuToggleFold: this.props["menu.toggleFold"], onMouseOver: this.props["menu.show"], onMouseOut: this.props["menu.hide"] }))),
+                react_1["default"].createElement("div", { id: 'layout-content', className: contentMode },
                     react_1["default"].createElement("div", { id: 'layout-body' },
                         viewport != 'xs' ? react_1["default"].createElement("div", { id: 'layout-nav' },
                             react_1["default"].createElement(NavView, { nav: nav, menu: menu, onNavClick: this.props["nav.click"], simple: viewport == 'sm' })) : null,
-                        react_1["default"].createElement("div", { id: 'layout-workarea' },
-                            react_1["default"].createElement(ui_2.CascadingView, __assign({ id: "workarea" }, workarea))))),
+                        workarea ? react_1["default"].createElement("div", { id: 'layout-workarea' },
+                            react_1["default"].createElement(ui_2.LoadableView, __assign({ id: "workarea" }, workarea))) : null)),
                 dialog.enable === true ? react_1["default"].createElement(Dialog, null) : null,
                 auth.enable === true ? react_1["default"].createElement(auth_1["default"], __assign({}, auth, { onAuthSuccess: this.props["auth.success"] })) : null);
         };
@@ -237,7 +239,7 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             return {
                 viewport: vp,
                 logo_hidden: true,
-                menu: { mode: 'min', beforeMode: state.menu.beforeMode || state.menu.mode, hidden: true }
+                menu: { mode: 'min', beforeMode: state.menu.beforeMode || state.menu.mode, hidden: true, collapsed: true }
             };
         }
         else if (vp === 'sm') {
@@ -245,7 +247,6 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
                 viewport: vp,
                 logo_hidden: false,
                 menu: {
-                    foldable: false,
                     mode: 'fold'
                 }
             };
@@ -255,7 +256,7 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
                 viewport: vp,
                 logo_hidden: false,
                 menu: {
-                    foldable: true
+                    mode: state.menu.beforeMode || 'normal'
                 }
             };
         }
@@ -264,7 +265,10 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
         "app.navigate": function (state, action) {
             action.$transport = { "__transport__": "app.navigate", superStore: appStore };
             //action.superStore = appStore;
-            return { workarea: { pages: [action] } };
+            return {
+                menu: { hidden: state.menu.mode == 'min' ? true : state.menu.hidden },
+                workarea: action
+            };
         },
         "app.resize": function (state, action) {
             if (rszDelayTick) {
@@ -323,7 +327,6 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
                 type: "app.navigate",
                 module: url
             });
-            return state;
         },
         "nav.click": function (state, action) {
         },
@@ -332,6 +335,7 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             if (!action.deferred)
                 action.deferred = new Deferred();
             action.$transport = { '__transport__': 'dialog' };
+            action.$superStore = action.superStore;
             action.__REPLACEALL__ = true;
             return {
                 dialog: action
@@ -479,7 +483,7 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
     var $mount = App.$mount;
     App.$mount = function (props, targetElement, superStore, transport) {
         return new Promise(function (resolve, reject) {
-            var authConfig = props.auth = utils_1.cloneObject(config.auth);
+            var authConfig = props.auth = utils_1.deepClone(config.auth);
             authConfig.authview_resolve = resolve;
             authConfig.enable = true;
             $mount(props, targetElement);

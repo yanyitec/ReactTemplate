@@ -16,7 +16,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
-define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-dom", "lib/react/prop-types", "lib/redux/redux", "lib/redux/react-redux", "lib/utils"], function (require, exports, axios, react_1, ReactDOM, PropTypes, redux_1, react_redux_1, utils_1) {
+define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-dom", "lib/react/prop-types", "lib/redux/redux", "lib/redux/react-redux", "lib/utils", "lib/antd/antd"], function (require, exports, axios, react_1, ReactDOM, PropTypes, redux_1, react_redux_1, utils_1, antd_1) {
     "use strict";
     exports.__esModule = true;
     exports.__setApp = function (app) { exports.$app = app; };
@@ -217,6 +217,38 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
         };
         return Component;
     };
+    function eachChildren(node, handler, deep) {
+        var children = node.props.children;
+        if (!children)
+            return;
+        if (!deep)
+            deep = 1;
+        if (children.length !== undefined) {
+            var nextDeep = deep + 1;
+            for (var i = 0, j = children.length; i < j; i++) {
+                var child = children[i];
+                var rs = handler(child, i, node, deep);
+                if (rs === false || rs === 'break')
+                    return;
+                if (rs === 'continue')
+                    continue;
+                eachChildren(children[i], handler, nextDeep);
+            }
+        }
+        else {
+            var rs = handler(children, 0, node, deep);
+            if (rs === false || rs === 'break' || rs === 'continue')
+                return;
+            eachChildren(children, handler, deep + 1);
+        }
+    }
+    exports.eachChildren = eachChildren;
+    function registerComponent(name, component) {
+        if (antd_1["default"][name])
+            throw new Error("aleady has a component named " + name);
+        antd_1["default"][name] = component;
+    }
+    exports.registerComponent = registerComponent;
     var HtmlElementView = /** @class */ (function (_super) {
         __extends(HtmlElementView, _super);
         function HtmlElementView() {
@@ -315,6 +347,7 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
             else {
                 contentElement = react_1["default"].createElement("div", { className: "loadable-content", ref: "loadable-content" });
             }
+            //if(!this.props.module || !this.props.contentUrl) return null;
             return react_1["default"].createElement("div", { className: (className || "") + ' loadable', id: id || "", ref: "html-element" },
                 contentElement,
                 react_1["default"].createElement("div", { className: 'loading', ref: "loading" },
@@ -336,8 +369,13 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
             var loadingElement = this.refs["loading"];
             var module = this.props.module;
             var contentUrl = this.props.contentUrl;
+            if (!module && !contentUrl) {
+                if (loadingElement && loadingElement.parentNode)
+                    loadingElement.parentNode.removeChild(loadingElement);
+                return;
+            }
             //let props = this.props;
-            var transport = this.props.$transport;
+            var transport = this.props.$transport || { __transport__: "Loadable" };
             //transport.$superStore = this.props.$superStore;
             transport.module = module;
             var onload = this.props.onload;
@@ -460,6 +498,120 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
         return CascadingView;
     }(react_1["default"].Component));
     exports.CascadingView = CascadingView;
+    var FieldView = /** @class */ (function (_super) {
+        __extends(FieldView, _super);
+        function FieldView() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        FieldView.prototype.render = function () {
+            var state = this.props;
+            if (state.disabled === true)
+                return null;
+            var field = state.field || {};
+            var inputType = field.inputType || state.inputType || 'Input';
+            var name = field.name || state.name;
+            var cls = field.css;
+            if (cls === undefined) {
+                cls = '';
+                if (this.props.className)
+                    cls += ' ' + this.props.className;
+                cls += ' ' + inputType;
+                cls += ' ' + name;
+                cls += ' field';
+                field.css = cls;
+            }
+            if (state.valid)
+                cls += ' ' + state.valid;
+            var input = antd_1["default"][inputType];
+            var label;
+            if (field.info) {
+                label = react_1["default"].createElement(antd_1.Tooltip, { title: field.info },
+                    react_1["default"].createElement("label", { className: 'field-label' },
+                        field.text || state.text || name,
+                        state.required ? react_1["default"].createElement("span", { className: 'required' }, "*") : null));
+            }
+            else {
+                label = react_1["default"].createElement("label", { className: 'field-label' },
+                    field.text || this.props.text || name,
+                    state.required ? react_1["default"].createElement("span", { className: 'required' }, "*") : null);
+            }
+            //field.className = "field-input";
+            return react_1["default"].createElement("div", { className: cls },
+                label,
+                react_1["default"].createElement("span", { className: 'field-input' }, react_1["default"].createElement(input, field)));
+        };
+        return FieldView;
+    }(react_1.Component));
+    exports.FieldView = FieldView;
+    var FieldsetView = /** @class */ (function (_super) {
+        __extends(FieldsetView, _super);
+        function FieldsetView(props) {
+            var _this = _super.call(this, props) || this;
+            _this.onToggle = function () {
+                _this.setState({ expended: !_this.state.expended });
+            };
+            _this.state = {
+                expended: false
+            };
+            return _this;
+        }
+        FieldsetView.prototype.render = function () {
+            var _this = this;
+            var state = this.props;
+            var fields = state.fields || {};
+            var hasHidden = false;
+            var canCollapse = false;
+            var vp = exports.viewport();
+            var alloweds = state.allowedFieldnames;
+            var visibles = state.visibleFieldnames;
+            var showAll = state.showAllAllowedFields;
+            var fieldcount = 0;
+            eachChildren(this, function (child, index, parent, deep) {
+                if (deep > 3)
+                    return false;
+                if (child.type !== FieldView)
+                    return;
+                var cprops = child.props;
+                var name = cprops.name;
+                var field = fields[name];
+                if (!field) {
+                    fieldcount += 1;
+                    return;
+                }
+                cprops.field = field;
+                if (alloweds && !alloweds[name]) {
+                    cprops.disabled = true;
+                }
+                if ((visibles && !visibles[name]) || (cprops[vp] === false)) {
+                    if (showAll !== true && !_this.state.expended) {
+                        hasHidden = true;
+                        cprops.disabled = true;
+                    }
+                    else {
+                        canCollapse = true;
+                        fieldcount += 1;
+                    }
+                }
+                return null;
+            });
+            if (fieldcount === 0 && !hasHidden)
+                return null;
+            var addition = null;
+            if (hasHidden) {
+                addition = react_1["default"].createElement("div", { key: 'fieldset-goggle', className: 'fieldset-goggle', onClick: this.onToggle },
+                    react_1["default"].createElement(antd_1.Icon, { type: "down" }));
+            }
+            else if (canCollapse) {
+                addition = react_1["default"].createElement("div", { key: 'fieldset-goggle', className: 'fieldset-goggle', onClick: this.onToggle },
+                    react_1["default"].createElement(antd_1.Icon, { type: "up" }));
+            }
+            return react_1["default"].createElement("div", { className: 'grid' },
+                this.props.children,
+                addition);
+        };
+        return FieldsetView;
+    }(react_1.Component));
+    exports.FieldsetView = FieldsetView;
     var genId = function () {
         var idSeed = 1;
         var time = new Date().valueOf().toString();

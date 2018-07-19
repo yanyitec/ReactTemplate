@@ -16,75 +16,51 @@ html,body{
 .grid{
     .tiny-bbox;
     width:100%;
-    display:table-row;
+    display:table;
+    clear:both;
     &>.col-d4,&>.col-d3,&>.col-d2,&>.col-d1{
         .tiny-bbox;
-        display:table-cell;
+        display:block;
+        float:left;
     }
 }
 .col-s(@span) when (@span>0){
     .grid>.col-s@{span}{
         .tiny-bbox;
-        display:table-cell;
+        display:block;
+        float:left;
         width:(100%/24*@span);
     }
     .col-s(@span - 1);
 }
 .col-s(24);
 
+.field{
+    .tiny-bbox;
+    position: relative;
+}
+.field .field-label{
+    position: absolute;
+    left:0;
+    top:0;
+    z-index:1;
+}
+
+.field .field-input{
+    .tiny-bbox;
+    display: inline-block;
+    width:100%;
+}
+
 .viewport(@type,@font-size,@margin,@padding,@header-size){
-    .gen-grid(@type) when(@type='xs'){
-        .grid{
-            &>.col-d1, &>.col-d2, &>.col-d3, &>.col-d4{
-                width:100%;
-            }
-        }
-    }
-    .gen-grid(@type) when(@type='sm'){
-        .grid{
-            &>.col-d1, {
-                width:100%;
-            }
-            &>.col-d2, &>.col-d3, &>.col-d4{
-                width:50%;
-            }
-        }
-    }
-    .gen-grid(@type) when(@type='md'){
-        .grid{
-            &>.col-d1, {
-                width:100%;
-            }
-            &>.col-d2, &>.col-d3, &>.col-d4{
-                width:50%;
-            }
-            &>.col-d4{
-                width:25%;
-            }
-        }
-    }
-    .gen-grid(@type) when(@type='lg'){
-        .grid{
-            &>.col-d1, {
-                width:100%;
-            }
-            &>.col-d2{
-                width:50%;
-            }
-            &>.col-d3{
-                width:33.33333%;
-            }
-            &>.col-d4{
-                width:25%;
-            }
-        }
-    }
+ 
 
 
     .col-s(@span,@vp) when (@span>0){
         .grid>.col-@{vp}-s@{span}{
             .tiny-bbox;
-            display:table-cell;
+            display:block;
+            float:left;
             width:(100%/24*@span);
         }
         .col-s(@span - 1,@vp);
@@ -94,6 +70,19 @@ html,body{
     
     *{
         font-size:@font-size;
+    }
+
+    .grid > .field {
+        padding:@padding @padding*2;
+        .field-label {
+            width:@font-size*5;
+            text-align: right;
+
+        }
+        .field-input{
+            padding-left:@font-size*5;
+            
+        }
     }
     
     @header-height:@header-size;
@@ -127,16 +116,11 @@ html,body{
                 .anticon{
                     font-size: @font-size * 1.2;
                 }
-            }
-        }
-        #layout-content{
-            margin-top:@header-height;
-            padding-left:@menu_normal_width;
-        }
-        &.menu-mode-fold{
-            #layout-header{
-                #layout-menu-main{
+                &.fold{
                     width: @header-height ;
+                    .fold-menu{
+                        text-align: center;
+                    }
                     .anticon{
                         font-size: @font-size * 1.5;
                     }
@@ -149,22 +133,32 @@ html,body{
                             padding: 0 (@header-height - @font-size *1.5 )/2 !important; 
                         }
                     }
-                    &.collapsed{
-                        width:@menu_normal_width * 0.75;
-                        .fold-menu{
-                            text-align: left;                
-                        }
-                        .ant-menu-root>li{
-                            text-align :left;
-                        }
+                    .ant-menu-root>li{
+                        text-align :left;
                     }
-                    
-                } 
+                }
             }
-            #layout-content{
+        }
+        #layout-content{
+            padding-top:@header-height;
+            padding-left:@menu_normal_width;
+            &.normal{
+                padding-left:@menu_normal_width;
+            }
+            &.fold{
                 padding-left:@header-height;
             }
-        }//end &.menu-mode-fold
+            &.vertical{
+                padding-left:0;
+            }
+            &.collapsed{
+                padding-left:0;
+            }
+            &.min{
+                padding-left:0;
+            }
+            
+        }
     }
 }
 
@@ -222,16 +216,57 @@ html,body{
 @screen-lg-min : 1200px;
 
 @media (max-width: @screen-xs-max ) {
-    .viewport(xs,12px,2px,4px,36px);
+    @margin:3px;
+    @padding:2px;
+    @font-size:10px;
+
+    .grid{
+        &>.col-d1, &>.col-d2, &>.col-d3, &>.col-d4{
+            width:100%;
+        }
+    }
+    .viewport(xs,@font-size,@margin,@padding,36px);
 }
 /* 小屏幕（平板，大于等于 768px） */
 @media (min-width: @screen-sm-min) {
-    .viewport(sm,12px,3px,5px,42px);
+    @margin:5px;
+    @padding:3px;
+    @font-size:12px;
+
+    .grid{
+        &>.col-d1, {
+        
+            width:100%;
+        }
+        &>.col-d2, &>.col-d3, &>.col-d4{
+      
+            width:50%;
+        }
+    }
+    .viewport(sm,@font-size,@margin,@padding,42px);
 }
 
 /* 中等屏幕（桌面显示器，大于等于 992px） */
 @media (min-width: @screen-md-min) {
-    .viewport(md,14px,4px,6px,50px); 
+    @margin:6px;
+    @padding:4px;
+    @font-size:12px;
+    .grid{
+        
+        &>.col-d1, {
+            width:100%;
+           
+        }
+        &>.col-d2, &>.col-d3, &>.col-d4{
+            width:50%;
+            
+        }
+        &>.col-d4{
+            width:25%;
+            
+        }
+    }
+    .viewport(md,@font-size,@margin,@padding,50px); 
 }
 
 /* 大屏幕（大桌面显示器，大于等于 1200px） */
@@ -241,6 +276,25 @@ html,body{
     @padding:5px;
     @font-size:14px;
 
+    .grid{
+      
+        &>.col-d1, {
+            width:100%;
+          
+        }
+        &>.col-d2{
+            width:50%;
+            
+        }
+        &>.col-d3{
+            width:33.33333%;
+            padding:@padding;
+        }
+        &>.col-d4{
+            width:25%;
+            
+        }
+    }
     
     
     .viewport(lg,@font-size,@margin,@padding,56px);

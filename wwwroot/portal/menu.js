@@ -59,11 +59,9 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/ui"], fun
                     hidden = true;
             }
             //let data= roots;
-            var className1 = state.className || "";
-            if (collapsed)
-                className1 += ' collapsed';
-            if (state.mode === 'fold')
-                className1 += ' fold';
+            //let className1 = state.className || "";
+            //if(collapsed) className1 += ' collapsed';
+            //if(state.mode==='fold') className1 += ' fold';
             var vt = ui_1.viewport(true);
             var h = vt.h - header.clientHeight;
             var menuMode = collapsed && state.mode !== 'min' ? 'vertical' : 'inline';
@@ -73,8 +71,8 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/ui"], fun
                 menuMode = 'vertical';
             else if (state.mode === 'horizontal')
                 menuMode = 'horizontal';
-            var foldable = state.foldable && menuMode != 'vertical' && !collapsed;
-            return react_1["default"].createElement("div", { id: this.props.id || "", style: { display: hidden ? 'none' : 'block', height: (state.mode == 'normal' || state.mode == 'fold') && !state.collapsed ? h + "px" : 'auto' }, className: className1 },
+            var foldable = menuMode != 'vertical' && !collapsed && state.mode != 'min';
+            return react_1["default"].createElement("div", { id: this.props.id || "", className: this.props.className, style: { display: hidden ? 'none' : 'block', height: (state.mode == 'normal' || state.mode == 'fold') && !state.collapsed ? h + "px" : 'auto' } },
                 foldable ?
                     react_1["default"].createElement("div", { className: 'fold-menu', onClick: state.onMenuToggleFold },
                         react_1["default"].createElement(antd_1.Icon, { type: state.mode === 'fold' ? 'menu-unfold' : 'menu-fold' })) : null,

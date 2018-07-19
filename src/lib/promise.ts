@@ -294,6 +294,7 @@ class PromiseA implements IPromise{
             try{
                 executor((value)=>resolvePromise(promise,promise,value,promise.__promise_options),(reason)=>rejectPromise(promise,promise,reason));
             }catch(ex){
+                console.error(ex);
                 rejectPromise(promise,promise,ex);
             }
         }

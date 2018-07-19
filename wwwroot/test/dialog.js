@@ -23,10 +23,10 @@ define(["require", "exports", "lib/react/react", "lib/react/prop-types", "lib/ui
             _this.onMaster = function (evt) {
                 //每个控件里面都可以用context获取到store
                 //this.context.store.dispatch({type:'my.alert',text:"我是dialog.tsx发出的信息"});
-                _this.props.$store.superStore.dispatch({ type: 'my.alert', text: "我是dialog.tsx发出的信息" });
+                _this.context.store.superStore.dispatch({ type: 'my.alert', text: "我是dialog.tsx发出的信息" });
             };
             _this.onApp = function (evt) {
-                _this.props.$store.root().dispatch({ type: 'menu.toggleCollapsed' });
+                _this.context.store.root().dispatch({ type: 'menu.toggleCollapsed' });
             };
             _this.transport = props.$transport || {};
             _this.state = { value: props.importValue };

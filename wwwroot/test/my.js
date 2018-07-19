@@ -31,7 +31,7 @@ define(["require", "exports", "lib/react/react", "lib/ui"], function (require, e
                 React.createElement("br", null),
                 React.createElement("a", { onClick: function (e) { return _this.props["modal2.show"]("test/dialog2"); } }, "\u70B9\u51FB\u6211\u8C03\u7528app\u7684\u6A21\u6001\u6846 ,\u6253\u5F00\u53E6\u5916\u4E00\u4E2A\u9875\u9762"),
                 React.createElement("br", null),
-                React.createElement("a", { onClick: this.props["my.jump"] }, "\u70B9\u51FB\u6211\u76F4\u63A5\u8DF3\u8F6C\u5230dialog2"));
+                React.createElement("a", { onClick: this.props["my.jump"] }, "\u70B9\u51FB\u6211\u8DF3\u8F6C\u5230form"));
         };
         return My;
     }(React.Component));
@@ -73,7 +73,7 @@ define(["require", "exports", "lib/react/react", "lib/ui"], function (require, e
                 this.superStore.dispatch({ type: 'menu.toggleFold' });
             },
             "my.jump": function (state, action) {
-                this.root().navigate('test/dialog2');
+                this.root().navigate('test/form');
             }
         }
     });

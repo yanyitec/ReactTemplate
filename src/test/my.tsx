@@ -22,7 +22,7 @@ export class My extends React.Component{
             <br />
             <a onClick={(e)=>this.props["modal2.show"]("test/dialog2")}>点击我调用app的模态框 ,打开另外一个页面</a>
             <br />
-            <a onClick={this.props["my.jump"]}>点击我直接跳转到dialog2</a>
+            <a onClick={this.props["my.jump"]}>点击我跳转到form</a>
         </div>
     }
     
@@ -66,7 +66,7 @@ export default $mountable(My,{
             this.superStore.dispatch({type:'menu.toggleFold'});
         },
         "my.jump" :function(state,action ){
-            this.root().navigate('test/dialog2');
+            this.root().navigate('test/form');
         }
     }
 });

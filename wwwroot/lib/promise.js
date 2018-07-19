@@ -206,6 +206,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
                     executor(function (value) { return resolvePromise(promise, promise, value, promise.__promise_options); }, function (reason) { return rejectPromise(promise, promise, reason); });
                 }
                 catch (ex) {
+                    console.error(ex);
                     rejectPromise(promise, promise, ex);
                 }
             }

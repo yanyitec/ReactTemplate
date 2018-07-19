@@ -60,9 +60,9 @@ export interface IMainMenuAction{
           if(hidden===undefined) hidden=true;
         } 
         //let data= roots;
-        let className1 = state.className || "";
-        if(collapsed) className1 += ' collapsed';
-        if(state.mode==='fold') className1 += ' fold';
+        //let className1 = state.className || "";
+        //if(collapsed) className1 += ' collapsed';
+        //if(state.mode==='fold') className1 += ' fold';
         let vt = viewport(true) as IViewport;
         let h = vt.h - header.clientHeight;
         
@@ -74,12 +74,12 @@ export interface IMainMenuAction{
         else if(collapsed) menuMode = 'vertical';
         else if(state.mode==='horizontal') menuMode = 'horizontal';
         
-        let foldable = state.foldable && menuMode!='vertical' && !collapsed;
+        let foldable =  menuMode!='vertical' && !collapsed && state.mode!='min';
 
       
-        return <div id={(this.props as  any).id||""} 
+        return <div id={(this.props as  any).id||""}  className={this.props.className}
           style={{display: hidden?'none':'block',height:(state.mode=='normal'|| state.mode=='fold') && !state.collapsed?h+"px":'auto'}} 
-          className={className1}>
+          >
             {   foldable?
                 <div className='fold-menu' onClick={state.onMenuToggleFold as any}>
                     <Icon  type={state.mode==='fold'?'menu-unfold':'menu-fold'}/>

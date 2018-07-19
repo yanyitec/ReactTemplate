@@ -4,14 +4,14 @@ import { Menu, Icon, Modal,Button,Dropdown,Breadcrumb  } from 'lib/antd/antd';
 import {  connect } from 'lib/redux/react-redux';
 
 import * as axios from 'lib/axios';
-import {cloneObject} from 'lib/utils';
+import {deepClone} from 'lib/utils';
 import {viewport,attach, __setApp,IViewport} from 'lib/ui';
 import MainMenuView,{IMainMenuState,IMenuItem, IMainMenuAction} from 'portal/menu';
 import Auth,{IAuthState} from 'portal/auth';
 
 //import * as config from 'conf/config';
 
-import {getCookie,$mountable,CascadingView, ContentView, IMountArguments, Center} from 'lib/ui';
+import {getCookie,$mountable,CascadingView,LoadableView, ContentView, IMountArguments, Center} from 'lib/ui';
 
 declare var Deferred : any;
 declare var Promise : any;
@@ -240,7 +240,7 @@ export class AppView extends Component{
     }else {
       layoutLogo = <div id='layout-logo'>
         <a className={menu.mode==='min'?'toggle collapsed':'toggle'} onClick={this.props["menu.toggleMin"]} 
-          onMouseOver={menu.mode==='min'?this.props["menu.show"]:null}
+          onMouseEnter={menu.mode==='min'?this.props["menu.show"]:null}
           onMouseOut={menu.mode==='min'?this.props["menu.hide"]:null}
         >
           <Icon type={menu.mode=='min'?"caret-down":"caret-up"} />
@@ -248,8 +248,10 @@ export class AppView extends Component{
         <div className='logo-image'><img src='images/logo.png' onClick={this.props["menu.toggleMin"]} /></div>
       </div>;
     }   
+    let contentMode = menu.mode;
+    if(menu.collapsed || menu.mode==='min') contentMode = 'collapsed';
 
-    return <div  id='layout' className ={'viewport-' + state.viewport +' menu-mode-' + menu.mode }>
+    return <div  id='layout' >
       <div id='layout-header'>
         {state.logo_hidden?null:<span id='layout-logo'><img src={`themes/${state.theme}/images/logo.png`} /></span>}
         <span id='layout-menu-toggle' onClick={this.props["menu.toggleCollapsed"]} onMouseOver={this.props["menu.show"]} onMouseOut={this.props["menu.hide"]}><Icon type="appstore" /></span>
@@ -258,20 +260,18 @@ export class AppView extends Component{
         {//viewType=='xs' || viewType=='sm'?buildMinQuicks(user,customActions):buildNormalQuicks(user,customActions)
         }
 
-        <MainMenuView id='layout-menu-main' {...menu} 
+        <MainMenuView id='layout-menu-main' {...menu} className={contentMode}
             onMenuClick={this.props["menu.click"]} 
             onMenuToggleFold={this.props["menu.toggleFold"]} 
             onMouseOver ={this.props["menu.show"]}
             onMouseOut={this.props["menu.hide"]}
           />
       </div>
-      <div id='layout-content' className={"menu-" + menu.mode}>
-        <div id='layout-sider'>
-          
-        </div>
+      <div id='layout-content' className={contentMode}>
+        
         <div id='layout-body'>
           { viewport!='xs'?<div id='layout-nav'><NavView nav={nav} menu={menu} onNavClick={this.props["nav.click"]} simple={viewport=='sm'} /></div>:null }
-          <div id='layout-workarea'><CascadingView id="workarea" {...workarea} /></div>
+          {workarea ?<div id='layout-workarea'><LoadableView id="workarea" {...workarea} /></div>:null}
         </div>
       </div>
       {dialog.enable===true?<Dialog />:null}
@@ -289,14 +289,13 @@ let handle_resize =(state:IAppState):any=>{
       return {
         viewport:vp,
         logo_hidden:true,
-        menu:{mode:'min',beforeMode : state.menu.beforeMode || state.menu.mode,hidden:true}
+        menu:{mode:'min',beforeMode : state.menu.beforeMode || state.menu.mode,hidden:true,collapsed:true}
       };
     }else if(vp==='sm'){
       return {
         viewport:vp,
         logo_hidden:false,
         menu:{
-          foldable:false,
           mode:'fold'
         }
       };
@@ -306,7 +305,7 @@ let handle_resize =(state:IAppState):any=>{
         
         logo_hidden:false,
         menu:{
-          foldable:true
+          mode: state.menu.beforeMode || 'normal'
         }
       };
     }
@@ -316,7 +315,10 @@ let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
   "app.navigate":(state,action)=>{
     action.$transport={"__transport__":"app.navigate",superStore:appStore};
     //action.superStore = appStore;
-    return {workarea:{pages:[action]}};
+    return {
+      menu:{hidden:state.menu.mode=='min'?true:state.menu.hidden},
+      workarea:action
+    };
   },
   "app.resize":(state:IAppState,action)=>{
     if(rszDelayTick){
@@ -373,7 +375,7 @@ let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
       type:"app.navigate",
       module:url
     });
-    return state;
+    
   },
   "nav.click":(state,action)=>{
 
@@ -382,6 +384,7 @@ let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
     action.enable = true;
     if(!action.deferred) action.deferred = new Deferred();
     action.$transport = {'__transport__':'dialog'};
+    action.$superStore = action.superStore;
     action.__REPLACEALL__=true;
     return {
       dialog:action
@@ -541,7 +544,7 @@ export let $app :IApp = appStore;
 let $mount = App.$mount;
 App.$mount =(props:any,targetElement:HTMLElement,superStore,transport?:any)=>{
   return new Promise((resolve,reject)=>{
-    let authConfig = props.auth= cloneObject(config.auth);
+    let authConfig = props.auth= deepClone(config.auth);
     authConfig.authview_resolve = resolve;
     authConfig.enable = true;
     

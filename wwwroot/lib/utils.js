@@ -2,7 +2,7 @@
     "use strict";
     exports.__esModule = true;
     var utils = {};
-    function cloneObject(src) {
+    function deepClone(src) {
         if (!src)
             return src;
         var dest;
@@ -13,15 +13,15 @@
         for (var n in src) {
             var value = src[n];
             if (typeof value === 'object') {
-                dest[n] = cloneObject(value);
+                dest[n] = deepClone(value);
             }
             else
                 dest[n] = value;
         }
         return dest;
     }
-    exports.cloneObject = cloneObject;
-    utils.cloneObject = cloneObject;
+    exports.deepClone = deepClone;
+    utils.deepClone = deepClone;
     //合并model
     function mergeDiff(dest, src, prop) {
         if (prop === undefined) {
