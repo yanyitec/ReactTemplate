@@ -1,7 +1,7 @@
 
 import  React, { Component } from 'lib/react/react';
 import { Menu, Icon, Modal  } from 'lib/antd/antd';
-import {viewType} from 'lib/ui';
+import {viewport, IViewport} from 'lib/ui';
 
 export interface IMenuItem{
     Id:string;
@@ -20,9 +20,12 @@ export interface IMainMenuState{
     defaultSelectedKeys?:string[];
     defaultOpenKeys?:string[];
     mode?:string; // icon = 只显示图标,min = 最小化 ,normal
-    beforeMode?:string; //min 之前的Mode
+    collapsed?:boolean; //toggle 之前的Mode
+    foldable?:boolean;
     hidden?:boolean;
+    beforeMode?:string;
     className?:string;
+    theme_type?:string;
     waitForHidden?:number;
 }
 export interface IMainMenuAction{
@@ -47,31 +50,51 @@ export interface IMainMenuAction{
     }
     
     render(){
-        const {roots,defaultSelectedKeys,defaultOpenKeys,mode,hidden,className
-            ,onMenuClick,onMenuToggleFold,onMouseOut,onMouseOver
-        } = this.props;
+        let state :IMainMenuState & IMainMenuAction=  this.props;
+        let header = document.getElementById('layout-header');
+        if(!header) return null;
+        let collapsed = state.collapsed;
+        let hidden = state.hidden;
+        if(state.mode==='min'){
+          if(collapsed===undefined) collapsed = true;
+          if(hidden===undefined) hidden=true;
+        } 
         //let data= roots;
-        let className1 = className || "";
-        if(hidden) className1 += ' hidden';
-        if(mode==='fold') className1 += ' fold';
-        let vt = viewType();
+        let className1 = state.className || "";
+        if(collapsed) className1 += ' collapsed';
+        if(state.mode==='fold') className1 += ' fold';
+        let vt = viewport(true) as IViewport;
+        let h = vt.h - header.clientHeight;
+        
+        
+
+        let menuMode = collapsed && state.mode!=='min'?'vertical': 'inline';
+        
+        if(state.mode==='min') menuMode='inline';
+        else if(collapsed) menuMode = 'vertical';
+        else if(state.mode==='horizontal') menuMode = 'horizontal';
+        
+        let foldable = state.foldable && menuMode!='vertical' && !collapsed;
+
       
-        return <div id={(this.props as  any).id||""} style={{display: hidden?'none':'block'}}>
-            {   mode==='min' || mode=='horizontal' || vt==='xs'?null: 
-                <div className='toggle-menu' onClick={onMenuToggleFold as any}>
-                    <Icon  type={mode==='fold'?'menu-unfold':'menu-fold'}/>
-                </div>
+        return <div id={(this.props as  any).id||""} 
+          style={{display: hidden?'none':'block',height:(state.mode=='normal'|| state.mode=='fold') && !state.collapsed?h+"px":'auto'}} 
+          className={className1}>
+            {   foldable?
+                <div className='fold-menu' onClick={state.onMenuToggleFold as any}>
+                    <Icon  type={state.mode==='fold'?'menu-unfold':'menu-fold'}/>
+                </div>:null
             }
             <Menu className='menus'
-                defaultSelectedKeys={defaultSelectedKeys}
-                defaultOpenKeys={defaultOpenKeys}
-                mode={mode=='min'?'vertical':'inline'}
-                onMouseOver = {onMouseOver}
-                onMouseOut = {onMouseOut}
-                theme="dark"
-                inlineCollapsed={mode=='fold'?true:false}
+                defaultSelectedKeys={state.defaultSelectedKeys}
+                defaultOpenKeys={state.defaultOpenKeys}
+                mode={menuMode}
+                onMouseOver = {state.onMouseOver}
+                onMouseOut = {state.onMouseOut}
+                theme={state.theme_type}
+                inlineCollapsed={state.mode=='fold' && menuMode!='vertical'?true:false}
             >
-                {this._buildMenu(roots,onMenuClick)}
+                {this._buildMenu(state.roots,state.onMenuClick)}
             </Menu>
         </div>;
     }

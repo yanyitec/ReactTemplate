@@ -1,0 +1,249 @@
+// out: ../../wwwroot/themes/common.css, compress: false, sourceMap: false
+
+
+//3无盒子
+.tiny-bbox{
+    position: relative;
+    box-sizing: border-box;
+    border:0;
+    margin:0;
+    padding:0;
+}
+//
+html,body{
+    .tiny-bbox;
+}
+.grid{
+    .tiny-bbox;
+    width:100%;
+    display:table-row;
+    &>.col-d4,&>.col-d3,&>.col-d2,&>.col-d1{
+        .tiny-bbox;
+        display:table-cell;
+    }
+}
+.col-s(@span) when (@span>0){
+    .grid>.col-s@{span}{
+        .tiny-bbox;
+        display:table-cell;
+        width:(100%/24*@span);
+    }
+    .col-s(@span - 1);
+}
+.col-s(24);
+
+.viewport(@type,@font-size,@margin,@padding,@header-size){
+    .gen-grid(@type) when(@type='xs'){
+        .grid{
+            &>.col-d1, &>.col-d2, &>.col-d3, &>.col-d4{
+                width:100%;
+            }
+        }
+    }
+    .gen-grid(@type) when(@type='sm'){
+        .grid{
+            &>.col-d1, {
+                width:100%;
+            }
+            &>.col-d2, &>.col-d3, &>.col-d4{
+                width:50%;
+            }
+        }
+    }
+    .gen-grid(@type) when(@type='md'){
+        .grid{
+            &>.col-d1, {
+                width:100%;
+            }
+            &>.col-d2, &>.col-d3, &>.col-d4{
+                width:50%;
+            }
+            &>.col-d4{
+                width:25%;
+            }
+        }
+    }
+    .gen-grid(@type) when(@type='lg'){
+        .grid{
+            &>.col-d1, {
+                width:100%;
+            }
+            &>.col-d2{
+                width:50%;
+            }
+            &>.col-d3{
+                width:33.33333%;
+            }
+            &>.col-d4{
+                width:25%;
+            }
+        }
+    }
+
+
+    .col-s(@span,@vp) when (@span>0){
+        .grid>.col-@{vp}-s@{span}{
+            .tiny-bbox;
+            display:table-cell;
+            width:(100%/24*@span);
+        }
+        .col-s(@span - 1,@vp);
+    }
+    .col-s(24,@type);
+
+    
+    *{
+        font-size:@font-size;
+    }
+    
+    @header-height:@header-size;
+    @head-font-size:@header-size*0.4;
+    @menu_normal_width : 200px;
+    #layout{
+        #layout-header{
+            height: @header-height;   
+
+            #layout-logo img{
+                width:@menu_normal_width;
+                height:@header-size*0.618;
+                margin:(@header-size - @header-size*0.618)/2 @margin;
+                margin-left:@margin + @header-height;
+            }
+            #layout-menu-toggle{
+                width: @header-height;
+                height:@header-height;
+                
+                padding: (@header-height - @head-font-size)/2;
+                & * {font-size:@head-font-size;}
+            }
+            #layout-menu-main{
+                left:0;
+                top: @header-height;
+                .fold-menu{
+                    height:@font-size*2;
+                    padding:@padding;
+                    
+                }
+                .anticon{
+                    font-size: @font-size * 1.2;
+                }
+            }
+        }
+        #layout-content{
+            margin-top:@header-height;
+            padding-left:@menu_normal_width;
+        }
+        &.menu-mode-fold{
+            #layout-header{
+                #layout-menu-main{
+                    width: @header-height ;
+                    .anticon{
+                        font-size: @font-size * 1.5;
+                    }
+                    
+                    .ant-menu-inline-collapsed {
+                        width:@header-height ;
+                        &>.ant-menu-item,
+                        &>.ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
+                        &>.ant-menu-submenu > .ant-menu-submenu-title{
+                            padding: 0 (@header-height - @font-size *1.5 )/2 !important; 
+                        }
+                    }
+                    &.collapsed{
+                        width:@menu_normal_width * 0.75;
+                        .fold-menu{
+                            text-align: left;                
+                        }
+                        .ant-menu-root>li{
+                            text-align :left;
+                        }
+                    }
+                    
+                } 
+            }
+            #layout-content{
+                padding-left:@header-height;
+            }
+        }//end &.menu-mode-fold
+    }
+}
+
+
+
+#layout{
+    .tiny-bbox;
+    width:100%;
+    #layout-header{
+        .tiny-bbox;
+        position:fixed;
+        left:0;top:0;
+        width:100%;
+        z-index:100;
+        
+
+        #layout-menu-toggle{
+            .tiny-bbox;
+            position: absolute;
+            left:0;
+            top:0;
+            z-index:101;
+        }
+        #layout-menu-main{
+            .tiny-bbox;
+            position: absolute;
+            left:0; 
+            z-index:102;
+            width:200px ;
+            .fold-menu{
+                text-align: left;
+            }
+        }
+    }
+    
+    &.menu-mode-fold{
+        #layout-header{
+            #layout-menu-main{
+                .fold-menu{
+                    text-align: center;                
+                }
+                .ant-menu-root>li{
+                    text-align :center;
+                }
+            }
+        }
+        
+    }
+}
+
+
+@screen-xs-max : 767px;
+@screen-sm-min : 768px;
+@screen-md-min : 992px;
+@screen-lg-min : 1200px;
+
+@media (max-width: @screen-xs-max ) {
+    .viewport(xs,12px,2px,4px,36px);
+}
+/* 小屏幕（平板，大于等于 768px） */
+@media (min-width: @screen-sm-min) {
+    .viewport(sm,12px,3px,5px,42px);
+}
+
+/* 中等屏幕（桌面显示器，大于等于 992px） */
+@media (min-width: @screen-md-min) {
+    .viewport(md,14px,4px,6px,50px); 
+}
+
+/* 大屏幕（大桌面显示器，大于等于 1200px） */
+@media (min-width: @screen-lg-min) {
+
+    @margin:8px;
+    @padding:5px;
+    @font-size:14px;
+
+    
+    
+    .viewport(lg,@font-size,@margin,@padding,56px);
+    
+    
+}

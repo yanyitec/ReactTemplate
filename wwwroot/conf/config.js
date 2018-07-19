@@ -1,12 +1,10 @@
-﻿alert('config');
-define(["require", "exports"], function (require, exports) {
+﻿define(["require", "exports"], function (require, exports) {
     "use strict";
     exports.__esModule = true;
-    debugger;
     exports["default"] = {
         //启动模块名/配置,这些配置可能会在启动过程中修改
         entry: {
-            module: 'app',
+            module: 'portal/app',
             auth: {
                 enable: true
             },
@@ -21,7 +19,10 @@ define(["require", "exports"], function (require, exports) {
             workarea: {
                 pages: []
             },
-            dialog: { width: 100 }
+            dialog: { width: 100 },
+            //主题
+            theme: 'light-blue',
+            menu_mode: 'normal'
         },
         //登录/界权设置
         auth: {

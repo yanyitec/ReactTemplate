@@ -9,7 +9,7 @@ let showMessage = (message:string,color?:any)=>{
 }
 let showError = (msg:string)=>{
     bootMsg.innerHTML +=`<li style="color:red">${msg}</li>` + bootMsg.innerHTML;
-}
+} 
 
 let sniffer = function(mod,index,value){
     donecount++;

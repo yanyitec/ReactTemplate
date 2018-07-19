@@ -162,7 +162,7 @@ interface IRes{
         const mod_m :IRequire = requirejs as IRequire;
         let useApply:boolean = false;
         let opts :any;
-        if(typeof modname==="string"){ modnames.unshift(_opts as string);modnames.unshift(modname); useApply=true;}
+        if(typeof modname==="string"){ if(_opts)modnames.unshift(_opts as string);modnames.unshift(modname); useApply=true;}
         else{
             modnames = modname as string[];
             opts = _opts ;
@@ -170,6 +170,9 @@ interface IRes{
         let mods : IModule[]=[];
         for(let i =0,j=modnames.length;i<j;i++){
             let modname = modnames[i];
+            if(!modname){
+                console.warn("空的模块名,跳过",arguments);
+            }
             let mod :IModule;
             if(modname==="require") mod=requireModule;
             if(modname==="define") mod=defineModule;
@@ -289,6 +292,8 @@ interface IRes{
             let script = scripts[i];
             let requireBoot = trim(script.getAttribute("require-boot"));
             if(!requireBoot) continue;
+            boot_url = requireBoot;break;
+            /*
             if( is_url(requireBoot)){
                 let ps = requireBoot.split('/');
                 ps.pop();
@@ -312,15 +317,17 @@ interface IRes{
                 bas_url =  location.protocol + "//" + location.hostname + ":" + location.port +'/' + paths.join('/'); 
                 if(bas_url[bas_url.length-1]!='/') bas_url += '/';
                 boot_url = bas_url + filename;   
-            }
+            }*/
         }
+        
         if(!bas_url){
             let path = paths.join("/");
             bas_url =  location.protocol + "//" + location.hostname + ":" + location.port + path;
             if(bas_url[bas_url.length-1]!='/') bas_url += "/";
         }
         requirejs.$bas_url = bas_url;
-    
+        
+        
     }catch(ex){
         console.trace("gen bas_url failed",ex);
         requirejs.$bas_url = '';

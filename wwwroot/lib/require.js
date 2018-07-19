@@ -27,7 +27,8 @@ var ModuleStates;
         var useApply = false;
         var opts;
         if (typeof modname === "string") {
-            modnames.unshift(_opts);
+            if (_opts)
+                modnames.unshift(_opts);
             modnames.unshift(modname);
             useApply = true;
         }
@@ -38,6 +39,9 @@ var ModuleStates;
         var mods = [];
         for (var i = 0, j = modnames.length; i < j; i++) {
             var modname_1 = modnames[i];
+            if (!modname_1) {
+                console.warn("空的模块名,跳过", arguments);
+            }
             var mod = void 0;
             if (modname_1 === "require")
                 mod = requireModule;
@@ -172,33 +176,33 @@ var ModuleStates;
             var requireBoot = trim(script.getAttribute("require-boot"));
             if (!requireBoot)
                 continue;
-            if (is_url(requireBoot)) {
-                var ps = requireBoot.split('/');
+            boot_url = requireBoot;
+            break;
+            /*
+            if( is_url(requireBoot)){
+                let ps = requireBoot.split('/');
                 ps.pop();
                 bas_url = ps.join('/') + '/';
                 boot_url = requireBoot;
             }
-            if (requireBoot[0] === '/') {
-                var ps = requireBoot.split('/');
-                var filename = ps.pop();
+            if(requireBoot[0]==='/' ){
+                let ps = requireBoot.split('/');
+                let filename = ps.pop();
                 bas_url = location.protocol + "//" + location.hostname + ":" + location.port + ps.join('/') + '/';
                 boot_url = bas_url + filename;
-            }
-            else {
-                var ps = requireBoot.split('/');
-                var filename = ps.pop();
-                for (var m = 0, n = ps.length; m < n; m++) {
-                    var pn = ps[i];
-                    if (pn == '..')
-                        paths.pop();
-                    else
-                        paths.push(pn);
+            }else {
+                let ps = requireBoot.split('/');
+                let filename = ps.pop();
+                for(let m=0,n=ps.length;m<n;m++){
+                    let pn = ps[i];
+                    if(pn=='..') paths.pop();
+                    else paths.push(pn);
+                    
                 }
-                bas_url = location.protocol + "//" + location.hostname + ":" + location.port + '/' + paths.join('/');
-                if (bas_url[bas_url.length - 1] != '/')
-                    bas_url += '/';
+                bas_url =  location.protocol + "//" + location.hostname + ":" + location.port +'/' + paths.join('/');
+                if(bas_url[bas_url.length-1]!='/') bas_url += '/';
                 boot_url = bas_url + filename;
-            }
+            }*/
         }
         if (!bas_url) {
             var path = paths.join("/");

@@ -22,6 +22,7 @@
             "ActionName":"Module1",
             "ControllerName":"Index",
             "SystemId":"Module1"
+            
         }
         ,{
             "Id":3,
@@ -33,12 +34,13 @@
         }
         ,{
             "Id":4,
-            "Name":"模块1-3",
+            "Name":"测试用的模块",
             "ParentId":1,
             "Data":{},
             "ActionName":"Module3",
             "ControllerName":"Index",
-            "SystemId":"Module1"
+            "SystemId":"Module1",
+            "Url":"test/my"
         }
         ,{
             "Id":5,
@@ -60,12 +62,13 @@
         }
         ,{
             "Id":7,
-            "Name":"模块1-4-6",
+            "Name":"模块test/dialog2",
             "ParentId":4,
             "Data":{},
             "ActionName":"Module6",
             "ControllerName":"Index",
-            "SystemId":"Module1"
+            "SystemId":"Module1",
+            "Url":"test/dialog2"
         }
     ],
     "Profile":{

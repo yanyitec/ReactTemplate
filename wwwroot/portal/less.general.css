@@ -1,0 +1,251 @@
+.tiny-bbox {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+html,
+body {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.grid {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: table-row;
+}
+.grid > .col-d4,
+.grid > .col-d3,
+.grid > .col-d2,
+.grid > .col-d1 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+}
+.grid > .col-s24 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 100%;
+}
+.grid > .col-s23 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 95.83333333%;
+}
+.grid > .col-s22 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 91.66666667%;
+}
+.grid > .col-s21 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 87.5%;
+}
+.grid > .col-s20 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 83.33333333%;
+}
+.grid > .col-s19 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 79.16666667%;
+}
+.grid > .col-s18 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 75%;
+}
+.grid > .col-s17 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 70.83333333%;
+}
+.grid > .col-s16 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 66.66666667%;
+}
+.grid > .col-s15 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 62.5%;
+}
+.grid > .col-s14 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 58.33333333%;
+}
+.grid > .col-s13 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 54.16666667%;
+}
+.grid > .col-s12 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 50%;
+}
+.grid > .col-s11 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 45.83333333%;
+}
+.grid > .col-s10 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 41.66666667%;
+}
+.grid > .col-s9 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 37.5%;
+}
+.grid > .col-s8 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 33.33333333%;
+}
+.grid > .col-s7 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 29.16666667%;
+}
+.grid > .col-s6 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 25%;
+}
+.grid > .col-s5 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 20.83333333%;
+}
+.grid > .col-s4 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 16.66666667%;
+}
+.grid > .col-s3 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 12.5%;
+}
+.grid > .col-s2 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 8.33333333%;
+}
+.grid > .col-s1 {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: table-cell;
+  width: 4.16666667%;
+}

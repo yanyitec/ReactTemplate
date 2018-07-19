@@ -18,6 +18,8 @@
         dialog: {
             width: number;
         };
+        theme: string;
+        menu_mode: string;
     };
     auth: {
         url: string;

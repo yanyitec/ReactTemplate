@@ -5,13 +5,13 @@ import {  connect } from 'lib/redux/react-redux';
 
 import * as axios from 'lib/axios';
 import {cloneObject} from 'lib/utils';
-import {viewType,attach} from 'lib/ui';
+import {viewport,attach, __setApp,IViewport} from 'lib/ui';
 import MainMenuView,{IMainMenuState,IMenuItem, IMainMenuAction} from 'portal/menu';
 import Auth,{IAuthState} from 'portal/auth';
 
 //import * as config from 'conf/config';
 
-import {mergemo,getCookie,$mountable,CascadingView, ContentView, IMountArguments, Center} from 'lib/ui';
+import {getCookie,$mountable,CascadingView, ContentView, IMountArguments, Center} from 'lib/ui';
 
 declare var Deferred : any;
 declare var Promise : any;
@@ -34,7 +34,13 @@ interface IAppState{
   dialog?:any;
   workarea?:any;
   user?:any;
-  viewType?:string;
+  menu_mode?:string;
+  //屏幕大小
+  viewport?:string;
+  //主题
+  theme?:string;
+  //logo是否要隐藏
+  logo_hidden?:boolean;
   [index:string]:any;
 }
 interface IAppAction extends IMainMenuAction,INavAction{
@@ -90,7 +96,7 @@ function NavView(appProps:IAppState & INavAction & {simple:boolean}){
           {nd.Icon?<Icon type={nd.Icon} />:null}
           <span>{nd.Name}</span>
         </Menu.Item>);
-        })(p.Children[i],i);
+        })(p.Children[i],i); 
       }
     }
     let menu = items.length==0?null:<Menu>{items}</Menu>;
@@ -223,10 +229,11 @@ function buildMinQuicks(user,customActions){
 export class AppView extends Component{
   props:any;
   render(){
-    const {menu,dialog,auth,workarea,nav,user,customActions,viewType} = this.props;
+    let state :IAppState = this.props;
+    const {menu,dialog,auth,workarea,nav,user,customActions,viewport} = this.props;
  
     let layoutLogo;
-    if(viewType==='xs'){
+    if(viewport==='xs'){
       layoutLogo = <div id='layout-logo'>
         <a className={menu.mode==='min'?'toggle collapsed':'toggle'} onClick={this.props["menu.toggleMin"]}><Icon type={menu.mode=='min'?"menu-unfold":"menu-fold"} /></a>
       </div>;
@@ -242,24 +249,28 @@ export class AppView extends Component{
       </div>;
     }   
 
-    return <div  id='layout' className ={'layout-' + viewType}>
+    return <div  id='layout' className ={'viewport-' + state.viewport +' menu-mode-' + menu.mode }>
       <div id='layout-header'>
-        {layoutLogo}
-        {viewType=='xs'?<NavXSView nav={nav} menu={menu} onNavClick={this.props["nav.click"]}/>:null}
-        {viewType=='xs' || viewType=='sm'?buildMinQuicks(user,customActions):buildNormalQuicks(user,customActions)}
-        
+        {state.logo_hidden?null:<span id='layout-logo'><img src={`themes/${state.theme}/images/logo.png`} /></span>}
+        <span id='layout-menu-toggle' onClick={this.props["menu.toggleCollapsed"]} onMouseOver={this.props["menu.show"]} onMouseOut={this.props["menu.hide"]}><Icon type="appstore" /></span>
+        {//viewType=='xs'?<NavXSView nav={nav} menu={menu} onNavClick={this.props["nav.click"]}/>:null
+        }
+        {//viewType=='xs' || viewType=='sm'?buildMinQuicks(user,customActions):buildNormalQuicks(user,customActions)
+        }
+
+        <MainMenuView id='layout-menu-main' {...menu} 
+            onMenuClick={this.props["menu.click"]} 
+            onMenuToggleFold={this.props["menu.toggleFold"]} 
+            onMouseOver ={this.props["menu.show"]}
+            onMouseOut={this.props["menu.hide"]}
+          />
       </div>
       <div id='layout-content' className={"menu-" + menu.mode}>
         <div id='layout-sider'>
-          <MainMenuView id='main-menu' {...menu} className={menu.hidden?'hidden':''} 
-            onMenuClick={this.props["menu.click"]} 
-            onMenuToggleFold={this.props["menu.toggleFold"]} 
-            onMouseOver ={menu.mode==='min'?this.props["menu.show"]:null}
-            onMouseOut={menu.mode==='min'?this.props["menu.hide"]:null}
-          />
+          
         </div>
         <div id='layout-body'>
-          { viewType!='xs'?<div id='layout-nav'><NavView nav={nav} menu={menu} onNavClick={this.props["nav.click"]} simple={viewType=='sm'} /></div>:null }
+          { viewport!='xs'?<div id='layout-nav'><NavView nav={nav} menu={menu} onNavClick={this.props["nav.click"]} simple={viewport=='sm'} /></div>:null }
           <div id='layout-workarea'><CascadingView id="workarea" {...workarea} /></div>
         </div>
       </div>
@@ -271,25 +282,48 @@ export class AppView extends Component{
 
 
 
-
+let handle_resize =(state:IAppState):any=>{
+  let vp = viewport();
+    
+    if(vp==='xs'){
+      return {
+        viewport:vp,
+        logo_hidden:true,
+        menu:{mode:'min',beforeMode : state.menu.beforeMode || state.menu.mode,hidden:true}
+      };
+    }else if(vp==='sm'){
+      return {
+        viewport:vp,
+        logo_hidden:false,
+        menu:{
+          foldable:false,
+          mode:'fold'
+        }
+      };
+    }else {
+      return {
+        viewport:vp,
+        
+        logo_hidden:false,
+        menu:{
+          foldable:true
+        }
+      };
+    }
+}
 
 let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
-  "resize":(state:IAppState,action)=>{
+  "app.navigate":(state,action)=>{
+    action.$transport={"__transport__":"app.navigate",superStore:appStore};
+    //action.superStore = appStore;
+    return {workarea:{pages:[action]}};
+  },
+  "app.resize":(state:IAppState,action)=>{
     if(rszDelayTick){
       clearTimeout(rszDelayTick);rszDelayTick=0;
     }
-    let vtype = viewType();
-    let menuMode = state.menu.mode || 'normal';
-    let beforeMode = state.menu.beforeMode;
-    if(vtype==='xs'){
-      beforeMode = 'normal';
-      menuMode = 'min';
-    }
-    if(!beforeMode) beforeMode='normal';
-    return {
-      viewType:vtype,
-      menu:{mode:menuMode,beforeMode :beforeMode}
-    };
+    return handle_resize(state);
+    
   },
   "menu.toggleFold":(state:IAppState,action)=>{
     let mode = state.menu.mode==='fold'?'normal':'fold';
@@ -297,36 +331,35 @@ let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
       menu:{mode:mode,hidden:false,beforeMode :mode}
     }
   },
-  "menu.toggleMin":(state:IAppState,action)=>{
-    let beforeMode = state.menu.beforeMode;
-    if(beforeMode===undefined) beforeMode = state.menu.mode || 'normal';
-    
+  "menu.toggleCollapsed":(state:IAppState,action)=>{
     return {
-      menu:{mode:state.menu.mode==='min'?beforeMode:'min',beforeMode:beforeMode,hidden:state.menu.mode==='min'?false:true }
+      menu:{ collapsed:!state.menu.collapsed,hidden:!state.menu.collapsed }
     }
   },
   "menu.show":(state:IAppState,action)=>{
+    if(state.menu.mode==='min' || !state.menu.collapsed) return state;
     if(state.menu.waitForHidden){
       clearTimeout(state.menu.waitForHidden);
     }
-    console.log('menu.show');
+    
     return {menu:{hidden:false,waitForHidden:0}};
   },
   "menu.hide":(state:IAppState,action)=>{
+    if(state.menu.mode==='min' || !state.menu.collapsed) return state;
     if(state.menu.waitForHidden && action.hideImmediate){
       clearTimeout(state.menu.waitForHidden);
       return {menu:{hidden:true,waitForHidden:0}}
     }
     let waitForHiden = setTimeout(()=>{
       deferred.resolve({type:"menu.hide",hideImmediate:true});
-    },200);
+    },100);
     let deferred = new Deferred();
     action.payload = deferred;
     return {menu:{waitForHidden:waitForHiden}};
   },
 
-  "menu.click":(state,action)=>{
-    let node = action.node;
+  "menu.click":function(state,action){
+    let node = action.data;
     let url = node.Url;
     if(!url) return state;
     if(url.indexOf("[dispatch]:")>=0){
@@ -336,8 +369,8 @@ let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
       if(handler) return handler.call(this,state,action);
       return state;
     }
-    return action_handlers.navigate.call(this,state,{
-      type:"navigate",
+    return action_handlers['app.navigate'].call(this,state,{
+      type:"app.navigate",
       module:url
     });
     return state;
@@ -346,44 +379,42 @@ let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
 
   },
   "dialog.show":(state,action)=>{
-    action.visible = true;
+    action.enable = true;
     if(!action.deferred) action.deferred = new Deferred();
-    action.transport = {'__transport__':'dialog'};
-    return mergemo(state,{
+    action.$transport = {'__transport__':'dialog'};
+    action.__REPLACEALL__=true;
+    return {
       dialog:action
-    });
+    };
   },
   "dialog.ok":(state,action)=>{
-    state.dialog.deferred.resolve({status:"ok",result:state.dialog.transport.exports});
-    return mergemo(state,{
-      dialog:{visible:false,deferred:null,$transport:null}
-    });
+    let result = state.dialog.$transport.getModalResult?state.dialog.$transport.getModalResult():state.dialog.$transport.exports;
+    state.dialog.deferred.resolve({status:"ok",data:result});
+    return {
+      dialog:{enable:false,deferred:null,$transport:null,$store:null,$superStore:null,__REPLACEALL__:true}
+    };
   },
   "dialog.cancel":(state,action)=>{
     state.dialog.deferred.resolve({status:"cancel"});
-    return mergemo(state,{
-      dialog:{visible:false,deferred:null}
-    });
+    return {
+      dialog:{enable:false,deferred:null,$transport:null,$store:null,$superStore:null,__REPLACEALL__:true}
+    };
   },
-  "navigate":(state,action)=>{
-    action.transport={"__transport__":"app.navigate"};
-    action.superStore = appStore;
-    return {...state,workarea:{pages:[action]}};
-  },
+  
   "auth.auth":(state, action)=>{
     return {auth:{enable:true}};
   },
   
   "auth.success":(state,action)=>{
     let{roots, nodes} = buildMenuModel(action.data);
-    return {
-      menu:{
-        data:nodes,
-        roots:roots
-      },
-      user:{data:action.data.User},
-      auth:{data:action.data.Auth,enable:false}
-    };
+    let newState = handle_resize(state);
+    let newMenu = newState.menu || (newState.menu={});
+    
+    newMenu.data = nodes;
+    newMenu.roots = roots;
+    newState.user ={data:action.data.User};
+    newState.auth ={data:action.data.Auth,enable:false};
+    return newState;
   }
 };
 
@@ -404,6 +435,7 @@ function buildMenuModel(authData){
     }else {
       roots.push(node);
     }
+    menus[node.Url] = node;
     
   }
   return {roots:roots,nodes:menus};
@@ -425,7 +457,7 @@ attach(window,"resize",()=>{
   if(appStore) {
     if(rszDelayTick) clearTimeout(rszDelayTick);
     rszDelayTick = setTimeout(() => {
-      appStore.dispatch({type:'resize'});
+      appStore.dispatch({type:'app.resize'});
     }, 200);
   }
 })
@@ -441,12 +473,32 @@ axios.interceptors.response.use((response) =>{
   console.error(err);
   alert(err);
 });
-const api ={
+export interface IApp{
+  dialog(opts);
+  navigate(urlOrOpts);
+  dispach(action:{type:string});
+  GET(url,data):IThenable;
+  POST(url,data):IThenable;
+  winAlert(msg);
+}
+const apiProvider =(appStore)=>{return {
   dialog:(opts)=>{
     let deferred = new Deferred();
-    let action ={type:"dialog", deferred:deferred,...opts};
+    let action ={type:"dialog.show", deferred:deferred,...opts};
     appStore.dispatch(action);
     return deferred.promise();
+  },
+  navigate:function(urlOrOpts){
+    let action = urlOrOpts;
+    if(typeof urlOrOpts ==='string'){
+      let state :IAppState= this.getState();
+      let node = state.menu.data[urlOrOpts];
+      if(!node) throw new Error(`${urlOrOpts} is not in menu/permissions`);
+      action = {...node};
+    }
+    if(action.module===undefined)action.module = action.Url;
+    action.type = "app.navigate";
+    this.dispatch(action);
   },
   GET:(url,data) :IThenable=>{
     return axios.get(url,data);
@@ -454,12 +506,14 @@ const api ={
   POST : (url,data):IThenable=>{
     return axios.post(url,data);
   },
-  store:null
-}; 
-define("app",api);
-let view_type = viewType();
+  winAlert(msg){
+    alert(msg);
+  }
+};}; 
+
+let view_type = viewport();
 let defaultModel = {
-  viewType:view_type,
+  viewport:view_type,
   menu:{
     mode:view_type=='xs'?'min':'normal',
     beforeMode:'normal'
@@ -470,18 +524,27 @@ let defaultModel = {
 }
 let appStore;
 let App= $mountable(AppView,{
-  model :defaultModel,
-  onCreating:(reduxParams:IMountArguments)=>{
-    appStore = api.store = reduxParams.store
-  },
-  action_handlers:action_handlers
-});
+    model :defaultModel,
+    onCreating:(reduxParams:IMountArguments)=>{
+      appStore = reduxParams.store;
+      appStore.$modname = "app";
+      __setApp(appStore);
+      $app = appStore;
+      define("app",appStore);
+    },
+    action_handlers:action_handlers,
+    apiProvider:apiProvider
+  }
+);
+export let $app :IApp = appStore;
+
 let $mount = App.$mount;
 App.$mount =(props:any,targetElement:HTMLElement,superStore,transport?:any)=>{
   return new Promise((resolve,reject)=>{
     let authConfig = props.auth= cloneObject(config.auth);
     authConfig.authview_resolve = resolve;
     authConfig.enable = true;
+    
     $mount(props,targetElement);
   });
   

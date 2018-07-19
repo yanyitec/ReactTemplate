@@ -8,7 +8,7 @@
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "lib/react/react", "ui"], function (require, exports, React, ui_1) {
+define(["require", "exports", "lib/react/react", "lib/ui"], function (require, exports, React, ui_1) {
     "use strict";
     exports.__esModule = true;
     var My = /** @class */ (function (_super) {
@@ -35,6 +35,6 @@ define(["require", "exports", "lib/react/react", "ui"], function (require, expor
         };
         return My;
     }(React.Component));
-    exports["default"] = My;
-    ui_1.$mountable(My);
+    exports.My = My;
+    exports["default"] = ui_1.$mountable(My);
 });

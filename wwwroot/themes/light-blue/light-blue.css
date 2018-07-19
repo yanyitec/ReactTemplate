@@ -1,0 +1,46 @@
+.light-blue html,
+.light-blue body {
+  background-color: #f4f4f4;
+  color: #333333;
+}
+.light-blue #layout #layout-header {
+  background-color: #0078d7;
+  color: #ffffff;
+}
+.light-blue #layout #layout-header #layout-menu-toggle {
+  background-color: #005ca4;
+}
+.light-blue #layout #layout-header #layout-menu-toggle:hover {
+  background-color: #0064b3;
+}
+.light-blue #layout #layout-header #layout-menu-main {
+  background-color: #f4f4f4;
+  color: #333333;
+}
+.light-blue #layout #layout-header #layout-menu-main .toggle-menu {
+  border-bottom: 1px solid #dddddd;
+}
+.light-blue #layout .ant-menu,
+.light-blue #layout .ant-menu-sub {
+  background-color: #f4f4f4;
+}
+.light-blue #layout.menu-mode-normal #layout-menu-main .ant-menu:not(.ant-menu-horizontal) .ant-menu-item-selected {
+  background-color: #bedaf0;
+  color: #005ca4;
+}
+.light-blue #layout.menu-mode-normal #layout-menu-main .ant-menu-item:hover,
+.light-blue #layout.menu-mode-normal #layout-menu-main .ant-menu-submenu-title:hover {
+  background-color: #e7e7e7;
+}
+.light-blue #layout.menu-mode-normal #layout-menu-main .ant-menu-submenu-open > .ant-menu-submenu-title {
+  color: #1a1a1a;
+  font-weight: bold;
+}
+.light-blue .ant-menu-submenu-popup .ant-menu {
+  background-color: #f4f4f4;
+  border: 1px solid #e0e0e0;
+}
+.light-blue .ant-menu-submenu-popup .ant-menu-item:hover,
+.light-blue .ant-menu-submenu-popup .ant-menu-submenu-title:hover {
+  background-color: #e7e7e7;
+}

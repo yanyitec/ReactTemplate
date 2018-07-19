@@ -1,16 +1,21 @@
-// out: ../wwwroot/app.css, compress: false, sourceMap: false
+// out: ../../wwwroot/portal/app.css, compress: false, sourceMap: false
+
 @sider-width:150px;
 @sider-collapsed-width:50px;
 @header-height:40px;
-@layout-margin:10px;
+@layout-margin:10px; 
 @layout-padding:5px;
+
+@back-color:#f2f2f2;
+@front-color:#0078d7;
 
 html,body{
     padding:0;margin:0;  
     overflow: auto;
+    
 } 
 
-.layout-container{
+.layout-container{ 
     box-sizing: border-box;
     border:0;
     margin:0;
@@ -128,7 +133,7 @@ html,body{
         height:50px;
         overflow:hidden;
         width:100%;
-        background-color:rgb(0, 21, 41);
+        background-color:@front-color;
         border-bottom: 1px solid #1890ff;
         display: block;
         position: fixed;
@@ -307,4 +312,15 @@ html,body{
 /* 大屏幕（大桌面显示器，大于等于 1200px） */
 @media (min-width: @screen-lg-min) { }
 
-
+.theme(
+    //前景色
+    @front-font-color
+    ,@front-bg-color
+    //背景色
+    ,@back-font-color
+    ,@back-bg-color
+){
+    html,body{
+        background-color:@back-bg-color;
+    }
+}

@@ -3,19 +3,15 @@ declare var require:Function;
 import * as axios from 'lib/axios';
 import React,{Component} from 'lib/react/react';
 import * as ReactDOM from 'lib/react/react-dom';
+import * as PropTypes from 'lib/react/prop-types';
 import { createStore,applyMiddleware } from 'lib/redux/redux';
 import { Provider, connect } from 'lib/redux/react-redux';
 import { mergeDiff } from 'lib/utils';
 import {Icon,Tooltip,Checkbox,Alert,Button} from 'lib/antd/antd';
 
 
-export let mergemo=(old,newModel)=>{
-    for(let n in old) {
-      if(newModel[n]===undefined) newModel[n] = old[n];
-    }
-    return newModel;
-  };
-
+export let $app:any;
+export let __setApp = (app)=>{$app=app;};
 //事件
 let div:HTMLElement = document.createElement("div") as HTMLElement;
 let _attach : (elem,evt,handler)=>void;
@@ -30,7 +26,7 @@ if((div as any).attachEvent){
 export let attach = _attach;
 export let detech = _detech;
 
-export function getCookie(name:string)
+export let getCookie:(name:string)=>string =  function (name:string)
 {
     var arr,reg=new RegExp("(^| )"+name+"=([^;]*)(;|$)");
     if(arr=document.cookie.match(reg))
@@ -38,7 +34,7 @@ export function getCookie(name:string)
     else return null;
 }
 
-export function setCookie(name:string,value?:any,time?:string)
+export let setCookie:(name:string,value?:any,time?:string)=>any =  function (name:string,value?:any,time?:string)
 {
     var strsec = getsec(time);
     var exp = new Date();
@@ -63,7 +59,7 @@ function getsec(str)
 }
 
 //获取盒模型
-export let getBox = function(elem?:any){
+export let getBox  = function(elem?:any){
     if(!elem){
         let w= window.innerWidth || document.documentElement.clientWidth;
         let h= window.innerHeight || document.documentElement.clientHeight;
@@ -81,42 +77,49 @@ export let getBox = function(elem?:any){
 }
 
 //媒体查询
-let viewTypeChangeHandlers:Array<(type)=>void>=[];
-let viewTypes = {
+let viewportChangeHandlers:Array<(type)=>void>=[];
+let viewports = {
     "lg":1200,
     "md":992,
     "sm":768
 };
-export let viewType = function(onChange?:(type)=>void):string{
+export interface IViewport{
+    w:number;
+    h:number;
+    name:string;
+}
+export let viewport =  function(onChange?:((type)=>void)|boolean):string| IViewport{
     if(onChange && typeof onChange ==='function') {
-        viewTypeChangeHandlers.push(onChange);
+        viewportChangeHandlers.push(onChange);
     }
-    return view_type;
+    if((onChange as boolean)===true) return view_port;
+    return view_port.name;
     
 }
-let view_type;
-let viewTypeResizeHandler = ()=>{
+let view_port;
+let viewportResizeHandler = ()=>{
     let w= window.innerWidth || document.documentElement.clientWidth;
+    let h= Math.max(document.body.clientHeight,Math.max(window.innerHeight ,document.documentElement.clientHeight));
+    //console.log("rsz",window.innerHeight,document.documentElement.clientHeight,document.body.clientHeight,h);
     let vt;
-    for(let t in viewTypes){
-        if(w>=viewTypes[t]) {
+    for(let t in viewports){
+        if(w>=viewports[t]) {
             vt=t;break;
         }
     }
-    if(!vt) vt='xs';
-    if(view_type!=vt){
-        view_type = vt;
-        for(let i=0,j=viewTypeChangeHandlers.length;i<j;i++){
-            let handler = viewTypeChangeHandlers.shift();
+    vt={w:w,h:h,name:vt||'xs'};
+    
+    if(!view_port || view_port.name!=vt.name){
+        view_port = vt;
+        for(let i=0,j=viewportChangeHandlers.length;i<j;i++){
+            let handler = viewportChangeHandlers.shift();
             let rs = handler.call(window,vt);
-            if(rs!=='#remove') viewTypeChangeHandlers.push(handler);
+            if(rs!=='#remove') viewportChangeHandlers.push(handler);
         }
-    }
+    }else view_port = vt;
 };
-attach(window,'resize',viewTypeResizeHandler);
-viewTypeResizeHandler();
-
-
+attach(window,'resize',viewportResizeHandler);
+viewportResizeHandler();
 
 export interface IMountArguments{
     model?:any,
@@ -129,6 +132,7 @@ export interface IMountArguments{
     transport?:any;
     targetElement?:any;
     Redux?:any;
+    apiProvider?:(store)=>{[index:string]:Function};
 }
 export interface IOnCreateInstanceEvent{
     Component?:any;
@@ -142,60 +146,83 @@ export interface IOnCreateInstanceEvent{
 
 export let $mountable = (Component:any,mountArguments?:IMountArguments)=>{
     mountArguments ||(mountArguments={});
-    if(!mountArguments.action_handlers){
-        (Component as any).$mount = (props:any,targetElement:HTMLElement,superStore?:any,transport?:any)=>{
-            (props||(props={}));
-            transport ||(transport={'__transport__':"$mount("+Component.toString()+")"});
-            mountArguments.transport = props.transport = transport;
-            mountArguments.transport.superStore = props.superStore = transport.superStore = superStore;
-            if(mountArguments.onCreating) mountArguments.onCreating(mountArguments);
-            ReactDOM.render(React.createElement(Component,props,null),targetElement);
-        }
-        return Component;
-    }
+    
     (Component as any).$mount = (props:any,targetElement:HTMLElement,superStore,transport?:any)=>{
         (props||(props={}));
         transport ||(transport={'__transport__':"$mount("+Component.toString()+")"});
-        mountArguments.transport = props.transport = transport;
-        mountArguments.transport.superStore = props.superStore = transport.superStore = superStore;
+        mountArguments.transport = transport;
+        mountArguments.transport.superStore = transport.superStore = superStore;
 
         let initModel;
         if(typeof mountArguments.model==='function') initModel = mountArguments.model(props,transport);
         else initModel = mountArguments.model;
         initModel = mergeDiff(props,initModel);
         let action_handlers = mountArguments.action_handlers;
-        let reducers = {};
-
-        const store =mountArguments.store = transport.store = transport.store || createStore((model,action)=>{
+        let reducers = action_handlers?(model,action)=>{
             let handler = action_handlers[action.type];
             let newModel;
             if(handler){
-                newModel =handler(model,action);
+                newModel =handler.call(store,model,action);
                 if(action.payload && typeof action.payload.then==='function'){
                     action.payload.then(   (result)=>{ store.dispatch(result); } );
                 }
-                return mergeDiff(model,newModel);
+                let nextState= mergeDiff(model,newModel);
+                if(nextState.__REPLACEALL__) nextState.__REPLACEALL__ =undefined;
+                return nextState;
             } 
             console.warn('disatch a unknown action',action);
             return model;
-        },initModel);
+        }:(state,action)=>state;
+
+        const store =mountArguments.store = transport.store = transport.store || createStore(reducers,initModel);
+        //store.superStore = superStore;
         let mapStateToProps= mountArguments.mapStateToProps;
         if(!mapStateToProps){
-            mapStateToProps =(state)=>{return {...state}};
+            mapStateToProps =(state)=>{return {$store:store,$transport:transport,$superStore:superStore,...state}};
+        }else {
+            let map = mapStateToProps;
+            mapStateToProps = (state)=>{
+                let newState = map(state);
+                return {$store:store,$transport:transport,$superStore:superStore,...newState}
+            };
         }
         store.superStore = superStore;
         store.transport = transport;
-        let mapDispatchToProps = mountArguments.mapDispatchToProps ;    
-        if(!mapDispatchToProps && action_handlers){
-            mapDispatchToProps = (dispatch)=>(dispatch)=>{
-                let dispatchers = {};
-                for(let actionName in action_handlers){
-                    dispatchers[actionName] = ((actionName,actionHandler,dispatch)=>{
-                    return (evtData)=>dispatch({type:actionName,data:evtData});
-                    })(actionName,action_handlers[actionName],dispatch);
+        store.modname = transport.module;
+        store.root = function(){
+            let p = store;
+            while(p){
+                if(!p.superStore) return p;
+                else p = p.superStore;
+            }
+        }
+        let mapDispatchToProps = mountArguments.mapDispatchToProps ;  
+        if(action_handlers){
+            if(!mapDispatchToProps){
+                mapDispatchToProps = (dispatch)=>(dispatch)=>{
+                    let dispatchers = {};
+                    for(let actionName in action_handlers){
+                        dispatchers[actionName] = ((actionName,actionHandler,dispatch)=>{
+                        return (evtData,extra)=>dispatch({type:actionName,data:evtData,extra:extra});
+                        })(actionName,action_handlers[actionName],dispatch);
+                    }
+                    return dispatchers;
+                };
+            }else{
+                let map = mapDispatchToProps;
+                throw new Error("Not implement.");
+            }
+        }  
+        
+        if(typeof mountArguments.apiProvider==='function'){
+            let api = mountArguments.apiProvider(store);
+            for(let n in api){
+                if(store[n]===undefined){
+                    store[n] = api[n];
+                }else {
+
                 }
-                return dispatchers;
-            };
+            }
         }
         
         let Redux = mountArguments.Redux = connect(mapStateToProps,mapDispatchToProps)(Component);
@@ -259,6 +286,9 @@ export class LoadableView extends Component{
     forceUpdate:any;
     state:any;
     context:any;
+    static contextTypes = {
+        store: PropTypes.object,
+    };
 
     render(){
         let contentElement;
@@ -314,7 +344,8 @@ export class LoadableView extends Component{
             return;
         }
         if(content.$mount){
-            let result = content.$mount(props,contentElement,transport.superStore,transport);
+
+            let result = content.$mount(props,contentElement,this.props.superStore || this.context.store|| this.props.$store,transport);
             if(result && typeof result.then==='function'){
                 return this._renderTo(loadableElement,contentElement,loadingElement,result,props,transport,onload);
             }
@@ -337,21 +368,25 @@ export class LoadableView extends Component{
         let loadingElement = this.refs["loading"];
         let module = this.props.module;
         let contentUrl = this.props.contentUrl;
-        let props = this.props.props;
-        let transport = this.props.transport;
+        //let props = this.props;
+        let transport = this.props.$transport;
+        //transport.$superStore = this.props.$superStore;
+        transport.module= module;
     
         let onload = this.props.onload;
         if(module){
             if(typeof module=="string") {
                 if(module===this.url) return;
-                module= require(module);
                 this.url = module;
+                module= require(module);
+                
             }
         }
         if(contentUrl){
             if(contentUrl===this.url) return;
-            module = axios.get(contentUrl);
             this.url = contentUrl;
+            module = axios.get(contentUrl);
+            
         }
         this.module = module;
         if(!module.then) {
@@ -360,7 +395,7 @@ export class LoadableView extends Component{
             this.module = undefined;
             return;
         }
-        return this._renderTo(loadableElement,contentElement,loadingElement,module,props,transport,onload);
+        return this._renderTo(loadableElement,contentElement,loadingElement,module,{...this.props},transport,onload);
         
     }
 }
@@ -368,11 +403,11 @@ export class LoadableView extends Component{
 export class ContentView extends Component{
     props:any;
     render(){
-        const {iframeUrl,module,vnode,html,text,contentUrl,dom,id,className,props,superStore,transport} = this.props;
+        const {iframeUrl,module,vnode,html,text,contentUrl,dom} = this.props;
         if(module || iframeUrl || contentUrl) 
-            return <LoadableView transport={transport} superStore={superStore} module={module||""} iframeUrl={iframeUrl||""} contentUrl={contentUrl||""} id={id||""} className={className||""} props={props}/>;
+            return <LoadableView {...this.props} />;
         if(vnode || html || text || dom){
-            return <HtmlElementView vnode={vnode||""} html ={html||""} text={text||""} dom={dom||""} />;
+            return <HtmlElementView {...this.props} />;
         }
         return null;
     }
@@ -405,7 +440,7 @@ export class Center extends React.Component{
             let {x,y,width,height} = getBox(target);
             x = x-pPos.x;y = y-pPos.y;
             let adjust = parseInt(this.props.adjust) || 0;
-            let vType = viewType();
+            let vType = viewport();
             if(vType==='xs') adjust=0;
             let top = y + (height - ctr.clientHeight)/2 + adjust ;
             if(this.props.mintop){

@@ -1,0 +1,93 @@
+// out: ../../../wwwroot/themes/light-blue/light-blue.css, compress: false, sourceMap: false
+// out: ../../wwwroot/themes/theme.css, compress: false, sourceMap: false
+
+//灰度混合
+.gray_mixin_bg (dark, @color,@percent:10%) {
+    background-color: darken(@color, @percent);
+}
+.gray_mixin_bg (light, @color,@percent:10%) {
+    background-color: lighten(@color, @percent);
+}
+.theme_light(
+    
+    //前景色
+    @front-font-color
+    ,@front-bg-color
+    //背景色
+    ,@back-font-color
+    ,@back-bg-color
+    ,@line-color
+){
+    
+
+    html,body{
+        background-color:@back-bg-color;
+        color:@back-font-color;
+    }
+
+    #layout{
+        #layout-header{
+            background-color:@front-bg-color;
+            color:@front-font-color; 
+            #layout-menu-toggle{
+                .gray_mixin_bg(dark,@front-bg-color);
+                &:hover{
+                    background-color:darken(@front-bg-color,7%);
+                }
+            }
+            #layout-menu-main{
+                background-color :@back-bg-color;
+                color:@back-font-color;
+                .toggle-menu{
+                    border-bottom:1px solid @line-color;
+                }
+                
+            }
+        } 
+        .ant-menu,.ant-menu-sub{
+            background-color :@back-bg-color;
+        }
+        
+        
+    }
+    #layout.menu-mode-normal{
+        #layout-menu-main{
+            .ant-menu:not(.ant-menu-horizontal) .ant-menu-item-selected{
+                background-color:lighten(desaturate(@front-bg-color,38%),42%);
+                color:darken(@front-bg-color,10%);
+            }
+            .ant-menu-item:hover,.ant-menu-submenu-title:hover {
+                background-color:darken(@back-bg-color,5%);
+            }
+            .ant-menu-submenu-open>.ant-menu-submenu-title{
+                color:darken(@back-font-color,10%);
+                font-weight:bold;
+            }
+        }
+        
+    }
+    .ant-menu-submenu-popup {
+        .ant-menu{
+            background-color : @back-bg-color;
+            border:1px solid darken(@back-bg-color,8%);
+        }
+        
+        .ant-menu-item:hover,.ant-menu-submenu-title:hover {
+            background-color:darken(@back-bg-color,5%);
+        }
+    }
+}
+
+
+
+
+
+.light-blue{
+    @front-font-color:#ffffff;
+    @front-bg-color:#0078d7;
+    @back-bg-color:#f4f4f4;
+    @back-font-color:#333333;
+    @line-color:#dddddd;
+    
+    .theme_light(@front-font-color,@front-bg-color,@back-font-color,@back-bg-color,@line-color);
+}

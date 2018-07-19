@@ -16,16 +16,10 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
-define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-dom", "lib/redux/redux", "lib/redux/react-redux", "lib/utils"], function (require, exports, axios, react_1, ReactDOM, redux_1, react_redux_1, utils_1) {
+define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-dom", "lib/react/prop-types", "lib/redux/redux", "lib/redux/react-redux", "lib/utils"], function (require, exports, axios, react_1, ReactDOM, PropTypes, redux_1, react_redux_1, utils_1) {
     "use strict";
     exports.__esModule = true;
-    exports.mergemo = function (old, newModel) {
-        for (var n in old) {
-            if (newModel[n] === undefined)
-                newModel[n] = old[n];
-        }
-        return newModel;
-    };
+    exports.__setApp = function (app) { exports.$app = app; };
     //事件
     var div = document.createElement("div");
     var _attach;
@@ -40,25 +34,23 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
     }
     exports.attach = _attach;
     exports.detech = _detech;
-    function getCookie(name) {
+    exports.getCookie = function (name) {
         var arr, reg = new RegExp("(^| )" + name + "=([^;]*)(;|$)");
         if (arr = document.cookie.match(reg))
             return unescape(arr[2]);
         else
             return null;
-    }
-    exports.getCookie = getCookie;
-    function setCookie(name, value, time) {
+    };
+    exports.setCookie = function (name, value, time) {
         var strsec = getsec(time);
         var exp = new Date();
         exp.setTime(exp.getTime() + strsec * 1);
         document.cookie = name + "=" + escape(value) + ";expires=" + exp.toGMTString();
-    }
-    exports.setCookie = setCookie;
+    };
     function delCookie(name) {
         var exp = new Date();
         exp.setTime(exp.getTime() - 1);
-        var cval = getCookie(name);
+        var cval = exports.getCookie(name);
         if (cval != null)
             document.cookie = name + "=" + cval + ";expires=" + exp.toGMTString();
     }
@@ -92,61 +84,54 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
         return { x: x, y: y, width: w, height: h };
     };
     //媒体查询
-    var viewTypeChangeHandlers = [];
-    var viewTypes = {
+    var viewportChangeHandlers = [];
+    var viewports = {
         "lg": 1200,
         "md": 992,
         "sm": 768
     };
-    exports.viewType = function (onChange) {
+    exports.viewport = function (onChange) {
         if (onChange && typeof onChange === 'function') {
-            viewTypeChangeHandlers.push(onChange);
+            viewportChangeHandlers.push(onChange);
         }
-        return view_type;
+        if (onChange === true)
+            return view_port;
+        return view_port.name;
     };
-    var view_type;
-    var viewTypeResizeHandler = function () {
+    var view_port;
+    var viewportResizeHandler = function () {
         var w = window.innerWidth || document.documentElement.clientWidth;
+        var h = Math.max(document.body.clientHeight, Math.max(window.innerHeight, document.documentElement.clientHeight));
+        //console.log("rsz",window.innerHeight,document.documentElement.clientHeight,document.body.clientHeight,h);
         var vt;
-        for (var t in viewTypes) {
-            if (w >= viewTypes[t]) {
+        for (var t in viewports) {
+            if (w >= viewports[t]) {
                 vt = t;
                 break;
             }
         }
-        if (!vt)
-            vt = 'xs';
-        if (view_type != vt) {
-            view_type = vt;
-            for (var i = 0, j = viewTypeChangeHandlers.length; i < j; i++) {
-                var handler = viewTypeChangeHandlers.shift();
+        vt = { w: w, h: h, name: vt || 'xs' };
+        if (!view_port || view_port.name != vt.name) {
+            view_port = vt;
+            for (var i = 0, j = viewportChangeHandlers.length; i < j; i++) {
+                var handler = viewportChangeHandlers.shift();
                 var rs = handler.call(window, vt);
                 if (rs !== '#remove')
-                    viewTypeChangeHandlers.push(handler);
+                    viewportChangeHandlers.push(handler);
             }
         }
+        else
+            view_port = vt;
     };
-    exports.attach(window, 'resize', viewTypeResizeHandler);
-    viewTypeResizeHandler();
+    exports.attach(window, 'resize', viewportResizeHandler);
+    viewportResizeHandler();
     exports.$mountable = function (Component, mountArguments) {
         mountArguments || (mountArguments = {});
-        if (!mountArguments.action_handlers) {
-            Component.$mount = function (props, targetElement, superStore, transport) {
-                (props || (props = {}));
-                transport || (transport = { '__transport__': "$mount(" + Component.toString() + ")" });
-                mountArguments.transport = props.transport = transport;
-                mountArguments.transport.superStore = props.superStore = transport.superStore = superStore;
-                if (mountArguments.onCreating)
-                    mountArguments.onCreating(mountArguments);
-                ReactDOM.render(react_1["default"].createElement(Component, props, null), targetElement);
-            };
-            return Component;
-        }
         Component.$mount = function (props, targetElement, superStore, transport) {
             (props || (props = {}));
             transport || (transport = { '__transport__': "$mount(" + Component.toString() + ")" });
-            mountArguments.transport = props.transport = transport;
-            mountArguments.transport.superStore = props.superStore = transport.superStore = superStore;
+            mountArguments.transport = transport;
+            mountArguments.transport.superStore = transport.superStore = superStore;
             var initModel;
             if (typeof mountArguments.model === 'function')
                 initModel = mountArguments.model(props, transport);
@@ -154,37 +139,74 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
                 initModel = mountArguments.model;
             initModel = utils_1.mergeDiff(props, initModel);
             var action_handlers = mountArguments.action_handlers;
-            var reducers = {};
-            var store = mountArguments.store = transport.store = transport.store || redux_1.createStore(function (model, action) {
+            var reducers = action_handlers ? function (model, action) {
                 var handler = action_handlers[action.type];
                 var newModel;
                 if (handler) {
-                    newModel = handler(model, action);
+                    newModel = handler.call(store, model, action);
                     if (action.payload && typeof action.payload.then === 'function') {
                         action.payload.then(function (result) { store.dispatch(result); });
                     }
-                    return utils_1.mergeDiff(model, newModel);
+                    var nextState = utils_1.mergeDiff(model, newModel);
+                    if (nextState.__REPLACEALL__)
+                        nextState.__REPLACEALL__ = undefined;
+                    return nextState;
                 }
                 console.warn('disatch a unknown action', action);
                 return model;
-            }, initModel);
+            } : function (state, action) { return state; };
+            var store = mountArguments.store = transport.store = transport.store || redux_1.createStore(reducers, initModel);
+            //store.superStore = superStore;
             var mapStateToProps = mountArguments.mapStateToProps;
             if (!mapStateToProps) {
-                mapStateToProps = function (state) { return __assign({}, state); };
+                mapStateToProps = function (state) { return __assign({ $store: store, $transport: transport, $superStore: superStore }, state); };
+            }
+            else {
+                var map_1 = mapStateToProps;
+                mapStateToProps = function (state) {
+                    var newState = map_1(state);
+                    return __assign({ $store: store, $transport: transport, $superStore: superStore }, newState);
+                };
             }
             store.superStore = superStore;
             store.transport = transport;
+            store.modname = transport.module;
+            store.root = function () {
+                var p = store;
+                while (p) {
+                    if (!p.superStore)
+                        return p;
+                    else
+                        p = p.superStore;
+                }
+            };
             var mapDispatchToProps = mountArguments.mapDispatchToProps;
-            if (!mapDispatchToProps && action_handlers) {
-                mapDispatchToProps = function (dispatch) { return function (dispatch) {
-                    var dispatchers = {};
-                    for (var actionName in action_handlers) {
-                        dispatchers[actionName] = (function (actionName, actionHandler, dispatch) {
-                            return function (evtData) { return dispatch({ type: actionName, data: evtData }); };
-                        })(actionName, action_handlers[actionName], dispatch);
+            if (action_handlers) {
+                if (!mapDispatchToProps) {
+                    mapDispatchToProps = function (dispatch) { return function (dispatch) {
+                        var dispatchers = {};
+                        for (var actionName in action_handlers) {
+                            dispatchers[actionName] = (function (actionName, actionHandler, dispatch) {
+                                return function (evtData, extra) { return dispatch({ type: actionName, data: evtData, extra: extra }); };
+                            })(actionName, action_handlers[actionName], dispatch);
+                        }
+                        return dispatchers;
+                    }; };
+                }
+                else {
+                    var map = mapDispatchToProps;
+                    throw new Error("Not implement.");
+                }
+            }
+            if (typeof mountArguments.apiProvider === 'function') {
+                var api = mountArguments.apiProvider(store);
+                for (var n in api) {
+                    if (store[n] === undefined) {
+                        store[n] = api[n];
                     }
-                    return dispatchers;
-                }; };
+                    else {
+                    }
+                }
             }
             var Redux = mountArguments.Redux = react_redux_1.connect(mapStateToProps, mapDispatchToProps)(Component);
             mountArguments.targetElement = targetElement;
@@ -260,7 +282,7 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
                     return;
                 }
                 if (content.$mount) {
-                    var result = content.$mount(props, contentElement, transport.superStore, transport);
+                    var result = content.$mount(props, contentElement, _this.props.superStore || _this.context.store || _this.props.$store, transport);
                     if (result && typeof result.then === 'function') {
                         return _this._renderTo(loadableElement, contentElement, loadingElement, result, props, transport, onload);
                     }
@@ -314,22 +336,24 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
             var loadingElement = this.refs["loading"];
             var module = this.props.module;
             var contentUrl = this.props.contentUrl;
-            var props = this.props.props;
-            var transport = this.props.transport;
+            //let props = this.props;
+            var transport = this.props.$transport;
+            //transport.$superStore = this.props.$superStore;
+            transport.module = module;
             var onload = this.props.onload;
             if (module) {
                 if (typeof module == "string") {
                     if (module === this.url)
                         return;
-                    module = require(module);
                     this.url = module;
+                    module = require(module);
                 }
             }
             if (contentUrl) {
                 if (contentUrl === this.url)
                     return;
-                module = axios.get(contentUrl);
                 this.url = contentUrl;
+                module = axios.get(contentUrl);
             }
             this.module = module;
             if (!module.then) {
@@ -338,7 +362,10 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
                 this.module = undefined;
                 return;
             }
-            return this._renderTo(loadableElement, contentElement, loadingElement, module, props, transport, onload);
+            return this._renderTo(loadableElement, contentElement, loadingElement, module, __assign({}, this.props), transport, onload);
+        };
+        LoadableView.contextTypes = {
+            store: PropTypes.object
         };
         return LoadableView;
     }(react_1.Component));
@@ -349,11 +376,11 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
             return _super !== null && _super.apply(this, arguments) || this;
         }
         ContentView.prototype.render = function () {
-            var _a = this.props, iframeUrl = _a.iframeUrl, module = _a.module, vnode = _a.vnode, html = _a.html, text = _a.text, contentUrl = _a.contentUrl, dom = _a.dom, id = _a.id, className = _a.className, props = _a.props, superStore = _a.superStore, transport = _a.transport;
+            var _a = this.props, iframeUrl = _a.iframeUrl, module = _a.module, vnode = _a.vnode, html = _a.html, text = _a.text, contentUrl = _a.contentUrl, dom = _a.dom;
             if (module || iframeUrl || contentUrl)
-                return react_1["default"].createElement(LoadableView, { transport: transport, superStore: superStore, module: module || "", iframeUrl: iframeUrl || "", contentUrl: contentUrl || "", id: id || "", className: className || "", props: props });
+                return react_1["default"].createElement(LoadableView, __assign({}, this.props));
             if (vnode || html || text || dom) {
-                return react_1["default"].createElement(HtmlElementView, { vnode: vnode || "", html: html || "", text: text || "", dom: dom || "" });
+                return react_1["default"].createElement(HtmlElementView, __assign({}, this.props));
             }
             return null;
         };
@@ -389,7 +416,7 @@ define(["require", "exports", "lib/axios", "lib/react/react", "lib/react/react-d
                 x = x - pPos.x;
                 y = y - pPos.y;
                 var adjust = parseInt(_this.props.adjust) || 0;
-                var vType = exports.viewType();
+                var vType = exports.viewport();
                 if (vType === 'xs')
                     adjust = 0;
                 var top = y + (height - ctr.clientHeight) / 2 + adjust;

@@ -1,10 +1,11 @@
 ﻿/// <reference types="react" />
 import React, { Component } from 'lib/react/react';
-export declare let mergemo: (old: any, newModel: any) => any;
+export declare let $app: any;
+export declare let __setApp: (app: any) => void;
 export declare let attach: (elem: any, evt: any, handler: any) => void;
 export declare let detech: (elem: any, evt: any, handler: any) => void;
-export declare function getCookie(name: string): string;
-export declare function setCookie(name: string, value?: any, time?: string): void;
+export declare let getCookie: (name: string) => string;
+export declare let setCookie: (name: string, value?: any, time?: string) => any;
 export declare function delCookie(name: string): void;
 export declare let getBox: (elem?: any) => {
     x: number;
@@ -12,7 +13,12 @@ export declare let getBox: (elem?: any) => {
     width: any;
     height: any;
 };
-export declare let viewType: (onChange?: (type: any) => void) => string;
+export interface IViewport {
+    w: number;
+    h: number;
+    name: string;
+}
+export declare let viewport: (onChange?: boolean | ((type: any) => void)) => string | IViewport;
 export interface IMountArguments {
     model?: any;
     mapStateToProps?: any;
@@ -26,6 +32,9 @@ export interface IMountArguments {
     transport?: any;
     targetElement?: any;
     Redux?: any;
+    apiProvider?: (store: any) => {
+        [index: string]: Function;
+    };
 }
 export interface IOnCreateInstanceEvent {
     Component?: any;
@@ -60,6 +69,9 @@ export declare class LoadableView extends Component {
     forceUpdate: any;
     state: any;
     context: any;
+    static contextTypes: {
+        store: any;
+    };
     render(): JSX.Element;
     componentDidMount(): void;
     componentDidUpdate(): void;

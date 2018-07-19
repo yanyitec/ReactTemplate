@@ -17,9 +17,12 @@ export interface IMainMenuState {
     defaultSelectedKeys?: string[];
     defaultOpenKeys?: string[];
     mode?: string;
-    beforeMode?: string;
+    collapsed?: boolean;
+    foldable?: boolean;
     hidden?: boolean;
+    beforeMode?: string;
     className?: string;
+    theme_type?: string;
     waitForHidden?: number;
 }
 export interface IMainMenuAction {

@@ -1,8 +1,8 @@
 import * as React from 'lib/react/react';
 import * as ReactDOM from 'lib/react/react-dom';
-import {$mountable} from 'ui';
+import {$mountable} from 'lib/ui';
 
-export default class My extends React.Component{
+export class My extends React.Component{
     props:any;
     state:any;
     setState:Function;
@@ -28,4 +28,4 @@ export default class My extends React.Component{
     }
     
 }
-$mountable(My);
+export default $mountable(My);

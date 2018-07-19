@@ -46,19 +46,39 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/ui"], fun
             return _this;
         }
         MainMenuView.prototype.render = function () {
-            var _a = this.props, roots = _a.roots, defaultSelectedKeys = _a.defaultSelectedKeys, defaultOpenKeys = _a.defaultOpenKeys, mode = _a.mode, hidden = _a.hidden, className = _a.className, onMenuClick = _a.onMenuClick, onMenuToggleFold = _a.onMenuToggleFold, onMouseOut = _a.onMouseOut, onMouseOver = _a.onMouseOver;
+            var state = this.props;
+            var header = document.getElementById('layout-header');
+            if (!header)
+                return null;
+            var collapsed = state.collapsed;
+            var hidden = state.hidden;
+            if (state.mode === 'min') {
+                if (collapsed === undefined)
+                    collapsed = true;
+                if (hidden === undefined)
+                    hidden = true;
+            }
             //let data= roots;
-            var className1 = className || "";
-            if (hidden)
-                className1 += ' hidden';
-            if (mode === 'fold')
+            var className1 = state.className || "";
+            if (collapsed)
+                className1 += ' collapsed';
+            if (state.mode === 'fold')
                 className1 += ' fold';
-            var vt = ui_1.viewType();
-            return react_1["default"].createElement("div", { id: this.props.id || "", style: { display: hidden ? 'none' : 'block' } },
-                mode === 'min' || mode == 'horizontal' || vt === 'xs' ? null :
-                    react_1["default"].createElement("div", { className: 'toggle-menu', onClick: onMenuToggleFold },
-                        react_1["default"].createElement(antd_1.Icon, { type: mode === 'fold' ? 'menu-unfold' : 'menu-fold' })),
-                react_1["default"].createElement(antd_1.Menu, { className: 'menus', defaultSelectedKeys: defaultSelectedKeys, defaultOpenKeys: defaultOpenKeys, mode: mode == 'min' ? 'vertical' : 'inline', onMouseOver: onMouseOver, onMouseOut: onMouseOut, theme: "dark", inlineCollapsed: mode == 'fold' ? true : false }, this._buildMenu(roots, onMenuClick)));
+            var vt = ui_1.viewport(true);
+            var h = vt.h - header.clientHeight;
+            var menuMode = collapsed && state.mode !== 'min' ? 'vertical' : 'inline';
+            if (state.mode === 'min')
+                menuMode = 'inline';
+            else if (collapsed)
+                menuMode = 'vertical';
+            else if (state.mode === 'horizontal')
+                menuMode = 'horizontal';
+            var foldable = state.foldable && menuMode != 'vertical' && !collapsed;
+            return react_1["default"].createElement("div", { id: this.props.id || "", style: { display: hidden ? 'none' : 'block', height: (state.mode == 'normal' || state.mode == 'fold') && !state.collapsed ? h + "px" : 'auto' }, className: className1 },
+                foldable ?
+                    react_1["default"].createElement("div", { className: 'fold-menu', onClick: state.onMenuToggleFold },
+                        react_1["default"].createElement(antd_1.Icon, { type: state.mode === 'fold' ? 'menu-unfold' : 'menu-fold' })) : null,
+                react_1["default"].createElement(antd_1.Menu, { className: 'menus', defaultSelectedKeys: state.defaultSelectedKeys, defaultOpenKeys: state.defaultOpenKeys, mode: menuMode, onMouseOver: state.onMouseOver, onMouseOut: state.onMouseOut, theme: state.theme_type, inlineCollapsed: state.mode == 'fold' && menuMode != 'vertical' ? true : false }, this._buildMenu(state.roots, state.onMenuClick)));
         };
         return MainMenuView;
     }(react_1.Component));

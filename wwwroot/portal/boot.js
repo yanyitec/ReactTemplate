@@ -1,4 +1,4 @@
-﻿
+﻿"use strict";
 var bootMsg = document.getElementById("bootMessage");
 var showMessage = function (message, color) {
     if (!message)
@@ -24,7 +24,6 @@ var donecount = 0;
 var config;
 showMessage('加载主配置...');
 require(['config@conf/config'], sniffer).then(function (_config) {
-    
     //taskcount+=1;
     config = _config[0];
     taskcount += 2;
