@@ -2,8 +2,8 @@
 import  React, { Component } from 'lib/react/react';
 import {  Icon, Button,Tooltip,Checkbox,Alert   } from 'lib/antd/antd';
 import * as axios from 'lib/axios';
-import {getCookie,setCookie,Center} from 'lib/ui';
-
+import {Center} from 'lib/ui';
+import {getCookie,setCookie} from 'lib/utils';
 
 export interface IAuthInfo{
     Username?:string;
@@ -119,6 +119,7 @@ export default class Auth extends Component{
             this.view_resolve = undefined;
             view_resolve(this);
         }
+        if(response.data) response = response.data;
         if(response.User.Username!==this.state.Username || response.User.Password !==this.state.Password){
             this.setState({processing:false,errorMessages:["用户名密码不正确"]});
             return;
@@ -288,5 +289,19 @@ export default class Auth extends Component{
         }
     }
     
+}
+(Auth as any).trying = (state,action)=>{
+    let info :IAuthInfo = state.auth.data;
+    //试图从cookie中加载
+    if(!info){
+        let authJson = getCookie(AUTH_COOKIE_NAME);
+        if(authJson){
+            try{
+                info = JSON.parse(authJson);
+            }catch(ex){
+
+            }
+        }
+    }
 }
   

@@ -16,28 +16,9 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
-define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/react-redux", "lib/axios", "lib/utils", "lib/ui", "portal/menu", "portal/auth", "lib/ui"], function (require, exports, react_1, antd_1, react_redux_1, axios, utils_1, ui_1, menu_1, auth_1, ui_2) {
+define(["require", "exports", "lib/react/react", "lib/utils", "lib/antd/antd", "lib/utils", "lib/module", "portal/menu", "portal/auth", "portal/ajax"], function (require, exports, react_1, utils_1, antd_1, utils_2, module_1, menu_1, auth_1, ajax_1) {
     "use strict";
     exports.__esModule = true;
-    var DialogView = /** @class */ (function (_super) {
-        __extends(DialogView, _super);
-        function DialogView() {
-            return _super !== null && _super.apply(this, arguments) || this;
-        }
-        DialogView.prototype.render = function () {
-            var _a = this.props, title = _a.title, width = _a.width, height = _a.height, onOk = _a.onOk, onCancel = _a.onCancel;
-            var contentView = react_1["default"].createElement(ui_2.ContentView, this.props, null);
-            return react_1["default"].createElement(antd_1.Modal, { title: title, visible: true, onOk: onOk, onCancel: onCancel, confirmLoading: false }, contentView);
-        };
-        return DialogView;
-    }(react_1.Component));
-    exports.DialogView = DialogView;
-    var Dialog = react_redux_1.connect(function (model) { return model.dialog; }, function (dispatch) {
-        return {
-            onOk: function () { return dispatch({ type: "dialog.ok" }); },
-            onCancel: function () { return dispatch({ type: "dialog.cancel" }); }
-        };
-    })(DialogView);
     function NavView(appProps) {
         var props = appProps.nav;
         var nodes = appProps.menu.data;
@@ -192,9 +173,11 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
     }
     var AppView = /** @class */ (function (_super) {
         __extends(AppView, _super);
-        function AppView() {
-            return _super !== null && _super.apply(this, arguments) || this;
+        function AppView(props) {
+            return _super.call(this, props) || this;
         }
+        AppView.prototype.componentDidMount = function () {
+        };
         AppView.prototype.render = function () {
             var state = this.props;
             var _a = this.props, menu = _a.menu, dialog = _a.dialog, auth = _a.auth, workarea = _a.workarea, nav = _a.nav, user = _a.user, customActions = _a.customActions, viewport = _a.viewport;
@@ -226,15 +209,14 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
                         viewport != 'xs' ? react_1["default"].createElement("div", { id: 'layout-nav' },
                             react_1["default"].createElement(NavView, { nav: nav, menu: menu, onNavClick: this.props["nav.click"], simple: viewport == 'sm' })) : null,
                         workarea ? react_1["default"].createElement("div", { id: 'layout-workarea' },
-                            react_1["default"].createElement(ui_2.LoadableView, __assign({ id: "workarea" }, workarea))) : null)),
-                dialog.enable === true ? react_1["default"].createElement(Dialog, null) : null,
+                            react_1["default"].createElement(module_1.Loadable, __assign({ id: "workarea" }, workarea))) : null)),
                 auth.enable === true ? react_1["default"].createElement(auth_1["default"], __assign({}, auth, { onAuthSuccess: this.props["auth.success"] })) : null);
         };
         return AppView;
     }(react_1.Component));
     exports.AppView = AppView;
     var handle_resize = function (state) {
-        var vp = ui_1.viewport();
+        var vp = utils_2.viewport();
         if (vp === 'xs') {
             return {
                 viewport: vp,
@@ -263,11 +245,15 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
     };
     var action_handlers = {
         "app.navigate": function (state, action) {
-            action.$transport = { "__transport__": "app.navigate", superStore: appStore };
+            var workarea = __assign({}, action);
+            workarea.__REPLACEALL__ = true;
+            workarea.super_store = appStore;
+            workarea.ctype = 'module';
+            workarea.tick = new Date().valueOf();
             //action.superStore = appStore;
             return {
                 menu: { hidden: state.menu.mode == 'min' ? true : state.menu.hidden },
-                workarea: action
+                workarea: workarea
             };
         },
         "app.resize": function (state, action) {
@@ -325,7 +311,10 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             }
             return action_handlers['app.navigate'].call(this, state, {
                 type: "app.navigate",
-                module: url
+                url: url,
+                forceRefresh: true,
+                super_store: appStore,
+                ctype: 'module'
             });
         },
         "nav.click": function (state, action) {
@@ -402,7 +391,7 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
         return item;
     }
     var rszDelayTick;
-    ui_1.attach(window, "resize", function () {
+    utils_2.attach(window, "resize", function () {
         if (appStore) {
             if (rszDelayTick)
                 clearTimeout(rszDelayTick);
@@ -410,17 +399,6 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
                 appStore.dispatch({ type: 'app.resize' });
             }, 200);
         }
-    });
-    axios.defaults.headers.common = { 'X-Requested-With': 'XMLHttpRequest', 'X-Requested-DataType': 'json', 'X-Response-DataType': 'json' };
-    axios.interceptors.response.use(function (response) {
-        if (response.status === '401') {
-            setTimeout(function () { appStore.dispach({ type: 'user.signin' }); }, 0);
-            throw response;
-        }
-        return response.data;
-    }, function (err) {
-        console.error(err);
-        alert(err);
     });
     var apiProvider = function (appStore) {
         return {
@@ -430,7 +408,7 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
                 appStore.dispatch(action);
                 return deferred.promise();
             },
-            navigate: function (urlOrOpts) {
+            navigate: function (urlOrOpts, data) {
                 var action = urlOrOpts;
                 if (typeof urlOrOpts === 'string') {
                     var state = this.getState();
@@ -439,23 +417,20 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
                         throw new Error(urlOrOpts + " is not in menu/permissions");
                     action = __assign({}, node);
                 }
-                if (action.module === undefined)
-                    action.module = action.Url;
+                //if(action.module===undefined)action.module = action.Url;
                 action.type = "app.navigate";
+                action.ctype = 'module';
+                if (!action.url)
+                    action.url = action.Url;
+                action.innerProps = data;
                 this.dispatch(action);
-            },
-            GET: function (url, data) {
-                return axios.get(url, data);
-            },
-            POST: function (url, data) {
-                return axios.post(url, data);
             },
             winAlert: function (msg) {
                 alert(msg);
             }
         };
     };
-    var view_type = ui_1.viewport();
+    var view_type = utils_2.viewport();
     var defaultModel = {
         viewport: view_type,
         menu: {
@@ -466,22 +441,25 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/redux/rea
             enable: true
         }
     };
+    var onCreating = function (creation) {
+        if (appStore)
+            throw new Error("App must be singleon, please do not mount it once again.");
+        appStore = creation.$store;
+        appStore.$modname = "app";
+        exports.$app = appStore;
+        define("app", appStore);
+        ajax_1["default"](appStore, appStore, config.ajax);
+    };
     var appStore;
-    var App = ui_2.$mountable(AppView, {
-        model: defaultModel,
-        onCreating: function (reduxParams) {
-            appStore = reduxParams.store;
-            appStore.$modname = "app";
-            ui_1.__setApp(appStore);
-            exports.$app = appStore;
-            define("app", appStore);
-        },
+    var App = module_1.__module__(AppView, {
+        state: defaultModel,
+        onCreating: onCreating,
         action_handlers: action_handlers,
         apiProvider: apiProvider
     });
     exports.$app = appStore;
-    var $mount = App.$mount;
-    App.$mount = function (props, targetElement, superStore, transport) {
+    var $mount = App.mount;
+    App.mount = function (props, targetElement, superStore) {
         return new Promise(function (resolve, reject) {
             var authConfig = props.auth = utils_1.deepClone(config.auth);
             authConfig.authview_resolve = resolve;

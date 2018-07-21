@@ -8,7 +8,7 @@
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "lib/react/react", "lib/react/prop-types", "lib/ui"], function (require, exports, React, PropTypes, ui_1) {
+define(["require", "exports", "lib/react/react", "lib/react/prop-types", "lib/module"], function (require, exports, React, PropTypes, module_1) {
     "use strict";
     exports.__esModule = true;
     var My = /** @class */ (function (_super) {
@@ -23,7 +23,7 @@ define(["require", "exports", "lib/react/react", "lib/react/prop-types", "lib/ui
             _this.onMaster = function (evt) {
                 //每个控件里面都可以用context获取到store
                 //this.context.store.dispatch({type:'my.alert',text:"我是dialog.tsx发出的信息"});
-                _this.context.store.superStore.dispatch({ type: 'my.alert', text: "我是dialog.tsx发出的信息" });
+                _this.context.store.super_store.dispatch({ type: 'my.alert', text: "我是dialog.tsx发出的信息" });
             };
             _this.onApp = function (evt) {
                 _this.context.store.root().dispatch({ type: 'menu.toggleCollapsed' });
@@ -34,12 +34,15 @@ define(["require", "exports", "lib/react/react", "lib/react/prop-types", "lib/ui
         }
         My.prototype.render = function () {
             var _this = this;
-            if (this.transport)
-                this.transport.getModalResult = function () {
+            if (this.context.store)
+                this.context.store.getModalResult = function () {
                     return _this.state.value;
                 };
             return React.createElement("div", null,
                 React.createElement("h1", null, "\u6211\u662F\u53EF\u4EE5\u7528\u5728\u6A21\u6001\u6846\u4E2D\u7684\u9875\u9762"),
+                React.createElement("div", null,
+                    "\u8FD9\u4E2A\u6587\u672C\u662F\u5916\u9762test/my\u4F20\u5165\u7684\u65F6\u95F4\u5B57\u7B26\u4E32:",
+                    this.props.text),
                 React.createElement("input", { type: "text", value: this.state.value, onChange: this.onChange }),
                 React.createElement("br", null),
                 React.createElement("a", { onClick: this.onMaster }, "\u8C03\u7528My\u9875\u9762\u7684\u65B9\u6CD5"),
@@ -54,5 +57,5 @@ define(["require", "exports", "lib/react/react", "lib/react/prop-types", "lib/ui
         return My;
     }(React.Component));
     exports.My = My;
-    exports["default"] = ui_1.$mountable(My);
+    exports["default"] = module_1.$mountable(My);
 });

@@ -8,7 +8,7 @@
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/axios", "lib/ui"], function (require, exports, react_1, antd_1, axios, ui_1) {
+define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/axios", "lib/ui", "lib/utils"], function (require, exports, react_1, antd_1, axios, ui_1, utils_1) {
     "use strict";
     exports.__esModule = true;
     var AUTH_COOKIE_NAME = 'AUTH';
@@ -58,7 +58,7 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/axios", "
             _this.view_resolve = props.authview_resolve;
             var authInfo = props.data;
             if (authInfo === undefined) {
-                var authJson = ui_1.getCookie(AUTH_COOKIE_NAME);
+                var authJson = utils_1.getCookie(AUTH_COOKIE_NAME);
                 if (authJson) {
                     try {
                         authInfo = JSON.parse(authJson);
@@ -105,6 +105,8 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/axios", "
                     _this.view_resolve = undefined;
                     view_resolve(_this);
                 }
+                if (response.data)
+                    response = response.data;
                 if (response.User.Username !== _this.state.Username || response.User.Password !== _this.state.Password) {
                     _this.setState({ processing: false, errorMessages: ["用户名密码不正确"] });
                     return;
@@ -115,7 +117,7 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/axios", "
                     RememberMe: _this.state.RememberMe,
                     AccessToken: response.AccessToken
                 };
-                ui_1.setCookie(AUTH_COOKIE_NAME, JSON.stringify(authInfo), "m20");
+                utils_1.setCookie(AUTH_COOKIE_NAME, JSON.stringify(authInfo), "m20");
                 _this.setState({ enable: false });
                 if (_this.props.onAuthSuccess) {
                     _this.props.onAuthSuccess(response);
@@ -213,4 +215,18 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/axios", "
         return Auth;
     }(react_1.Component));
     exports["default"] = Auth;
+    Auth.trying = function (state, action) {
+        var info = state.auth.data;
+        //试图从cookie中加载
+        if (!info) {
+            var authJson = utils_1.getCookie(AUTH_COOKIE_NAME);
+            if (authJson) {
+                try {
+                    info = JSON.parse(authJson);
+                }
+                catch (ex) {
+                }
+            }
+        }
+    };
 });

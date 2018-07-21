@@ -8,7 +8,7 @@
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/ui"], function (require, exports, react_1, antd_1, ui_1) {
+define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/utils"], function (require, exports, react_1, antd_1, utils_1) {
     "use strict";
     exports.__esModule = true;
     var SubMenu = antd_1.Menu.SubMenu;
@@ -62,7 +62,7 @@ define(["require", "exports", "lib/react/react", "lib/antd/antd", "lib/ui"], fun
             //let className1 = state.className || "";
             //if(collapsed) className1 += ' collapsed';
             //if(state.mode==='fold') className1 += ' fold';
-            var vt = ui_1.viewport(true);
+            var vt = utils_1.viewport(true);
             var h = vt.h - header.clientHeight;
             var menuMode = collapsed && state.mode !== 'min' ? 'vertical' : 'inline';
             if (state.mode === 'min')

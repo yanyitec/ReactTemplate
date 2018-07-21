@@ -3,10 +3,11 @@ import * as React from 'lib/react/react';
 export declare class My extends React.Component {
     props: any;
     state: any;
+    context: any;
     setState: Function;
     constructor(props: any);
     onChange: (evt: any) => void;
     render(): JSX.Element;
 }
-declare const _default: any;
+declare const _default: import("../../../../../ITPS/05 architecture/CMBPS.Front/src/lib/module").IModule;
 export default _default;

@@ -15,5 +15,5 @@ export declare class My extends React.Component {
     onApp: (evt: any) => void;
     render(): JSX.Element;
 }
-declare const _default: any;
+declare const _default: import("../../../../../ITPS/05 architecture/CMBPS.Front/src/lib/module").IModule;
 export default _default;

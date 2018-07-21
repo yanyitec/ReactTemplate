@@ -1,14 +1,12 @@
 import * as React from 'lib/react/react';
-import * as ReactDOM from 'lib/react/react-dom';
 
-import {$app, $mountable } from 'lib/ui';
-import { debug } from 'util';
+import {$mountable} from 'lib/module';
+import {$app} from 'portal/app';
 
 export class My extends React.Component{
     props:any;
     
     render(){
-        debugger;
         let handler = ()=>{
             return this.props["modal1.show"];
         };
@@ -31,23 +29,26 @@ export default $mountable(My,{
     action_handlers:{
         "my.alert":(state, action)=>{
             alert("test/my 页面调用了alert方法:" + action.text);
+            return state;
         },
         "modal2.show":function(state, action){
-            $app.dialog({
-                title:"调用dialog2",
-                module : action.data,
-                superStore:this
-            });
+            
         },
         "modal1.show":function(state,action){
-            
-            action.payload = $app.dialog({title:"里面出来的模态框",module:"test/dialog",superStore:this}).then((result)=>{
-                
+            let now = new Date();
+            let t = now.getMonth() + '-' + now.getDate() + ' ' + now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
+            let param = {
+                title:"里面出来的模态框",
+                url : 'test/dialog',
+                data: {text:t}
+            }
+            action.payload = this.pop(param).then((result)=>{
+                console.log(result);
                 //把result 变成一个action
                 let action = {
                     type:'my.changeText',
                     status:result.status,
-                    data:result.data
+                    data:result.store.getModalResult()
                 };
                 //框架会dispach这个action
                 return action;
@@ -58,15 +59,17 @@ export default $mountable(My,{
         "my.changeText":(state,action)=>{
             //alert(action.status + "->" + action.data);
             return {
-                returnFromModal:"对话框里的数据是:" +action.data
+                returnFromModal:'点击的按键是:'+action.status+",对话框里的数据是:" +action.data
             };
         },
         //要让this指向store，必须用function而不能用()=>
         "my.invokeSuper":function(state,action){
-            this.superStore.dispatch({type:'menu.toggleFold'});
+            this.super_store.dispatch({type:'menu.toggleFold'});
+            return state;
         },
         "my.jump" :function(state,action ){
-            this.root().navigate('test/form');
+            this.root().navigate('test/form',{Id:'my.jump-idx'});
+            return state;
         }
     }
 });

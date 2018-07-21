@@ -8,5 +8,5 @@ export declare class AppView extends Component {
     props: any;
     render(): JSX.Element;
 }
-declare let App: any;
-export default App;
+declare let MOD: any;
+export default MOD;

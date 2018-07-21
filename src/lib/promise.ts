@@ -282,8 +282,8 @@ class PromiseA implements IPromise{
             target || (target={});
             
             target.then = (onfullfill,onreject)=>{return promise.then(onfullfill,onreject);};
-            target.done = (onfullfill)=>{return promise.then(onfullfill);};
-            target.fail = (onreject)=>{return promise.then(null,onreject);};
+            target.done = function(onfullfill){ promise.done(onfullfill); return this;};
+            target.fail = function(onreject){promise.fail(onreject); return this;};
             target.promise = promise.promise;
             return target;
         }

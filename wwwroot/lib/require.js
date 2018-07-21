@@ -59,7 +59,6 @@ var ModuleStates;
         return Promise.all(mods, opts || { useApply: useApply, callbackSync: false });
     };
     var modules = requirejs.$modules = [];
-    var prefixes = requirejs.$prefixes = {};
     var each = requirejs.each = function (func) {
         for (var i = 0, j = modules.length; i < j; i++) {
             if (func(modules[i]) === false)
@@ -67,93 +66,97 @@ var ModuleStates;
         }
         return requirejs;
     };
-    var find = requirejs.find = function (name, merge) {
+    var find = requirejs.find = function (name, nameIfNotfound) {
         var module;
-        var mergeNames = true;
         var mnames = new ModuleNames(name, function (alias, type, names) {
-            if (type === "keys" || type === "prefix") {
-                each(function (mod) {
-                    if (mod.checkAlias(alias)) {
-                        module = mod;
-                        mergeNames = false;
-                        return false;
-                    }
-                });
-                if (module)
+            each(function (mod) {
+                if (mod.checkAlias(alias)) {
+                    module = mod;
                     return false;
-            }
-            else if (type === "shortNames") {
-                each(function (mod) {
-                    if (mod.checkAlias(alias)) {
-                        module = mod;
-                        return false;
-                    }
-                });
-            }
-            else if (type === "names") {
-                if (module)
-                    return;
-                each(function (mod) {
-                    if (mod.checkAlias(alias)) {
-                        module = mod;
-                        mergeNames = names.prefix === undefined;
-                        return false;
-                    }
-                });
-                if (module && names.prefix === undefined)
-                    return false;
-            }
-            else if (type == "urls") {
-                if (module)
-                    return;
-                each(function (mod) {
-                    if (mod.checkAlias(alias)) {
-                        module = mod;
-                        return false;
-                    }
-                });
-            }
-            else {
-                throw new Error("not implements");
-            }
+                }
+            });
+            if (module)
+                return false;
         });
-        if (module) {
-            if (mergeNames && merge) { }
-            return module;
-        }
-        return (merge) ? mnames : undefined;
+        return module ? module : (nameIfNotfound ? mnames : null);
     };
     requirejs.ensure = function (fullname) {
-        var modOrNames = find(fullname, true);
-        if (modOrNames instanceof Module)
-            return modOrNames;
-        var mod = new Module(fullname);
-        modules[modOrNames.key] = mod;
+        var moduleOrName = find(fullname, true);
+        if (moduleOrName instanceof Module)
+            return moduleOrName;
+        var mod = new Module(moduleOrName);
+        modules[moduleOrName.key] = mod;
         modules.push(mod);
         mod.load();
         return mod;
     };
-    requirejs.config = function (cfg) {
-        var prefixs = cfg.prefixes;
-        if (prefixs) {
-            for (var prefixname in prefixs) {
-                var ps = prefixs[prefixname];
-                var existed = prefixes[prefixname];
-                if (!existed)
-                    existed = prefixes[prefixname] = [];
-                if (typeof ps === 'string')
-                    ps = [ps];
-                for (var i = 0, j = ps.length; i < j; i++) {
-                    var url = trim(ps[i]);
-                    if (!url)
-                        continue;
-                    if (url[url.length - 1] != '/')
-                        url += '/';
-                    if (!array_exists(existed, url))
-                        existed.push(url);
+    var resolvedUrls = requirejs.$resolvedUrls = {};
+    var resolveRules = requirejs.$resolveRules = {};
+    var resolveUrl = requirejs.resolveUrl = function (url, returnRule) {
+        if (is_url(url))
+            return [url];
+        var query;
+        var at = url.indexOf('?');
+        if (at >= 0) {
+            query = url.substr(at);
+            url = url.substr(0, at - 1);
+        }
+        var resolved = resolvedUrls[url];
+        if (!resolved) {
+            var matchedRule = void 0;
+            for (var k in resolveRules) {
+                var rule = resolveRules[k];
+                if (rule.regex.test(url))
+                    matchedRule = rule;
+            }
+            if (matchedRule) {
+                var urls = [];
+                for (var m = 0, n = matchedRule.replacements.length; m < n; m++) {
+                    var replacement = matchedRule.replacements[m];
+                    var resolvedUrl = url.replace(matchedRule.regex, replacement);
+                    if (!is_url(resolvedUrl))
+                        resolvedUrl = bas_url + resolvedUrl;
+                    urls.push(resolvedUrl);
                 }
+                resolved = resolvedUrls[url] = { rule: matchedRule, urls: urls };
+            }
+            else {
+                resolved = resolvedUrls[url] = { rule: null, urls: [bas_url + url] };
             }
         }
+        var result = [];
+        for (var i = 0, j = resolved.urls.length; i < j; i++) {
+            var finalUrl = resolved.urls[i];
+            if (query)
+                finalUrl += query;
+            result.push(finalUrl);
+        }
+        return result;
+    };
+    function config_resolves(resolves) {
+        if (resolves['<APPEND>'] === '</APPEND>') {
+            resolvedUrls = {};
+            resolveRules = {};
+        }
+        for (var n in resolves) {
+            var existed = resolveRules[n];
+            if (!existed)
+                existed = resolveRules[n] = { name: n, regex: new RegExp(n), replacements: [] };
+            var urls = resolves[n];
+            if (typeof urls === 'string')
+                urls = [urls];
+            else if (!urls || !urls.push)
+                throw new Error("resolves 's value must be string or string[]");
+            for (var i = 0, j = urls.length; i < j; i++) {
+                var url = urls[i];
+                if (!array_exists(existed.replacements, url))
+                    existed.replacements.push(url);
+            }
+        }
+    }
+    requirejs.config = function (cfg) {
+        if (cfg.resolves)
+            config_resolves(cfg.resolves);
         if (cfg.bas) {
             requirejs.$bas_url = cfg.bas;
             if (requirejs.$bas_url[requirejs.$bas_url.length - 1] != '/')
@@ -220,14 +223,14 @@ var ModuleStates;
         setTimeout(function () { return requirejs([boot_url]); }, 0);
     }
     var ModuleNames = /** @class */ (function () {
-        function ModuleNames(key, onNameParsed, prefixSetting) {
+        function ModuleNames(key, onNameParsed) {
             if (!key)
                 throw new Error('模块名必须是非空字符串');
             this.key = (key = trim(key));
             if (onNameParsed && onNameParsed(this.key, "keys", this) === false)
                 return;
             var aliases = this.aliases = [key];
-            var urls = this.urls = [];
+            //let urls:string[] = this.urls = [];
             var at = key.indexOf("@");
             var name;
             if (at >= 0) {
@@ -236,76 +239,38 @@ var ModuleStates;
                     return;
                 aliases.push(shortName);
                 name = key.substr(at + 1);
+                //if(onNameParsed && onNameParsed(name,"names",this)===false) return;
             }
             else {
                 name = key;
             }
-            //aliases.push(nameOrUrl);
-            var prefixs = prefixSetting || requirejs.$prefixes;
-            if (!is_url(name)) {
-                if (prefixs) {
-                    for (var prefix in prefixs) {
-                        if (name.indexOf(prefix) !== 0)
-                            continue;
-                        this.prefix = prefix;
-                        if (onNameParsed && onNameParsed(name, "prefix", this) === false)
-                            return;
-                        aliases.push(name);
-                        var prefix_urls = prefixs[prefix];
-                        for (var i = 0, j = prefix_urls.length; i < j; i++) {
-                            var url_1 = prefix_urls[i];
-                            if (!url_1) {
-                                console.warn("the url for require.$prefixs[" + prefix + "@" + i + "] is empty.");
-                                continue;
-                            }
-                            url_1 += name.substr(prefix.length);
-                            var url1 = url_1.toLowerCase();
-                            var ext_1 = extname(url_1);
-                            if (!ext_1) {
-                                if (onNameParsed && onNameParsed(url1, "names", this) === false)
-                                    return;
-                                aliases.push(url1);
-                                this.name = url1;
-                                url_1 += ".js";
-                                if (!is_url(url_1))
-                                    url_1 = requirejs.$bas_url + url_1;
-                                if (onNameParsed && onNameParsed(url_1, "urls", this) === false)
-                                    return;
-                                urls.push(url_1);
-                            }
-                            else {
-                                if (!is_url(url_1))
-                                    url_1 = requirejs.$bas_url + url_1;
-                                if (onNameParsed && onNameParsed(url1, "urls", this) === false)
-                                    return;
-                                urls.push(url_1);
-                            }
-                        }
-                        return;
-                    }
-                }
-            }
-            var url = name;
-            var ext = extname(url);
+            var ext = extname(name);
             if (!ext) {
+                if (name != key) {
+                    if (onNameParsed && onNameParsed(name, "names", this) === false)
+                        return;
+                    aliases.push(name);
+                }
+                this.name = name;
+                name += ".js";
+            }
+            var urls;
+            if (is_url(name)) {
+                urls = [name];
+            }
+            else {
                 if (onNameParsed && onNameParsed(name, "names", this) === false)
                     return;
                 aliases.push(name);
                 this.name = name;
-                url += ".js";
-                if (!is_url(url))
-                    url = requirejs.$bas_url + url;
+                urls = resolveUrl(name);
+            }
+            this.urls = urls;
+            for (var i in urls) {
+                var url = urls[i];
                 if (onNameParsed && onNameParsed(url, "urls", this) === false)
                     return;
                 aliases.push(url);
-                urls.push(url);
-            }
-            else {
-                if (!is_url(url))
-                    url = requirejs.$bas_url + url;
-                if (onNameParsed && onNameParsed(name, "urls", this) === false)
-                    return;
-                urls.push(url);
             }
         }
         return ModuleNames;
@@ -327,6 +292,8 @@ var ModuleStates;
                     if (typeof name === "string") {
                         names = new ModuleNames(name);
                     }
+                    else
+                        names = name;
                     this.key = names.key;
                     this.aliases = names.aliases;
                     this.urls = names.urls;

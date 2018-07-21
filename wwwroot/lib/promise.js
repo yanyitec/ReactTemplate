@@ -196,8 +196,8 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
                     return this;
                 target || (target = {});
                 target.then = function (onfullfill, onreject) { return promise.then(onfullfill, onreject); };
-                target.done = function (onfullfill) { return promise.then(onfullfill); };
-                target.fail = function (onreject) { return promise.then(null, onreject); };
+                target.done = function (onfullfill) { promise.done(onfullfill); return this; };
+                target.fail = function (onreject) { promise.fail(onreject); return this; };
                 target.promise = promise.promise;
                 return target;
             };

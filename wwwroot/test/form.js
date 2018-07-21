@@ -8,7 +8,7 @@
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "lib/react/react", "lib/ui", "lib/antd/antd"], function (require, exports, React, ui_1, antd_1) {
+define(["require", "exports", "lib/react/react", "lib/ui", "lib/module", "lib/antd/antd"], function (require, exports, React, ui_1, module_1, antd_1) {
     "use strict";
     exports.__esModule = true;
     var FormView = /** @class */ (function (_super) {
@@ -20,11 +20,12 @@ define(["require", "exports", "lib/react/react", "lib/ui", "lib/antd/antd"], fun
             return React.createElement(antd_1.Collapse, null,
                 React.createElement(antd_1.Collapse.Panel, null,
                     React.createElement(ui_1.FieldsetView, { header: "\u57FA\u672C\u4FE1\u606F" },
+                        React.createElement("div", null, this.props.Id),
                         React.createElement("div", { className: 'grid' },
                             React.createElement(ui_1.FieldView, { className: 'col-d4', name: 'Id', xs: 'false' }),
-                            React.createElement(ui_1.FieldView, { className: 'col-d4', required: true, name: 'Name', xs: 'false' })))));
+                            React.createElement(ui_1.FieldView, { className: 'col-d4', required: true, name: 'Name', inputType: 'DatePicker', xs: 'false' })))));
         };
         return FormView;
     }(React.Component));
-    exports["default"] = ui_1.$mountable(FormView, {});
+    exports["default"] = module_1.$mountable(FormView, {});
 });

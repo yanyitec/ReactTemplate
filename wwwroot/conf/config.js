@@ -48,8 +48,19 @@
             "portal/auth",
             "portal/menu"
         ],
+        //url解析规则
+        resolves: {
+        //"^test/":"http://localhost:3000/test/"
+        },
         release_version: "1.0.0",
         //ajax配置
-        ajax: {}
+        ajax: {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-Requested-Type': 'json',
+                'X-Response-Type': 'json'
+            },
+            url_resolve: ''
+        }
     };
 });

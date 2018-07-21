@@ -1,10 +1,11 @@
 import * as React from 'lib/react/react';
 import * as ReactDOM from 'lib/react/react-dom';
-import {$mountable} from 'lib/ui';
+import {$mountable} from 'lib/module';
 
 export class My extends React.Component{
     props:any;
     state:any;
+    context:any;
     setState:Function;
     constructor(props){
         super(props);
@@ -17,7 +18,7 @@ export class My extends React.Component{
         });
     }
     render(){
-        if(this.props.transport)this.props.transport.getModelResult = ()=>{
+        if(this.context.store)this.context.store.getModalResult = ()=>{
             return this.state.value;
         }
 

@@ -25,7 +25,15 @@
         url: string;
     };
     preloads: string[];
+    resolves: {};
     release_version: string;
-    ajax: {};
+    ajax: {
+        headers: {
+            'X-Requested-With': string;
+            'X-Requested-Type': string;
+            'X-Response-Type': string;
+        };
+        url_resolve: string;
+    };
 };
 export default _default;

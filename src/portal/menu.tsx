@@ -1,7 +1,7 @@
 
 import  React, { Component } from 'lib/react/react';
 import { Menu, Icon, Modal  } from 'lib/antd/antd';
-import {viewport, IViewport} from 'lib/ui';
+import {viewport, IViewport} from 'lib/utils';
 
 export interface IMenuItem{
     Id:string;

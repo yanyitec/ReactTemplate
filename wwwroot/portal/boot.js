@@ -61,9 +61,9 @@ require(['config@conf/config'], sniffer).then(function (_config) {
     //启动入口模块
     .then(function (preload_mods) {
     var App = preload_mods[preload_mods.length - 1];
-    if (!App.$mount) {
-        showError("启动模块错误，请联系管理员。(启动模块没有$mount函数)");
-        throw new Error('启动模块必须具备$mount函数');
+    if (!App.mount) {
+        showError("启动模块错误，请联系管理员。(启动模块没有mount函数)");
+        throw new Error('启动模块必须具备mount函数');
     }
     var appElement = document.getElementById("app");
     appElement.innerHTML = "";
@@ -72,7 +72,7 @@ require(['config@conf/config'], sniffer).then(function (_config) {
         appProps = { module: appProps };
     }
     appProps.boot = booter;
-    var appPromise = App.$mount(appProps, appElement);
+    var appPromise = App.mount(appProps, appElement);
     if (!appPromise || typeof appPromise.then !== 'function') {
         return Promise.resolve(appPromise, "callbackSync");
     }

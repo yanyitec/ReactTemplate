@@ -1,17 +1,15 @@
 
 import  React, { Component } from 'lib/react/react';
-import { Menu, Icon, Modal,Button,Dropdown,Breadcrumb  } from 'lib/antd/antd';
-import {  connect } from 'lib/redux/react-redux';
-
-import * as axios from 'lib/axios';
 import {deepClone} from 'lib/utils';
-import {viewport,attach, __setApp,IViewport} from 'lib/ui';
+import { Menu, Icon,Button,Dropdown,Breadcrumb  } from 'lib/antd/antd';
+import {viewport,attach} from 'lib/utils';
+import {__module__,Loadable, IModuleCreation} from 'lib/module';
 import MainMenuView,{IMainMenuState,IMenuItem, IMainMenuAction} from 'portal/menu';
 import Auth,{IAuthState} from 'portal/auth';
+import ajaxable from 'portal/ajax';
 
 //import * as config from 'conf/config';
 
-import {getCookie,$mountable,CascadingView,LoadableView, ContentView, IMountArguments, Center} from 'lib/ui';
 
 declare var Deferred : any;
 declare var Promise : any;
@@ -48,29 +46,7 @@ interface IAppAction extends IMainMenuAction,INavAction{
     onMenuToggleMin:()=>any;    
 }
 
-export class DialogView extends Component{
-  props:any;
-  
-  render(){
-    const {title,width,height,onOk,onCancel} = this.props; 
-    let contentView = React.createElement(ContentView,this.props,null);
-    return <Modal title={title}
-      visible={true}
-      onOk={onOk}
-      onCancel={onCancel}
-      confirmLoading={false}
-    >
-      {contentView}
-    </Modal>
-  }
-}
 
-let Dialog = connect((model:IAppState)=>{return model.dialog},(dispatch)=>{
-  return {
-    onOk:()=>dispatch({type:"dialog.ok"}),
-    onCancel:()=>dispatch({type:"dialog.cancel"})
-  }
-})(DialogView);
 
 function NavView(appProps:IAppState & INavAction & {simple:boolean}){
   let props = appProps.nav;
@@ -228,6 +204,14 @@ function buildMinQuicks(user,customActions){
 
 export class AppView extends Component{
   props:any;
+  context:any;
+  constructor(props:any){
+    super(props);
+    
+  }
+  componentDidMount(){
+    
+  }
   render(){
     let state :IAppState = this.props;
     const {menu,dialog,auth,workarea,nav,user,customActions,viewport} = this.props;
@@ -271,10 +255,10 @@ export class AppView extends Component{
         
         <div id='layout-body'>
           { viewport!='xs'?<div id='layout-nav'><NavView nav={nav} menu={menu} onNavClick={this.props["nav.click"]} simple={viewport=='sm'} /></div>:null }
-          {workarea ?<div id='layout-workarea'><LoadableView id="workarea" {...workarea} /></div>:null}
+          {workarea ?<div id='layout-workarea'><Loadable id="workarea" {...workarea} /></div>:null}
         </div>
       </div>
-      {dialog.enable===true?<Dialog />:null}
+      
       {auth.enable===true?<Auth {...auth} onAuthSuccess={this.props["auth.success"]}></Auth>:null}
     </div>;
   }
@@ -313,11 +297,15 @@ let handle_resize =(state:IAppState):any=>{
 
 let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
   "app.navigate":(state,action)=>{
-    action.$transport={"__transport__":"app.navigate",superStore:appStore};
+    let workarea ={...action};
+    workarea.__REPLACEALL__ = true;
+    workarea.super_store = appStore;
+    workarea.ctype = 'module';
+    workarea.tick = new Date().valueOf();
     //action.superStore = appStore;
     return {
       menu:{hidden:state.menu.mode=='min'?true:state.menu.hidden},
-      workarea:action
+      workarea:workarea
     };
   },
   "app.resize":(state:IAppState,action)=>{
@@ -373,7 +361,10 @@ let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
     }
     return action_handlers['app.navigate'].call(this,state,{
       type:"app.navigate",
-      module:url
+      url:url,
+      forceRefresh:true,
+      super_store:appStore,
+      ctype:'module'
     });
     
   },
@@ -465,23 +456,13 @@ attach(window,"resize",()=>{
   }
 })
 
-axios.defaults.headers.common = {'X-Requested-With': 'XMLHttpRequest','X-Requested-DataType':'json','X-Response-DataType':'json'};
-axios.interceptors.response.use((response) =>{
-  if(response.status==='401'){
-    setTimeout(()=>{appStore.dispach({type:'user.signin'})},0);
-    throw response;
-  }
-  return response.data;
-},(err)=>{
-  console.error(err);
-  alert(err);
-});
+
 export interface IApp{
   dialog(opts);
   navigate(urlOrOpts);
   dispach(action:{type:string});
-  GET(url,data):IThenable;
-  POST(url,data):IThenable;
+  getJson(url,data):IThenable;
+  postJson(url,data):IThenable;
   winAlert(msg);
 }
 const apiProvider =(appStore)=>{return {
@@ -491,7 +472,7 @@ const apiProvider =(appStore)=>{return {
     appStore.dispatch(action);
     return deferred.promise();
   },
-  navigate:function(urlOrOpts){
+  navigate:function(urlOrOpts,data?:any){
     let action = urlOrOpts;
     if(typeof urlOrOpts ==='string'){
       let state :IAppState= this.getState();
@@ -499,20 +480,21 @@ const apiProvider =(appStore)=>{return {
       if(!node) throw new Error(`${urlOrOpts} is not in menu/permissions`);
       action = {...node};
     }
-    if(action.module===undefined)action.module = action.Url;
+    //if(action.module===undefined)action.module = action.Url;
     action.type = "app.navigate";
+    action.ctype = 'module';
+    if(!action.url) action.url = action.Url; 
+    action.innerProps= data;
     this.dispatch(action);
   },
-  GET:(url,data) :IThenable=>{
-    return axios.get(url,data);
-  },
-  POST : (url,data):IThenable=>{
-    return axios.post(url,data);
-  },
+  
+  
   winAlert(msg){
     alert(msg);
   }
-};}; 
+};};
+
+
 
 let view_type = viewport();
 let defaultModel = {
@@ -525,29 +507,33 @@ let defaultModel = {
     enable:true
   }
 }
+let onCreating =(creation:IModuleCreation)=>{
+  if(appStore) throw new Error("App must be singleon, please do not mount it once again.");
+    appStore = creation.$store;
+    appStore.$modname = "app";
+    $app = appStore;
+    define("app",appStore);
+    ajaxable(appStore,appStore,config.ajax);
+}
 let appStore;
-let App= $mountable(AppView,{
-    model :defaultModel,
-    onCreating:(reduxParams:IMountArguments)=>{
-      appStore = reduxParams.store;
-      appStore.$modname = "app";
-      __setApp(appStore);
-      $app = appStore;
-      define("app",appStore);
-    },
+let App= __module__(AppView,{
+    state :defaultModel,
+    onCreating:onCreating,
     action_handlers:action_handlers,
     apiProvider:apiProvider
   }
 );
+
+
+
 export let $app :IApp = appStore;
 
-let $mount = App.$mount;
-App.$mount =(props:any,targetElement:HTMLElement,superStore,transport?:any)=>{
+let $mount = App.mount;
+App.mount =(props:any,targetElement:HTMLElement,superStore)=>{
   return new Promise((resolve,reject)=>{
     let authConfig = props.auth= deepClone(config.auth);
     authConfig.authview_resolve = resolve;
     authConfig.enable = true;
-    
     $mount(props,targetElement);
   });
   

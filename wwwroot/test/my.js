@@ -8,7 +8,7 @@
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "lib/react/react", "lib/ui"], function (require, exports, React, ui_1) {
+define(["require", "exports", "lib/react/react", "lib/module"], function (require, exports, React, module_1) {
     "use strict";
     exports.__esModule = true;
     var My = /** @class */ (function (_super) {
@@ -18,7 +18,6 @@ define(["require", "exports", "lib/react/react", "lib/ui"], function (require, e
         }
         My.prototype.render = function () {
             var _this = this;
-            debugger;
             var handler = function () {
                 return _this.props["modal1.show"];
             };
@@ -36,25 +35,29 @@ define(["require", "exports", "lib/react/react", "lib/ui"], function (require, e
         return My;
     }(React.Component));
     exports.My = My;
-    exports["default"] = ui_1.$mountable(My, {
+    exports["default"] = module_1.$mountable(My, {
         action_handlers: {
             "my.alert": function (state, action) {
                 alert("test/my 页面调用了alert方法:" + action.text);
+                return state;
             },
             "modal2.show": function (state, action) {
-                ui_1.$app.dialog({
-                    title: "调用dialog2",
-                    module: action.data,
-                    superStore: this
-                });
             },
             "modal1.show": function (state, action) {
-                action.payload = ui_1.$app.dialog({ title: "里面出来的模态框", module: "test/dialog", superStore: this }).then(function (result) {
+                var now = new Date();
+                var t = now.getMonth() + '-' + now.getDate() + ' ' + now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
+                var param = {
+                    title: "里面出来的模态框",
+                    url: 'test/dialog',
+                    data: { text: t }
+                };
+                action.payload = this.pop(param).then(function (result) {
+                    console.log(result);
                     //把result 变成一个action
                     var action = {
                         type: 'my.changeText',
                         status: result.status,
-                        data: result.data
+                        data: result.store.getModalResult()
                     };
                     //框架会dispach这个action
                     return action;
@@ -65,15 +68,17 @@ define(["require", "exports", "lib/react/react", "lib/ui"], function (require, e
             "my.changeText": function (state, action) {
                 //alert(action.status + "->" + action.data);
                 return {
-                    returnFromModal: "对话框里的数据是:" + action.data
+                    returnFromModal: '点击的按键是:' + action.status + ",对话框里的数据是:" + action.data
                 };
             },
             //要让this指向store，必须用function而不能用()=>
             "my.invokeSuper": function (state, action) {
-                this.superStore.dispatch({ type: 'menu.toggleFold' });
+                this.super_store.dispatch({ type: 'menu.toggleFold' });
+                return state;
             },
             "my.jump": function (state, action) {
-                this.root().navigate('test/form');
+                this.root().navigate('test/form', { Id: 'my.jump-idx' });
+                return state;
             }
         }
     });

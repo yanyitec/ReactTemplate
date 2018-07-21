@@ -1,4 +1,4 @@
-/// <reference types="react" />
+﻿/// <reference types="react" />
 import React, { Component } from 'lib/react/react';
 export declare let mergemo: (old: any, newModel: any) => any;
 export declare let attach: (elem: any, evt: any, handler: any) => void;

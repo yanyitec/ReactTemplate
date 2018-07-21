@@ -13,11 +13,20 @@ declare var Promise: Function;
  * @interface IRequireConfig
  */
 interface IRequireConfig {
-    prefixes?: {
+    resolves?: {
         [name: string]: string | string[];
     };
     bas: string;
     release_version?: string;
+}
+interface IResolveRule {
+    name: string;
+    regex: RegExp;
+    replacements: string[];
+}
+interface IResolvedUrl {
+    rule: IResolveRule;
+    urls: string[];
 }
 /**
  * 一个require 等同用模块管理器
@@ -27,6 +36,7 @@ interface IRequireConfig {
  */
 interface IRequire {
     (modname: string | string[], ...modnames: string[]): IPromise;
+    resolveUrl(url: string): string[];
     /**
      * 配置该模块
      *
@@ -63,8 +73,11 @@ interface IRequire {
      */
     release_version: string;
     define: Function;
-    $prefixes: {
-        [key: string]: string | string[];
+    $resolvedUrls: {
+        [key: string]: IResolvedUrl;
+    };
+    $resolveRules: {
+        [key: string]: IResolveRule;
     };
     $modules: IModule[];
     $bas_url: string;

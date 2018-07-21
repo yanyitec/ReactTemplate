@@ -18,12 +18,21 @@ declare var Promise:Function;
  * @interface IRequireConfig
  */
 interface IRequireConfig{
-    prefixes?:{[name:string]:string|string[]};
+    resolves?:{[name:string]:string|string[]};
     bas:string;
     release_version?:string;
+    
 }
 
-
+interface IResolveRule{
+    name:string;
+    regex:RegExp;
+    replacements:string[];
+}
+interface IResolvedUrl{
+    rule:IResolveRule;
+    urls:string[];
+}
 
 
 /**
@@ -34,6 +43,8 @@ interface IRequireConfig{
  */
 interface IRequire{
     (modname:string|string[],...modnames:string[]):IPromise;
+
+    resolveUrl(url:string):string[];
     /**
      * 配置该模块
      *
@@ -81,7 +92,8 @@ interface IRequire{
 
     define:Function;
 
-    $prefixes:{[key:string]:string|string[]};
+    $resolvedUrls:{[key:string]:IResolvedUrl};
+    $resolveRules:{[key:string]:IResolveRule};
     $modules:IModule[];
     $bas_url:string;
 
@@ -187,7 +199,7 @@ interface IRes{
     } as IRequire;
     
     let modules = requirejs.$modules = [];
-    let prefixes = requirejs.$prefixes = {};
+
     let each : (func:(mod:Module)=>boolean)=>IRequire = requirejs.each = (func:(mod:Module)=>boolean):IRequire=>{
         for(let i =0,j=modules.length;i<j;i++){
             if(func(modules[i])===false) return requirejs;
@@ -195,82 +207,90 @@ interface IRes{
         return requirejs;
     }
     
-    let find: (name:string,merge?:boolean)=>Module|ModuleNames = requirejs.find = (name:string,merge?:boolean):Module|ModuleNames=>{
+    let find: (name:string,nameIfNotfound?:boolean)=>Module|ModuleNames = requirejs.find = (name:string,nameIfNotfound?:boolean):Module|ModuleNames =>{
         let module :Module;
-        let mergeNames:boolean=true;
         let mnames = new ModuleNames(name,(alias,type,names):boolean=>{
-            if(type==="keys" || type==="prefix"){
-                each((mod)=>{
-                    if(mod.checkAlias(alias)){
-                        module = mod;
-                        mergeNames=false;
-                        return false;
-                    }
-                });
-                if(module) return false;
-            }else if(type ==="shortNames"){
-                each((mod)=>{
-                    if(mod.checkAlias(alias)){
-                        module = mod;
-                        return false;
-                    }
-                });
-                
-            }else if(type ==="names"){
-                if(module) return;
-                each((mod)=>{
-                    if(mod.checkAlias(alias)){
-                        module = mod;
-                        mergeNames=names.prefix===undefined;
-                        return false;
-                    }
-                });
-                if(module && names.prefix===undefined) return false;
-            }else if(type=="urls"){
-                if(module)return;
-                each((mod)=>{
-                    if(mod.checkAlias(alias)){
-                        module = mod;
-                        return false;
-                    }
-                });
-            }else {
-                throw new Error("not implements");
-            }
+            each((mod)=>{
+                if(mod.checkAlias(alias)){
+                    module = mod;
+                    return false;
+                }
+            });
+            if(module) return false;
         });
-        if(module){
-            if(mergeNames && merge){}
-            return module;
-        }
-        return (merge)?mnames:undefined;
+        return module?module:(nameIfNotfound?mnames:null);
+        
     }
     requirejs.ensure = (fullname:string):Module=>{
         
-        let modOrNames :any= find(fullname,true);
-        if(modOrNames instanceof Module) return modOrNames as Module;
-        let mod :Module = new Module(fullname);
-        modules[(modOrNames as ModuleNames).key] = mod;
+        let moduleOrName :Module|ModuleNames= find(fullname,true);
+        if(moduleOrName instanceof Module) return moduleOrName as Module;
+        let mod :Module = new Module(moduleOrName);
+        modules[(moduleOrName as ModuleNames).key] = mod;
         modules.push(mod);
         mod.load();
         return mod;
     }
-    requirejs.config = (cfg:IRequireConfig):IRequireConfig=>{
-        let prefixs = cfg.prefixes;
-        if(prefixs){
-            for(let prefixname in prefixs){
-                let ps = prefixs[prefixname];
-                let existed = prefixes[prefixname];
-                if(!existed) existed = prefixes[prefixname] =[];
-                if(typeof ps==='string') ps= [ps];
-                for(let i=0,j=ps.length;i<j;i++){
-                    let url = trim(ps[i]);
-                    if(!url) continue;
-                    if(url[url.length-1]!='/') url += '/';
-                    if(!array_exists(existed,url)) existed.push(url);
+
     
+    let resolvedUrls : {[index:string]:IResolvedUrl}=requirejs.$resolvedUrls = {};
+    let resolveRules :{[index:string]:IResolveRule} = requirejs.$resolveRules ={};
+    let resolveUrl = requirejs.resolveUrl =(url:string,returnRule?:boolean):string[]=>{
+        if(is_url(url)) return [url];
+        let query:string;
+        let at = url.indexOf('?');
+        if(at>=0) {
+            query = url.substr(at);
+            url =url.substr(0,at-1);
+        }
+        let resolved:IResolvedUrl = resolvedUrls[url];
+        if(!resolved){
+            let matchedRule:IResolveRule;
+            for(let k in resolveRules){
+                let rule = resolveRules[k];
+                if(rule.regex.test(url)) matchedRule = rule;
+            }
+            if(matchedRule){
+
+                let urls = [];
+                for(let m=0,n=matchedRule.replacements.length;m<n;m++){
+                    let replacement = matchedRule.replacements[m];
+                    let resolvedUrl = url.replace(matchedRule.regex,replacement);
+                    if(!is_url(resolvedUrl)) resolvedUrl = bas_url + resolvedUrl;
+                    urls.push(resolvedUrl);
                 }
+                resolved = resolvedUrls[url] = {rule:matchedRule,urls:urls};
+            }else {
+                resolved = resolvedUrls[url] = {rule:null,urls:[bas_url + url]};
             }
         }
+        let result = [];
+        for(let i =0,j=resolved.urls.length;i<j;i++){
+            let finalUrl = resolved.urls[i];
+            if(query) finalUrl += query;
+            result.push(finalUrl);
+        }
+        return result;
+    }
+    function config_resolves(resolves:{[index:string]:string|string[]}){
+        if(resolves['<APPEND>']==='</APPEND>'){
+            resolvedUrls = {};
+            resolveRules  ={}; 
+        }
+        for(let  n in resolves){
+            let existed = resolveRules[n];
+            if(!existed) existed =resolveRules[n] = {name:n,regex:new RegExp(n),replacements:[]};
+            let urls = resolves[n];
+            if(typeof urls==='string') urls = [urls];
+            else if(!urls || !urls.push) throw new Error("resolves 's value must be string or string[]");
+            for(let i =0,j=urls.length;i<j;i++){
+                let url = urls[i];
+                if(!array_exists(existed.replacements,url)) existed.replacements.push(url);
+            }
+        }
+    }
+    requirejs.config = (cfg:IRequireConfig):IRequireConfig=>{
+        if(cfg.resolves) config_resolves(cfg.resolves);
         if(cfg.bas) {
             requirejs.$bas_url = cfg.bas;
             if(requirejs.$bas_url[requirejs.$bas_url.length-1]!='/') requirejs.$bas_url += '/';
@@ -347,12 +367,12 @@ interface IRes{
         prefix:string;
         aliases:string[];
         urls:string[];
-        constructor(key:string,onNameParsed?:(name:string,type:string,names:ModuleNames)=>boolean,prefixSetting?:{[index:string]:string|string[]}){
+        constructor(key:string,onNameParsed?:(name:string,type:string,names:ModuleNames)=>boolean){
             if(!key) throw new Error('模块名必须是非空字符串');
             this.key = (key=trim(key));
             if(onNameParsed && onNameParsed(this.key,"keys",this)===false) return;
             let aliases :string[] = this.aliases = [key];
-            let urls:string[] = this.urls = [];
+            //let urls:string[] = this.urls = [];
             
             let at = key.indexOf("@");
             let name:string;
@@ -361,65 +381,37 @@ interface IRes{
                 if(onNameParsed && onNameParsed(shortName,"shortNames",this)===false) return;
                 aliases.push(shortName);
                 name = key.substr(at+1);
+                //if(onNameParsed && onNameParsed(name,"names",this)===false) return;
             }else {
                 name = key; 
             }
-            //aliases.push(nameOrUrl);
-            let prefixs = prefixSetting ||  requirejs.$prefixes;
-            if(!is_url(name)){
-                
-                if(prefixs){
-                    for(let prefix in prefixs){
-                        if(name.indexOf(prefix)!==0) continue;
-                        this.prefix = prefix;
-                        if(onNameParsed && onNameParsed(name,"prefix",this)===false) return;
-                        aliases.push(name);
-                        let prefix_urls = prefixs[prefix] as string[];
-                        
-                        for(let i=0,j=prefix_urls.length;i<j;i++) {
-                            let url :string = prefix_urls[i];
-                            if(!url) {console.warn(`the url for require.$prefixs[${prefix}@${i}] is empty.`);continue;}
-                            url += name.substr(prefix.length);
-                            let url1  =url.toLowerCase();
-                            
-                            let ext = extname(url);
-                            if(!ext) {
-                                if(onNameParsed && onNameParsed(url1,"names",this)===false) return;
-                                aliases.push(url1);
-                                this.name  = url1;
-                                url += ".js";
-                                if(!is_url(url)) url = requirejs.$bas_url + url;
-                                if(onNameParsed && onNameParsed(url,"urls",this)===false) return;
-                                urls.push(url);
-                            }else {
-                                if(!is_url(url)) url = requirejs.$bas_url + url;
-                                if(onNameParsed && onNameParsed(url1,"urls",this)===false) return;
-                                urls.push(url);
-                            }
-                            
-                        }
-                       
-                        return;
-                    }
-                }
-            }
             
-            let url = name;
-            let ext = extname(url);
+            let ext = extname(name);
             if(!ext){
+                if(name!=key){
+                    if(onNameParsed && onNameParsed(name,"names",this)===false) return;
+                    aliases.push(name);
+                }
+                this.name = name;
+                name += ".js";
+            }
+            let urls :string[];
+            if(is_url(name)){
+                urls = [name];
+            }else {
                 if(onNameParsed && onNameParsed(name,"names",this)===false) return;
                 aliases.push(name);
                 this.name = name;
-                url += ".js";
-                if(!is_url(url)) url = requirejs.$bas_url + url;
+                urls =  resolveUrl(name);
+            }
+            this.urls = urls;
+            for(let i in urls){
+                let url = urls[i];
                 if(onNameParsed && onNameParsed(url,"urls",this)===false) return;
                 aliases.push(url);
-                urls.push(url);
-            }else {
-                if(!is_url(url)) url = requirejs.$bas_url + url;
-                if(onNameParsed && onNameParsed(name,"urls",this)===false) return;
-                urls.push(url)
             }
+            
+            
             
         }
     }
@@ -481,7 +473,7 @@ interface IRes{
                 if(name){
                     if(typeof name==="string"){
                         names = new ModuleNames(name);
-                    }
+                    }else names = name;
                     this.key = names.key;
                     this.aliases = names.aliases;
                     this.urls = names.urls;
