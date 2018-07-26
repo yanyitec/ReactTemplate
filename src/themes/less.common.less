@@ -105,37 +105,38 @@ html,body{
                 padding: (@header-height - @head-font-size)/2;
                 & * {font-size:@head-font-size;}
             }
-            #layout-menu-main{
-                left:0;
-                top: @header-height;
+            
+        }
+        #layout-menu-main{
+            left:0;
+            top: @header-height;
+            .fold-menu{
+                height:@font-size*2;
+                padding:@padding;
+                
+            }
+            .anticon{
+                font-size: @font-size * 1.2;
+            }
+            &.fold{
+                width: @header-height ;
                 .fold-menu{
-                    height:@font-size*2;
-                    padding:@padding;
-                    
+                    text-align: center;
                 }
                 .anticon{
-                    font-size: @font-size * 1.2;
+                    font-size: @font-size * 1.5;
                 }
-                &.fold{
-                    width: @header-height ;
-                    .fold-menu{
-                        text-align: center;
+                
+                .ant-menu-inline-collapsed {
+                    width:@header-height ;
+                    &>.ant-menu-item,
+                    &>.ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
+                    &>.ant-menu-submenu > .ant-menu-submenu-title{
+                        padding: 0 (@header-height - @font-size *1.5 )/2 !important; 
                     }
-                    .anticon{
-                        font-size: @font-size * 1.5;
-                    }
-                    
-                    .ant-menu-inline-collapsed {
-                        width:@header-height ;
-                        &>.ant-menu-item,
-                        &>.ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
-                        &>.ant-menu-submenu > .ant-menu-submenu-title{
-                            padding: 0 (@header-height - @font-size *1.5 )/2 !important; 
-                        }
-                    }
-                    .ant-menu-root>li{
-                        text-align :left;
-                    }
+                }
+                .ant-menu-root>li{
+                    text-align :left;
                 }
             }
         }
@@ -159,6 +160,52 @@ html,body{
             }
             
         }
+        #layout-workarea{
+            padding:@padding*2;
+        }
+        .module{
+            padding:@padding;
+            .mask{
+                &>div.mask-front{
+                    & .pop-message-box{
+                        padding:@padding*1.5;
+                        padding-right:@font-size*2 + @margin*2;
+                        border-radius:@padding*0.7;
+                        
+                        &>div.pop-message-header {
+                            & .pop-message-caption{
+                                vertical-align: middle;
+                                font-size:@font-size*1.2;
+                            }
+                            
+                            & i{
+                                font-size:@font-size*1.8;
+                                margin:0 @margin 0 0;
+                            }
+                        }
+                        &>div.pop-message-body{
+                            display: block;
+                            padding-left:@font-size*1.8 + @margin;
+                        }
+                        &>div.pop-message-footer{
+                            position:absolute;
+                            top:@padding;right:@margin;
+                        }
+                    }
+        
+                }
+                &.waiting{
+                    .mask-front{
+                        padding : @padding;
+                        border-radius: @padding;
+                        background-position: 50% @padding;
+                        .pop-message{
+                            padding:@padding;
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -172,7 +219,7 @@ html,body{
         position:fixed;
         left:0;top:0;
         width:100%;
-        z-index:100;
+        z-index:1000;
         
 
         #layout-menu-toggle{
@@ -180,33 +227,75 @@ html,body{
             position: absolute;
             left:0;
             top:0;
-            z-index:101;
+            z-index:1001;
         }
-        #layout-menu-main{
-            .tiny-bbox;
-            position: absolute;
-            left:0; 
-            z-index:102;
-            width:200px ;
-            .fold-menu{
-                text-align: left;
-            }
-        }
+        
     }
     
     &.menu-mode-fold{
-        #layout-header{
-            #layout-menu-main{
-                .fold-menu{
-                    text-align: center;                
-                }
-                .ant-menu-root>li{
-                    text-align :center;
-                }
+        #layout-menu-main{
+            .fold-menu{
+                text-align: center;                
+            }
+            .ant-menu-root>li{
+                text-align :center;
             }
         }
         
     }
+    #layout-menu-main{
+        .tiny-bbox;
+        position: fixed;
+        left:0; 
+        z-index:1002;
+        width:200px ;
+        .fold-menu{
+            text-align: left;
+        }
+    }
+}
+.module{
+    .tiny-bbox;
+    position: relative;
+    .mask{
+        .tiny-bbox;
+        position: absolute;
+        width:100%;
+        height:100%;
+        z-index:996;
+        left:0;top:0;
+        &>div.mask-back{
+            .tiny-bbox;
+            position: absolute;
+            width:100%;
+            height:100%;
+            z-index:997;
+            
+        }
+        &>div.mask-front{
+            margin:0;
+            position: absolute;
+            z-index: 998;
+            & .pop-message-box{
+                padding:0;
+                position: relative;
+                &>div.pop-message-header{
+                    display: table-row;
+                    &>div{
+                        display: table-cell;
+                    }
+                }
+                &>div.pop-message-body{
+                    display: block;
+                }
+                &>div.pop-message-footer{
+                    position:absolute;
+                }
+            }
+
+        }
+    }
+
 }
 
 
@@ -273,7 +362,7 @@ html,body{
 @media (min-width: @screen-lg-min) {
 
     @margin:8px;
-    @padding:5px;
+    @padding:7px;
     @font-size:14px;
 
     .grid{

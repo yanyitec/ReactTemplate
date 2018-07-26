@@ -214,15 +214,6 @@ function settleValue(promise:IPromise,promiseState:IPromiseState,status:PromiseS
 }
 
 
-
-function createThenCallback(orignalCallback:(settledValue:any)=>void,resolveOrReject:(value:any)=>void,useApply:boolean){
-    return  function(settledValue:any):any{
-        let result = (useApply) ? orignalCallback.apply(null,arguments):orignalCallback.call(null,settledValue);
-        resolveOrReject(result);
-        return result;
-    };
-}
-
 function makeOpts(opts:IPromiseOptions|string|boolean):IPromiseOptions{
     if(opts===false) opts = {"callbackSync":false};
     else if(opts===true) opts = {"callbackSync":true};
@@ -292,7 +283,17 @@ class PromiseA implements IPromise{
         
         if(executor){
             try{
-                executor((value)=>resolvePromise(promise,promise,value,promise.__promise_options),(reason)=>rejectPromise(promise,promise,reason));
+                executor(function(value,applyArg?:any){
+                        if(value==='#useApply'){
+                            let opts = promise.__promise_options || (promise.__promise_options={useApply:true});
+                            opts.useApply = true;
+                            
+                            value = applyArg;
+                        }
+                        resolvePromise(promise,promise,value,promise.__promise_options);
+                    }
+                    ,(reason)=>rejectPromise(promise,promise,reason)
+                );
             }catch(ex){
                 console.error(ex);
                 rejectPromise(promise,promise,ex);

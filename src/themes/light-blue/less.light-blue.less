@@ -76,6 +76,66 @@
             background-color:darken(@back-bg-color,5%);
         }
     }
+
+    #layout .module{
+        .mask{
+            .mask-back{
+                background-color: lighten(@back-bg-color,3%);
+                opacity: 0.15;
+            }
+            &.waiting{
+                
+                div.mask-front{
+                    border:1px solid darken(@back-bg-color,10%);
+                    padding-top:40px;
+                    background-color:lighten(@back-bg-color,30%) ;
+                    background-image:url(images/loading.gif);
+                    background-repeat:no-repeat;
+                }
+            }        
+            &.info{
+                .pop-message-box{
+                    border: 1px solid #91d5ff;
+                    background-color: #e6f7ff;
+                    
+                    .pop-message-icon{
+                        color:darken(#91d5ff,10%);
+                    }
+                }
+            }    
+            &.error{
+                .pop-message-box{
+                    border: 1px solid #ffa39e;
+                    background-color: #fff1f0;
+                    
+                    .pop-message-icon{
+                        color:darken(#ffa39e,10%);
+                    }
+                }
+            } 
+            &.warning{
+                .pop-message-box{
+                    border: 1px solid #ffe58f;
+                    background-color: #fffbe6;
+                    
+                    .pop-message-icon{
+                        color:darken(#ffe58f,10%);
+                    }
+                }
+            }  
+            &.success{
+                .pop-message-box{
+                    border: 1px solid #b7eb8f;
+                    background-color: #f6ffed;
+                    
+                    .pop-message-icon{
+                        color:darken(#b7eb8f,10%);
+                    }
+                }
+            }  
+        }
+        
+    }
 }
 
 

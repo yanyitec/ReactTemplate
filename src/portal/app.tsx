@@ -244,18 +244,19 @@ export class AppView extends Component{
         {//viewType=='xs' || viewType=='sm'?buildMinQuicks(user,customActions):buildNormalQuicks(user,customActions)
         }
 
-        <MainMenuView id='layout-menu-main' {...menu} className={contentMode}
+        
+      </div>
+      <MainMenuView id='layout-menu-main' {...menu} className={contentMode}
             onMenuClick={this.props["menu.click"]} 
             onMenuToggleFold={this.props["menu.toggleFold"]} 
             onMouseOver ={this.props["menu.show"]}
             onMouseOut={this.props["menu.hide"]}
           />
-      </div>
       <div id='layout-content' className={contentMode}>
         
         <div id='layout-body'>
           { viewport!='xs'?<div id='layout-nav'><NavView nav={nav} menu={menu} onNavClick={this.props["nav.click"]} simple={viewport=='sm'} /></div>:null }
-          {workarea ?<div id='layout-workarea'><Loadable id="workarea" {...workarea} /></div>:null}
+          {workarea ?<Loadable {...workarea}  id="layout-workarea" is_workarea={true} />:null}
         </div>
       </div>
       
@@ -349,7 +350,7 @@ let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
   },
 
   "menu.click":function(state,action){
-    let node = action.data;
+    let node = action;
     let url = node.Url;
     if(!url) return state;
     if(url.indexOf("[dispatch]:")>=0){
@@ -400,14 +401,14 @@ let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
   },
   
   "auth.success":(state,action)=>{
-    let{roots, nodes} = buildMenuModel(action.data);
+    let{roots, nodes} = buildMenuModel(action);
     let newState = handle_resize(state);
     let newMenu = newState.menu || (newState.menu={});
     
     newMenu.data = nodes;
     newMenu.roots = roots;
-    newState.user ={data:action.data.User};
-    newState.auth ={data:action.data.Auth,enable:false};
+    newState.user ={data:action.User};
+    newState.auth ={data:action.Auth,enable:false};
     return newState;
   }
 };

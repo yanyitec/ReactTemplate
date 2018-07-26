@@ -18,9 +18,10 @@ export function mergeDiff(dest,src,prop?:string) {
     if(prop===undefined){
         if(dest===src || src===undefined) return dest;
         if(dest===undefined || dest===null || src===null) return src;
-        if(src && src.__RELACEALL__){src.__RELACEALL__=undefined; return src;}
+        if(src && src.__REPLACEALL__){src.__REPLACEALL__=undefined; return src;}
         let destT  = typeof dest;
         let srcT = typeof src;
+        if(srcT==='object' && Object.prototype.toString.call(src)==='[object Array]') return src;
         let ds,isArr=false;
         if(destT==='object'){
             //console.log(Object.prototype.toString.call(dest),dest);
@@ -37,7 +38,6 @@ export function mergeDiff(dest,src,prop?:string) {
         if(!isArr){
             if(Object.prototype.toString.call(src)==='[object Array]') {
                 ds=[];
-                isArr;
             }else if(!ds){ 
                 ds={};
                 if(srcT!=='object') src={};
@@ -56,7 +56,7 @@ export function mergeDiff(dest,src,prop?:string) {
     let destValue = dest[prop];
     if(srcValue===undefined || srcValue===destValue) return destValue;
     if(destValue===undefined || srcValue === null || srcValue instanceof RegExp) return srcValue;
-    if(srcValue && srcValue.__RELACEALL__){srcValue.__RELACEALL__=undefined;return srcValue;}
+    if(srcValue && srcValue.__REPLACEALL__){srcValue.__REPLACEALL__=undefined;return srcValue;}
     let srcValueType = typeof srcValue;
     if(srcValueType==='number' || srcValueType==="string" || srcValueType==="boolean") return srcValue;
     //是对象，且不相同

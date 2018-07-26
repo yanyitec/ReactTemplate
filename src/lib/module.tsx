@@ -6,23 +6,37 @@ import { Provider, connect } from 'lib/redux/react-redux';
 import { mergeDiff, viewport } from 'lib/utils';
 import * as PropTypes from 'lib/react/prop-types';
 import * as axios from 'lib/axios';
-import {Modal} from 'lib/antd/antd';
+import {Modal,Icon} from 'lib/antd/antd';
+
+
 
 declare var require:Function;
 declare var Promise : any;
 declare var Deferred:any;
-
+export interface IReactComponent{
+    (props:any):any;
+    refs?:any;
+    props?:any;
+    forceUpdate?:any;
+    state?:any;
+    context?:any;
+    setState?:any;
+}
 
 export interface ILoadableState{
-    
+    id?:string;
+    className?:string;
+    style?:any;
+    width?:any;
+    height?:any;
     /**
-     * 内容类型 : 
+     * 内容类型 : 必填
      * 远程类型 : module,iframe,page
-     * 本地类型 : v-node,dom,html,text
+     * 本地类型 : v-node,Component,dom,html,text
      * @type {string}
      * @memberof IContentState
      */
-    ctype:string;
+    ctype?:string;
 
     /**
      * 内容
@@ -31,6 +45,7 @@ export interface ILoadableState{
      * @memberof IContentState
      */
     content?:any;
+    Component?:Function;
 
     /**
      *远程类型的url
@@ -46,72 +61,111 @@ export interface ILoadableState{
      * @type {*}
      * @memberof IContentState
      */
-    mod_state?:any;
+    parameters?:any;
     
     /**
-     * 远程类型加载完成后会调用这个函数
+     * 内容有变化后，会调用该函数
      *
      * @memberof IContentState
      */
-    loaded?:(ctype,value)=>any;
+    onContentChange?:(value,ctype)=>any;
+
+    /**
+     * iframe 完成检查。
+     * 设定了这个值后， iframe是否完成要符合该reg检查
+     *
+     * @type {string}
+     * @memberof ILoadableState
+     */
+    iframe_finish_url_regex ?:string;
     super_store?:any;
     //forceRefresh?:string;
     //作为action 使用
     type?:string;
     //menu 点击要刷新，即使是url一样也要刷新，但render并不总刷新
     tick?:number;
+    is_workarea?:boolean;
 }
 
-export interface IPopAction{
-    url:string;
-    data?:any;
-    fireOnLoaded?:boolean;
-}
+
 
 export class Loadable extends React.Component{
     refs:any;
-    props:any;
+    props:ILoadableState;
     setState:any;
     forceUpdate:any;
     state:any;
     context:any;
 
-    //componentDidMount:any;
-    
-
     cnode:HTMLElement;
     tick:number;
-    loadedUrl?:string;
+    loaded_url?:string;
+    loaded_content?:any;
     rszTimer?:any;
     _w:number;
     _h:number;
 
-    constructor(props){
+    constructor(props:ILoadableState){
         super(props);
     }
 
-    render(){
+    ctype(){
         let ctype = this.props.ctype;
-        let vnode;
-        if(ctype==='v-node' || ctype==='text'){
-            if(this.props.loaded) this.props.loaded.call(this.cnode,ctype,this.props.content);
-            return <div>{this.props.content || null}</div>;
-        } 
-        vnode = <div ref={(node) => this.cnode = node}></div>;
-        if(ctype==='html')  {
-            this.componentDidMount = this.componentDidUpdate = ()=>{
-                this.cnode.innerHTML = this.props.content;
-                if(this.props.loaded) this.props.loaded.call(this.cnode,'html',this.cnode);
-            }
-            return vnode;
+        if(ctype!==undefined)return ctype;
+        let content = this.props.content;
+        if(content!==undefined){
+            if(content._reactInternalInstance) return 'v-node'; 
+            if(content.tagName!==undefined && content.nodeType!==undefined) return 'dom';
+            if(typeof content==='string') return 'html';
+            return 'text';
         }
+        let url = this.props.url;
+        if(url){
+            if(/(.html?$)|(.html?\?)/.test(url)) return 'iframe';
+            if(/.js$/.test(url)) return 'module';
+        }
+        
+    }
+
+    render(){
+        let ctype = this.ctype();
+        if(!ctype) {console.warn("无法确定ctype,不显示任何东西",this.props);return null;}
+        let props  = this.props;
+        let vnode;
+        if(props.Component){
+            if(this.loaded_content!=props.Component){
+                if(props.onContentChange) setTimeout(()=>props.onContentChange.call(this.cnode,this.loaded_content,ctype),0); 
+                
+            }
+            let MyComponent :IReactComponent= this.props.Component as IReactComponent;
+            return <MyComponent {...this.props.parameters} ref={(node)=>this.loaded_content=node}/>
+        }
+        if(ctype==='v-node' || ctype==='text'){
+            let content = props.content||"";
+            if(this.loaded_content!=content){
+                if(this.props.onContentChange) setTimeout(()=>props.onContentChange.call(this.cnode,this.props.content,ctype),0); 
+                this.loaded_content= content;
+            }
+            return <div>{content}</div>;
+        } 
+        if(ctype==='html')  {
+            if(this.props.onContentChange) setTimeout(()=>props.onContentChange.call(this.cnode,this.props.content,ctype),0); 
+            return <div id={props.id ||null} className={props.className||null} style={props.style||null} dangerouslySetInnerHTML={{__html:props.content}}></div>
+        }
+        vnode = <div id={props.id ||null} className={props.className||null} style={props.style||null} ref={(node) => this.cnode = node} ></div>;
+        
         if(ctype==='dom') {
             this.componentDidMount = this.componentDidUpdate = ()=>{
-                this.cnode.innerHTML ="";this.cnode.appendChild(this.props.content);
-                if(this.props.loaded) this.props.loaded.call(this.cnode,'dom',this.props.content);
+                let content = this.props.content;
+                if(this.cnode.firstChild!=content){
+                    this.cnode.innerHTML ="";this.cnode.appendChild(this.props.content);
+                    if(this.props.onContentChange) this.props.onContentChange.call(this.cnode,this.props.content,ctype);
+                }
+                
             };
             return vnode;
         }
+        
         
         if(ctype==='iframe'){
             this.componentDidMount = this.componentDidUpdate = this.renderIframe;
@@ -130,55 +184,69 @@ export class Loadable extends React.Component{
         
     }
     renderModule(){
-        if(this.loadedUrl && this.loadedUrl==this.props.url && this.props.tick == this.tick){
+        if(this.loaded_url && this.loaded_url==this.props.url && this.props.tick == this.tick){
             return;
         }
         this.tick = this.props.tick;
-        require(this.loadedUrl=this.props.url).then((mod)=>{
+        require(this.loaded_url=this.props.url).then((mod)=>{
+            let mod_element = document.createElement('div');
+            this.cnode.innerHTML = "";
+            this.cnode.appendChild(mod_element);
+            let parameters = this.props.parameters || {};
+            if(this.props.is_workarea) parameters.__$is_workarea__=true;
             if(mod.createInstance && mod.mount){
-                let mod_element = document.createElement('div');
-                this.cnode.innerHTML = "";
-                this.cnode.appendChild(mod_element);
-                mod.mount(this.props.mod_state,mod_element,this.props.super_store).then((store)=>{
+                mod.mount(parameters,mod_element,this.props.super_store).then((store)=>{
                     store.$modname = this.props.url;
-                    if(this.props.loaded) this.props.loaded.call(this.cnode,'module',store);
+                    this.loaded_content = store;
+                    if(this.props.onContentChange) this.props.onContentChange.call(this.cnode,store,'store');
                 });
+            }else if(typeof mod ==='function'){
+                this.loaded_content = new mod(parameters,mod_element);
+                ReactDOM.render(this.loaded_content,mod_element,this.props.parameters);
+                if(this.props.onContentChange) this.props.onContentChange.call(this.cnode,this.loaded_content,'react');
             }
-            
-            
         });
     }
     
     
     renderIframe(){
-        if(this.loadedUrl && this.loadedUrl==this.props.url && this.props.tick == this.tick){
+        if(this.loaded_url && this.loaded_url==this.props.url && this.props.tick == this.tick){
             return;
         }
         this.tick = this.props.tick;
-        this.cnode.innerHTML = "<iframe></iframe>";
+        let style = "border:0;padding:0;margin:0;";
+        let width = this.props.width;
+        if(width) style += "width:" + width + ";";
+        else style += "width:100%;";
+        let height = (this.props as any).height;
+        if(height) style+="height:" + height;
+
+        //if(this.props.width)
+        let html = "<iframe style='"+style+"' border='0' "+(height?"height='"+height+"'":"") +(width?" width='"+width+"'":" width='100%'")+"></iframe>";
+        this.cnode.innerHTML = html;
         let iframe = this.cnode.firstChild as HTMLIFrameElement;
         iframe.onload = ()=>{
-            if(this.props.loaded) this.props.loaded.call(iframe,'iframe',iframe);
+            if(this.props.onContentChange) this.props.onContentChange.call(iframe,iframe,"iframe");
         };
-        let url = this.loadedUrl = this.props.url;
+        let url = this.loaded_url = this.props.url;
         if(url.indexOf('?')<0) url += '?';
         else url += '&';
         iframe.src= url += '_nocache='+Math.random();
         let fill = ()=>{
-            if(this._w!=this.cnode.offsetWidth)iframe.width =(this._w = this.cnode.offsetWidth)+'px';
-            if(this._h !=this.cnode.offsetHeight )iframe.height =(this._h = this.cnode.offsetHeight)+'px';
+            if(this._w!=this.cnode.clientWidth)iframe.width =(this._w = this.cnode.clientWidth)+'px';
+            if(this._h !=this.cnode.clientWidth )iframe.height =(this._h = this.cnode.clientHeight)+'px';
         };
-        if(this.rszTimer) clearInterval(this.rszTimer);
-        this.rszTimer = setInterval(fill,100);
-        fill();
+        //if(this.rszTimer) clearInterval(this.rszTimer);
+        //this.rszTimer = setInterval(fill,100);
+        //fill();
     }
     renderPage(){
-        if(this.loadedUrl && this.loadedUrl==this.props.url && !this.props.forceRefresh){
+        if(this.loaded_url && this.loaded_url==this.props.url && this.props.tick == this.tick){
             return;
         }
         axios.get(this.props.url).then((response)=>{
             this.cnode.innerHTML=response.data;
-            if(this.props.loaded) this.props.loaded.call(this.cnode,'iframe',this.cnode);
+            if(this.props.onContentChange) this.props.onContentChange.call(this.cnode,response.data,'html');
         });
     }
 }
@@ -267,7 +335,8 @@ export interface IModuleArguments{
      */
     mount_async?:(opts:IMountOpts)=>IThenable;
     
-    onCreating?:(creation:IModuleCreation)=>void;
+    //onCreating?:(creation:IModuleCreation)=>void;
+    initialize?:(props:any)=>IThenable;
     onMounting?:(store:any)=>void;
 }
 
@@ -284,10 +353,94 @@ export interface IModule{
     $api?:{[index:string]:Function};
     $Wrap?:any;
     contextTypes?:{ store: PropTypes.object};
-
 }
 
-interface IPopState extends ILoadableState{
+export interface IModalAction {
+    type?:string;
+    id?:string;
+    title?:string;
+    nav_name?:string;
+    className?:string;
+    width?:any;
+    height?:any;
+    /**
+     * 内容类型 : 必填
+     * 远程类型 : module,iframe,page
+     * 本地类型 : v-node,Component,dom,html,text
+     * @type {string}
+     * @memberof IContentState
+     */
+    ctype?:string;
+
+    /**
+     * 内容
+     * 类型为本地类型时，该值必须有
+     * @type {*}
+     * @memberof IContentState
+     */
+    content?:any;
+    Component?:Function;
+
+    /**
+     *远程类型的url
+     *
+     * @type {string}
+     * @memberof IContentState
+     */
+    url?:string;
+
+    /**
+     * 当远程为module时,里面模块的初始状态
+     *
+     * @type {*}
+     * @memberof IContentState
+     */
+    parameters?:any;
+    
+    /**
+     * 内容有变化后，会调用该函数
+     *
+     * @memberof IContentState
+     */
+    onContentChange?:(value,ctype)=>any;
+
+    /**
+     * iframe 完成检查。
+     * 设定了这个值后， iframe是否完成要符合该reg检查
+     *
+     * @type {string}
+     * @memberof ILoadableState
+     */
+    iframe_finish_url_regex ?:string;
+    
+    /**
+     *  弹出的类型 
+     * layer dialog auto
+     * 默认auto
+     * @type {string}
+     * @memberof IModalState
+     */
+    modalType?:string;
+    /**
+     *  on close
+     *
+     * @type {(IDeferred|Function)}
+     * @memberof IModalState
+     */
+    onclose?:IDeferred|Function;
+
+    /**
+     *  on load
+     *  content_change
+     * @type {(IDeferred|Function)}
+     * @memberof IModalState
+     */
+    onload?:IDeferred|Function;
+
+    callbackOnLoad?:boolean;
+}
+
+export interface IModalState extends IModalAction{
 
     /**
      * creating 准备加载
@@ -296,23 +449,16 @@ interface IPopState extends ILoadableState{
      * closed
      *
      * @type {string}
-     * @memberof IPopState
+     * @memberof IModalState
      */
-    status:string;
-    /**
-     *  弹出的类型 
-     * layer dialog auto
-     * 默认auto
-     * @type {string}
-     * @memberof IPopState
-     */
-    popType?:string;
+    status?:string;
+    
 
     /**
      * 内部使用，dialog函数等会使用
      *
      * @type {IDeferred}
-     * @memberof IPopState
+     * @memberof IModalState
      */
     thenable?:IDeferred;
 
@@ -321,32 +467,27 @@ interface IPopState extends ILoadableState{
      * closed/loaded
      *
      * @type {string}
-     * @memberof IPopState
+     * @memberof IModalState
      */
     thenType?:string;
 
-    /**
-     *  on close
-     *
-     * @type {(IDeferred|Function)}
-     * @memberof IPopState
-     */
-    onclose?:IDeferred|Function;
-
-    /**
-     *  on load
-     *
-     * @type {(IDeferred|Function)}
-     * @memberof IPopState
-     */
-    onload?:IDeferred|Function;
+    
     store?:any;
-    id?:string;
+    
     
 }
+export interface IMaskState{
+    type:string;
+    caption?:string;
+    message:string;
+    //是否独占，不会显示其他的元素
+    exclusive?:boolean;
+    onclose?:Function;
+}
 export interface IModState{
-    pop?:IPopState;
-    waiting?:boolean;
+    __$modal__?:IModalState;
+    __$mask__?:IMaskState;
+    __$is_workarea__?:boolean;
 }
 
 export interface IModuleCreation{
@@ -356,7 +497,7 @@ export interface IModuleCreation{
     $api?:{[index:string]:Function};
     $store?:any;
     $Wrap?:any;
-    
+    initialize?:(props:any)=>IThenable;
     /**
      * 最终生成的Provider包含的 着的组件
      *
@@ -367,8 +508,8 @@ export interface IModuleCreation{
     instance?:React.Component;
 }
 
-export default function define_module(Component:any,moduleArguments?:IModuleArguments):IModule{
-    moduleArguments ||(moduleArguments={});
+export default function define_module(Component:any):IModule{
+    let moduleArguments : IModuleArguments = Component;
     
     let createInstance= (props:any,superStore?:any,creation?:IModuleCreation):React.Component =>{
         creation ||(creation = {});
@@ -381,13 +522,23 @@ export default function define_module(Component:any,moduleArguments?:IModuleArgu
         else state = moduleArguments.state;
         //props优先
         state = mergeDiff(state,props);
-        if(!state.$mod) state.$mod={};
         creation.$state = state;
         
         creation.$reducer = Component.$reducer || (Component.$reducer = createReducer(creation,moduleArguments));
         
         // 状态管理 store
-        let store = creation.$store = createMyStore(Component,creation,moduleArguments);
+        const store =creation.$store =  createStore(creation.$reducer,creation.$state);
+        store.super_store = creation.$super_store;
+        store.is_inDialog = creation.$state.$inDialog;
+        store.initialize = moduleArguments.initialize;
+        let p = store;
+        while(p){
+            if(!p.super_store) break;
+            else p = p.super_store;
+        }
+        store.root = p;
+
+        injectApi(Component,creation);
 
         let Wrap = Module.$Wrap || (Module.$Wrap = createWrapComponent(Component));
 
@@ -397,7 +548,7 @@ export default function define_module(Component:any,moduleArguments?:IModuleArgu
             <Redux />
         </Provider>;
         creation.instance = instance;
-        if(moduleArguments.onCreating) moduleArguments.onCreating(creation);
+        //if(moduleArguments.onCreating) moduleArguments.onCreating(creation);
         return instance;
     };
     let Module :IModule = Component as IModule;
@@ -448,44 +599,64 @@ function createReducer(creation:IModuleCreation,moduleArguments:IModuleArguments
     let reducer;
 
     let action_handlers = moduleArguments.action_handlers ||{};
+    action_handlers["$module.init"] = (state,action)=>{
+        if(!action.state){
+            return {__$mask__:null};
+        }
+        action.state.__$mask__=null;
+        return action.state;
+    }
     
-    action_handlers['pop.create']=(state,loadableAction)=>{
-        if(state.$mod.pop && state.$mod.pop.status!=='close') {
+    action_handlers['$modal.show']=(state:IModState,modalAction:IModalAction)=>{
+        if(state.__$modal__ && state.__$modal__.status!=='close') {
             throw new Error("already pop out a layer.");
         }
-        loadableAction.status = 'creating';
-        loadableAction.__REPLACEALL__ =true;
-        loadableAction.super_store = creation.$store;
+        let modalState :IModalState = modalAction as IModalState;
+        let loadableState:ILoadableState = modalAction as ILoadableState;
+        modalState.status = 'creating';
+        (modalState as any).__REPLACEALL__ =true;
+        loadableState.super_store = creation.$store;
         //加载完成
-        loadableAction.loaded = function(type,result){
-            creation.$store.dispatch({type:'pop.load',load_content:result,ctype:type});
+        modalAction.onContentChange = function(result,type){
+            creation.$store.dispatch({type:'$modal.load',load_content:result,ctype:type});
             
             //通知app更新导航条
-            if(loadableAction.nav_text){
-                creation.$store.root().dispatch({type:'nav.push',text:loadableAction.nav_text,info:result});
+            if(modalState.nav_name){
+                creation.$store.root().dispatch({type:'nav.push',text:modalState.nav_name,info:result});
             }
-            if(loadableAction.onload){
-                if(typeof loadableAction.loaded.resolve==='function') loadableAction.onload.resolve(result);
-                else loadableAction.onload(result);
+            if(modalState.onload){
+                if(typeof (modalState.onload as any).resolve==='function') (modalState.onload as IDeferred).resolve(result);
+                else (modalState.onload as Function)(result);
             }
             //action.payload.resolve(result);
         }
-        return {$mod:{pop:loadableAction,waiting:true}};
+        return {__$modal__:modalState};
     };
-    action_handlers['pop.load']=function(state,action){
-        return {$mod:{waiting:false,pop:{
-            status:'load',
-            load_content:action.load_content,
-            ctype:action.ctype,
-            store:action.ctype=='module'? action.load_content:null
-        }}}
+    action_handlers['$mask.show']=function(state,action){
+        action.__REPLACEALL__=true;
+        action.type = action.icon;
+        return {__$mask__:action};
     }
-    action_handlers['pop.close']=function(state,action){
-        let popState:IPopState = state.$mod.pop;
+    action_handlers['$mask.hide']=function(state:IModState,action){
+        if(state.__$mask__.onclose) state.__$mask__.onclose(state);
+        return {__$mask__:null};
+    }
+    action_handlers['$modal.load']=function(state,action){
+        return {
+            __$mask__:null,
+            __$modal__:{
+                status:'load',
+                load_content:action.load_content,
+                ctype:action.ctype,
+                store:action.ctype=='module'? action.load_content:null
+            }
+        };
+    };
+    action_handlers['$modal.close']=function(state,action){
+        let popState:IModalState = state.__$modal__;
         let popStore = popState.store;
-        let status = action.data;
-        let result = {status:status,store:popStore};
-        if(popStore.__close_handlers){
+        let result = {status:action.status,state:popStore?popStore.getState():popState};
+        if(popStore && popStore.__close_handlers){
             for(let i = 0,j= popStore.__close_handlers.length;i<j;i++){
                 let handler = popStore.__close_handlers.shift();
                 handler.call(popStore,result);
@@ -497,11 +668,11 @@ function createReducer(creation:IModuleCreation,moduleArguments:IModuleArguments
             setTimeout(()=>{
                 if(typeof onclose.resolve==='function') onclose.resolve(result);
                 else if(typeof onclose ==='function')onclose(result);
-                creation.$store.root().dispatch({type:'nav.pop',id:id});
+                creation.$store.root.dispatch({type:'nav.pop',id:id});
             },0);
             
         }
-        return {$mod:{pop:null}};
+        return {__$modal__:null};
     }
     
     let customReducer = moduleArguments.reducer;
@@ -534,8 +705,8 @@ function createReducer(creation:IModuleCreation,moduleArguments:IModuleArguments
     }
     let afterReducer = (oldState,newState,action)=>{
         if(!newState) {
-        console.error('reducer must return a state.',action);
-        new Error('reducer must return a state.');
+            console.error('reducer must return a state.',action);
+            new Error('reducer must return a state.');
         } 
         if(action.payload && typeof action.payload.then==='function'){
             action.payload.then(   (result)=>{ if(result) creation.$store.dispatch(result); } );
@@ -551,12 +722,13 @@ function createReducer(creation:IModuleCreation,moduleArguments:IModuleArguments
     return reducer;
 }
 
-function createMyStore(Component:IModuleCreation,creation:IModuleCreation,moduleArguments:IModuleArguments){
-    const store =creation.$store =  createStore(creation.$reducer,creation.$state);
-    store.super_store = creation.$super_store;
-    store.$inDialog = creation.$state.$inDialog;
-    store.__close_handlers;
-    store.closing =function(handler:Function){
+function injectApi(Component:IModuleCreation,creation:IModuleCreation){
+    const store =creation.$store;
+    
+    let apiContainer:any = (Component as any).__api_injected?null:(Component as Function).prototype;
+    if(!apiContainer) return store;
+    (Component as any).__api_injected = true;
+    apiContainer.$closing =function(handler:Function){
         if(!store.__close_handlers)store.__close_handlers=[];
         store.__close_handlers.push(handler);
         return ()=>{
@@ -564,44 +736,122 @@ function createMyStore(Component:IModuleCreation,creation:IModuleCreation,module
                 let h = store.__close_handlers.shift();
                 if(h!==handler) store.__close_handlers.push(h);
             }
-        }
+        };
     }
-    
-    store.root = function(){
-        let p = store;
+    apiContainer.$store = function(){ return this.context.store;}
+    apiContainer.$waiting = function(msg:string|boolean){
+        this.context.store.dispatch({type:"$mask.show",content:msg});
+    }
+
+    apiContainer.$root = function(){
+        let p = this.context.store;
         while(p){
-            if(!p.super_store) return p;
+            if(!p.super_store) break;
             else p = p.super_store;
         }
+        this.$root = ()=>p;
     }
-    store.pop=function(param:IPopAction):IThenable{
+    apiContainer.$navigate = function(url:string,ctype?:any,parameters?:any){
+        if(parameters===undefined){ parameters = ctype; ctype=undefined;}
+        return this.context.store.dispatch({
+            type:"app.navigate",
+            url:url,
+            ctype:ctype,
+            parameters:parameters
+        });
+    }
+    apiContainer.$modal=function(action:IModalAction):IThenable{
         return new Promise((resolve,reject)=>{
-            let action :any = {
-                type:'pop.create',
-                mod_state:param.data,
-                url:param.url,
-                ctype:'module'
-            };
-            if(param.fireOnLoaded) action.onload= resolve;
+            action.type="$modal.show";
+            //if(param.fireOnLoaded) action.onload= resolve;
+            //else action.onclose = resolve;
+            setTimeout(()=>this.context.store.dispatch(action),0);
+            
+        });
+    }
+    apiContainer.$dialog=function(action:IModalAction):IThenable{
+        return new Promise((resolve,reject)=>{
+            action.type = "$modal.show";
+            action.modalType = "dialog";
+            if(action.callbackOnLoad) action.onload= resolve;
             else action.onclose = resolve;
+            setTimeout(()=>this.context.store.dispatch(action),0);
+            
+        });
+    }
+    apiContainer.$messageBox=function(text?:string,caption?:string,icon?:string):IThenable{
+        if(icon===undefined){
+            icon = caption;caption=null;
+        }
+        return new Promise((resolve,reject)=>{
+           
+            let action = {
+                type:"$mask.show",
+                caption:caption,
+                message:text,
+                icon:icon,
+                onclose:resolve
+            };
             setTimeout(()=>store.dispatch(action),0);
             
         });
     }
-    let api = Component.$api;
-    if(!api){
-        if(typeof moduleArguments.apiProvider==='function') api = Component.$api = moduleArguments.apiProvider(store);
+
+    apiContainer.$get = function(url:string,data?:any,waiting?:string):IThenable{
+        if(waiting) this.waiting(waiting);
+        return new Promise((resolve,reject)=>{
+            axios.get(url,data).then((result)=>{
+                if(result.statusCode===401){
+                    this.$root().auth().then(()=>{
+                        this.$get(url,data,waiting);
+                    });
+                    return;
+                }
+                if(waiting)this.waiting(false);
+                handleAjaxResult(this,result,resolve,reject);
+            });
+        });
     }
-    if(api){
-        for(let n in api){
-            if(store[n]===undefined){
-                store[n] = api[n];
-            }else {
-                console.warn('already has the same name member in store '+ n);
-            }
+    apiContainer.$post = function(url:string,data?:any,waiting?:string):IThenable{
+        if(waiting) this.waiting(waiting);
+        return new Promise((resolve,reject)=>{
+            axios.post(url,data).then((result)=>{
+                if(result.statusCode===401){
+                    this.$root().auth().then(()=>{
+                        this.$post(url,data,waiting);
+                    });
+                    return;
+                }
+                if(waiting)this.waiting(false);
+                handleAjaxResult(this,result,resolve,reject);
+            });
+        });
+    }
+}
+function handleAjaxResult(me,result,resolve,reject){
+    if(!result.data){
+        console.warn("返回的数据格式不正确，缺乏data字段");
+        me.$messageBox("返回的数据格式不正确，缺乏data字段","warn");
+        reject(result.data);
+        return;
+    }
+    let remoteData = result.data;
+    if(remoteData.StatusText==='error'){
+        me.$messageBox(remoteData.Message || "有错误，请联系管理员","error").done(()=>reject(remoteData));
+        return;
+    }
+    let complete =()=>{
+        if(remoteData.ClientAction){
+            me.context.store.dispatch(remoteData.ClientAction,remoteData.Data);
+        }else {
+            let viewData = remoteData.ViewData;
+            if(viewData) resolve("#useApply",[remoteData.Data,remoteData.ViewData]);
+            else resolve(remoteData.Data);
         }
-    }
-    return store;
+    };
+    if(remoteData.Message){
+        me.$messageBox(remoteData.Message ,"success").done(complete);
+    }else complete();
 }
 
 function createRedux(ModComponent:IModule,moduleArguments:IModuleArguments){
@@ -624,7 +874,18 @@ function createRedux(ModComponent:IModule,moduleArguments:IModuleArguments){
                 let dispatchers = {};
                 for(let actionName in action_handlers){
                     dispatchers[actionName] = ((actionName,dispatch)=>{
-                        return (evtData,extra)=>dispatch({type:actionName,data:evtData,extra:extra});
+                        return (evtData)=>{
+                            if(evtData.preventDefault) {
+                                return dispatch({type:actionName,event:evtData});
+                            }
+                            let action;
+                            try{
+                                evtData.type= actionName;action=evtData;
+                            }catch(ex){
+                                action = {...evtData,type : actionName};
+                            }
+                            dispatch(action);
+                        };
                     })(actionName,dispatch);
                 }
                 return dispatchers;
@@ -639,52 +900,113 @@ function createRedux(ModComponent:IModule,moduleArguments:IModuleArguments){
 
 let createWrapComponent = function(Component):any{
     return class WrapComponent extends React.Component{
-        props:any;
+        props:IModState;
         context:any;
         modElement;
         waitingFrontElement;
         waitingElement;
         waiting_timer:any;
         tick_count:number;
+        disposed:boolean;
 
-        static contextTypes = {
-            store: PropTypes.object,
-        };
+        static contextTypes = {  store: PropTypes.object };
+
+        constructor(props){
+            super(props);
+        }
 
         render(){
-            let state = this.props.$mod;
+            let state = this.props;
+            let store =this.context.store;
             let waiting;
-            if(state.isWaiting){
-                waiting = <div className='waiting' ref={(node)=>this.waitingElement=node} style={{position:'absolute'}}>
-                    <div className='waiting-back'></div>
-                    <div className='waiting-front' ref={(node)=>this.waitingFrontElement=node} style={{position:'absolute'}}><div className='waiting-message'>{state.waiting_message}</div></div>
+            let maskState:IMaskState = state.__$mask__;
+            if(store.initialize){
+                maskState = {type:null,message:null,exclusive :true};
+            }
+            if(maskState){
+                
+                let maskCss;
+                let popMessage;
+            
+                if(maskState.type){
+                    let mtype = maskState.type||'info';
+                    maskCss = "mask " + mtype;
+                    let lngs = {'warning':"警告",'success':"成功",'error':'错误',"info":"信息"};
+                    let icon;
+                    switch(mtype){
+                        case "error": icon  =<Icon type="close-circle-o" />;break;
+                        case "info": icon = <Icon type="info-circle-o" />;break;
+                        case "success": icon = <Icon type="check-circle-o" />;break;
+                        case "warning":icon = <Icon type="warning" />;break;
+                        default :icon = <Icon type="info-circle-o" />;
+                    }
+                    let cls=`pop-message-box`;
+                    let onclick = ()=>{
+                        this.context.store.dispatch({type:"$mask.hide"});
+                    };
+                    popMessage = <div className={cls}>
+                        <div className='pop-message-header'>
+                            <div className='pop-message-icon'>{icon}</div>
+                            <div className='pop-message-caption'>{maskState.caption||lngs[mtype]}</div>
+                        </div>
+                        <div className='pop-message-body'>
+                            <div className='pop-message-content' dangerouslySetInnerHTML={{__html:maskState.message}}></div>
+                        </div>
+                        <div className='pop-message-footer'><Icon type="close" onClick={onclick} /></div>
+                    </div>
+                }else {
+                    maskCss ="mask waiting";
+                    popMessage = <div className='pop-message'>{maskState.message? maskState.message :"加载中..."}</div>;
+                }
+                waiting = <div className={maskCss} ref={(node)=>this.waitingElement=node} style={{position:'absolute'}}>
+                    <div className='mask-back'></div>
+                    <div className='mask-front' ref={(node)=>this.waitingFrontElement=node} style={{position:'absolute'}}>
+                        {popMessage}
+                    </div>
                 </div>;
                 
             }else {
                 if(this.waiting_timer) {clearInterval(this.waiting_timer);this.waiting_timer=0;}
             }
-            let pop,main_hidden=false;
-            if(state.pop && state.pop.status!=='close'){
-                if(state.pop.popType==='dialog'){
-                    pop = this.popDialog(state.pop);
-                }else if(state.pop.popType==='layer'){
+
+            if(store.initialize){
+                let init = this.context.store.initialize;
+                store.initialize = null;
+                init({...this.props}).then((newState)=>{
+                    store.dispatch({type:"$module.init",state:newState});
+                },(e)=>{
+                    store.dispatch({type:"$mask.show",icon:"error",message:e});
+                });
+            }
+            if(maskState && maskState.exclusive){
+                return <div className='module' ref={(node)=>this.modElement=node} style={{position:"relative"}}>
+                {waiting}
+            </div>
+            }
+            let modalState = state.__$modal__,main_hidden=false;
+            let modal;
+            if(modalState && modalState.status!=='close'){
+                let modalType = modalState.modalType;
+                
+                if(modalType==='dialog'){
+                    modal = this.popDialog(modalState);
+                }else if(modalType==='layer'){
                     main_hidden = true;
-                    pop = this.popLayer(state.pop);
+                    modal = this.popLayer(modalState);
                 }else {
                     let vp = viewport();
-                    if(vp==='xs'){ pop = this.popLayer(state.pop);main_hidden=true;}
-                    else pop = this.popDialog(state.pop);
+                    if(vp==='xs'){ modal = this.popLayer(modalState);main_hidden=true;}
+                    else modal = this.popDialog(modalState);
                 }
                 //state.pop['module.']
             }
 
-            return <div className='module' ref={(node)=>this.modElement=node}>
+            return <div className='module' ref={(node)=>this.modElement=node} style={{position:"relative"}}>
                 {waiting}
                 <div className='module-component' style={{display:main_hidden?"none":''}}>
                 <Component {...this.props} />
                 </div>
-                
-                {pop}
+                {modal}
             </div>
         }
 
@@ -692,10 +1014,10 @@ let createWrapComponent = function(Component):any{
             popState.$inDialog=true;
             let contentView = React.createElement(Loadable,popState,null);
 
-            return <Modal title={this.props.title}
+            return <Modal title={popState.title}
                 visible={true}
-                onOk={()=>this.props["pop.close"]('ok')}
-                onCancel={()=>this.props["pop.close"]('cancel')}
+                onOk={()=>this.props["$modal.close"]({status:'ok'})}
+                onCancel={()=>this.props["$modal.close"]({status:'cancel'})}
                 confirmLoading={false}
             >
                 {contentView}
@@ -729,10 +1051,20 @@ let createWrapComponent = function(Component):any{
                 }
                 this.waitingElement.style.width = this.modElement.offsetWidth + "px";
                 this.waitingElement.style.height = this.modElement.offsetHeight + 'px';
-                let x = (this.modElement.offsetWidth - this.waitingElement.clientWidth)/2;
-                let y = (this.modElement.offsetHeight - this.waitingElement.clientHeight)/2;
-                this.waitingFrontElement.left = x + "px";
-                this.waitingFrontElement.top = y + "px";
+                let x :any= (this.waitingElement.offsetWidth - this.waitingFrontElement.clientWidth)/2; 
+                let y;
+                if(this.props.__$is_workarea__){
+                    let h = Math.max(document.documentElement.clientHeight,document.body.clientHeight);
+                    y = (h- this.waitingFrontElement.clientHeight) /2;
+                    y += Math.max(document.body.scrollTop,document.documentElement.scrollTop);
+                    y -= document.getElementById("layout-header").clientHeight;
+                    //console.log(h,y);
+                }else{
+                    
+                    y = (this.waitingElement.offsetHeight - this.waitingFrontElement.clientHeight)/2;
+                }
+                this.waitingFrontElement.style.left = parseInt(x) + "px";
+                this.waitingFrontElement.style.top = parseInt(y) + "px";
             };
             this.waiting_timer  = setInterval(cover,100);
             cover();
@@ -740,11 +1072,12 @@ let createWrapComponent = function(Component):any{
         }
 
         componentWillUnmount(){
-            alert('destory');
-            if(this.waiting_timer) clearInterval(this.waiting_timer);
+            if(this.waiting_timer) {clearInterval(this.waiting_timer); this.waiting_timer=0;}
+            if(this.disposed) return;
             let store = this.context.store;
-            store.dispatch({type:'module.closing'});
-            if(store.super_store) store.super_store.dispatch({type:'pop.closing'});
+            store.dispatch({type:'$module.closing'});
+            if(store.super_store) store.super_store.dispatch({type:'$modal.closing'});
+            this.disposed=true;
         }
     };
 }

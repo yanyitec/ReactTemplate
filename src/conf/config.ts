@@ -14,11 +14,7 @@ export default {
             data:null
         },
        
-        workarea:{
-          pages:[]
-        },
-        
-        dialog:{width:100},
+
         //主题
         theme:'light-blue',
         menu_mode:'normal'
