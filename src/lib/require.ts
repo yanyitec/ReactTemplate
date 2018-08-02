@@ -716,7 +716,9 @@ interface IRes{
         if(dotAt<0) return '';
         let slashAt = url.indexOf('/',dotAt);
         if(slashAt>=0) return '';
-        return url.substring(dotAt) ;
+        let ext= url.substring(dotAt) ;
+        if(ext.length>3)return null;
+        return ext;
     }
     
     function trim(text?:string){

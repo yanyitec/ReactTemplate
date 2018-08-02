@@ -108,54 +108,66 @@ define(["require", "exports", "lib/react/react", "lib/utils", "lib/antd/antd"], 
         return Center;
     }(react_1["default"].Component));
     exports.Center = Center;
-    var FieldView = /** @class */ (function (_super) {
-        __extends(FieldView, _super);
-        function FieldView() {
+    var Field = /** @class */ (function (_super) {
+        __extends(Field, _super);
+        function Field() {
             return _super !== null && _super.apply(this, arguments) || this;
         }
-        FieldView.prototype.render = function () {
+        Field.prototype.render = function () {
             var state = this.props;
             if (state.disabled === true)
                 return null;
-            var field = state.field || {};
-            var inputType = field.inputType || state.inputType || 'Input';
-            var name = field.name || state.name;
-            var cls = field.css;
+            //let inputType = field.inputType || state.inputType || 'Input';
+            var name = state.name;
+            var cls = this.css;
             if (cls === undefined) {
                 cls = '';
                 if (this.props.className)
                     cls += ' ' + this.props.className;
-                cls += ' ' + inputType;
+                //cls += ' ' + inputType;
                 cls += ' ' + name;
                 cls += ' field';
-                field.css = cls;
+                this.css = cls;
             }
-            if (state.valid)
-                cls += ' ' + state.valid;
-            var input = antd_1["default"][inputType];
-            var label;
-            if (field.info) {
-                label = react_1["default"].createElement(antd_1.Tooltip, { title: field.info },
-                    react_1["default"].createElement("label", { className: 'field-label' },
-                        field.text || state.text || name,
-                        state.required ? react_1["default"].createElement("span", { className: 'required' }, "*") : null));
+            var validStates = state.validStates || {};
+            var validateText = validStates[name];
+            var validateIndicator;
+            if (validateText === true) {
+                cls += " validate-success";
+                validateIndicator = react_1["default"].createElement("label", { className: 'field-valid' },
+                    react_1["default"].createElement(antd_1.Icon, { type: "check" }));
+            }
+            else if (validateText) {
+                cls += ' validate-error';
+                validateIndicator = react_1["default"].createElement("label", { className: 'field-valid' },
+                    react_1["default"].createElement(antd_1.Tooltip, { title: validateText },
+                        react_1["default"].createElement(antd_1.Icon, { type: "close" })));
+            }
+            else if (this.props.info) {
+                validateIndicator = react_1["default"].createElement("label", { className: 'field-valid' },
+                    react_1["default"].createElement(antd_1.Tooltip, { title: this.props.info },
+                        react_1["default"].createElement(antd_1.Icon, { type: "info-circle-o" })));
             }
             else {
-                label = react_1["default"].createElement("label", { className: 'field-label' },
-                    field.text || this.props.text || name,
-                    state.required ? react_1["default"].createElement("span", { className: 'required' }, "*") : null);
+                validateIndicator = react_1["default"].createElement("label", { className: 'field-valid' },
+                    react_1["default"].createElement("i", null, "\u00A0"));
             }
+            //let input = antd[inputType];
+            var label = react_1["default"].createElement("label", { className: 'field-label' },
+                state.label || name,
+                state.required ? react_1["default"].createElement("span", { className: 'required' }, "*") : null);
             //field.className = "field-input";
             return react_1["default"].createElement("div", { className: cls },
                 label,
-                react_1["default"].createElement("span", { className: 'field-input' }, react_1["default"].createElement(input, state)));
+                react_1["default"].createElement("span", { className: 'field-input' }, this.props.children),
+                validateIndicator);
         };
-        return FieldView;
+        return Field;
     }(react_1.Component));
-    exports.FieldView = FieldView;
-    var FieldsetView = /** @class */ (function (_super) {
-        __extends(FieldsetView, _super);
-        function FieldsetView(props) {
+    exports.Field = Field;
+    var Fieldset = /** @class */ (function (_super) {
+        __extends(Fieldset, _super);
+        function Fieldset(props) {
             var _this = _super.call(this, props) || this;
             _this.onToggle = function () {
                 _this.setState({ expended: !_this.state.expended });
@@ -165,35 +177,34 @@ define(["require", "exports", "lib/react/react", "lib/utils", "lib/antd/antd"], 
             };
             return _this;
         }
-        FieldsetView.prototype.render = function () {
+        Fieldset.prototype.render = function () {
             var _this = this;
             var state = this.props;
-            var fields = state.fields || {};
             var hasHidden = false;
             var canCollapse = false;
             var vp = utils_1.viewport();
-            var alloweds = state.allowedFieldnames;
-            var visibles = state.visibleFieldnames;
-            var showAll = state.showAllAllowedFields;
+            var alloweds = state.alloweds;
+            var visibles = state.visibles;
+            var collapsed = state.collapsed;
             var fieldcount = 0;
+            var validStates = state.validStates || {};
+            var validRules = state.validRules || {};
             eachChildren(this, function (child, index, parent, deep) {
                 if (deep > 3 || !child)
                     return false;
-                if (child.type !== FieldView)
-                    return;
-                var cprops = child.props;
-                var name = cprops.name;
-                var field = fields[name];
-                if (!field) {
-                    fieldcount += 1;
+                if (child.type !== Field) {
+                    fieldcount++;
                     return;
                 }
-                cprops.field = field;
+                var cprops = child.props;
+                if (!cprops.validStates)
+                    cprops.validStates = validStates;
+                var name = cprops.name;
                 if (alloweds && !alloweds[name]) {
                     cprops.disabled = true;
                 }
                 if ((visibles && !visibles[name]) || (cprops[vp] === false)) {
-                    if (showAll !== true && !_this.state.expended) {
+                    if (collapsed !== true && !_this.state.expended) {
                         hasHidden = true;
                         cprops.disabled = true;
                     }
@@ -201,6 +212,8 @@ define(["require", "exports", "lib/react/react", "lib/utils", "lib/antd/antd"], 
                         canCollapse = true;
                         fieldcount += 1;
                     }
+                }
+                if (!cprops.validate) {
                 }
                 return null;
             });
@@ -219,9 +232,9 @@ define(["require", "exports", "lib/react/react", "lib/utils", "lib/antd/antd"], 
                 this.props.children,
                 addition);
         };
-        return FieldsetView;
+        return Fieldset;
     }(react_1.Component));
-    exports.FieldsetView = FieldsetView;
+    exports.Fieldset = Fieldset;
     var genId = function () {
         var idSeed = 1;
         var time = new Date().valueOf().toString();

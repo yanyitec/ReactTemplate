@@ -1,31 +1,13 @@
 ﻿declare const _default: {
-    entry: {
-        module: string;
-        auth: {
-            enable: boolean;
-        };
-        user: {};
-        menu: {
-            data: {};
-            roots: any[];
-        };
-        nav: {
-            data: any;
-        };
-        workarea: {
-            pages: any[];
-        };
-        dialog: {
-            width: number;
-        };
-        theme: string;
-        menu_mode: string;
+    resolves: {
+        "^\\{Auth\\}/": string;
+        "^\\{Site\\}/": string;
     };
+    preloads: string[];
+    entry: string;
     auth: {
         url: string;
     };
-    preloads: string[];
-    resolves: {};
     release_version: string;
     ajax: {
         headers: {

@@ -1,10 +1,11 @@
 
 import  React, { Component } from 'lib/react/react';
 import { Menu, Icon, Modal  } from 'lib/antd/antd';
-import {viewport, IViewport} from 'lib/utils';
+import {viewport, IViewport,attach,detech} from 'lib/utils';
 
 export interface IMenuItem{
     Id:string;
+    _menuId :string;
     Name?:string;
     Icon?:string;
     Url?:string;
@@ -15,7 +16,7 @@ export interface IMenuItem{
   
 export interface IMainMenuState{
     id?:string;
-    data?:{[index:string]:IMenuItem};
+    nodes?:{[index:string]:IMenuItem};
     roots?:IMenuItem[];
     defaultSelectedKeys?:string[];
     defaultOpenKeys?:string[];
@@ -44,6 +45,9 @@ export interface IMainMenuAction{
     forceUpdate:any;
     context:any;
     refs:any;
+    menuArea:any;
+    timer:any;
+    y:number;
     
     constructor(props:IMainMenuState & IMainMenuAction){
       super(props);
@@ -59,14 +63,9 @@ export interface IMainMenuAction{
           if(collapsed===undefined) collapsed = true;
           if(hidden===undefined) hidden=true;
         } 
-        //let data= roots;
-        //let className1 = state.className || "";
-        //if(collapsed) className1 += ' collapsed';
-        //if(state.mode==='fold') className1 += ' fold';
-        let vt = viewport(true) as IViewport;
-        let h = vt.h - header.clientHeight;
         
-        
+        let vp = viewport(true) as IViewport;
+        let h = vp.h;
 
         let menuMode = collapsed && state.mode!=='min'?'vertical': 'inline';
         
@@ -76,15 +75,22 @@ export interface IMainMenuAction{
         
         let foldable =  menuMode!='vertical' && !collapsed && state.mode!='min';
 
+        
+        if(state.mode=='normal' || state.mode=='fold' || !state.mode){
+          attach(window,'resize',this.checkHeight);
+        }else {
+          detech(window,'resize',this.checkHeight);
+        }
       
         return <div id={(this.props as  any).id||""}  className={this.props.className}
           style={{display: hidden?'none':'block',height:(state.mode=='normal'|| state.mode=='fold') && !state.collapsed?h+"px":'auto'}} 
           >
             {   foldable?
-                <div className='fold-menu' onClick={state.onMenuToggleFold as any}>
+                <div className='fold-menu' id='menu_fold_handler' onClick={state.onMenuToggleFold as any}>
                     <Icon  type={state.mode==='fold'?'menu-unfold':'menu-fold'}/>
                 </div>:null
             }
+            <div className='menuArea' ref={(node)=>this.menuArea = node} style={{"overflowY":"auto"}}>
             <Menu className='menus'
                 defaultSelectedKeys={state.defaultSelectedKeys}
                 defaultOpenKeys={state.defaultOpenKeys}
@@ -93,10 +99,15 @@ export interface IMainMenuAction{
                 onMouseOut = {state.onMouseOut}
                 theme={state.theme_type}
                 inlineCollapsed={state.mode=='fold' && menuMode!='vertical'?true:false}
+                onOpenChange = {this.checkHeight}
             >
                 {this._buildMenu(state.roots,state.onMenuClick)}
             </Menu>
+            </div>
         </div>;
+    }
+    componentDidMount(){
+        
     }
   
     _buildMenuName=(node,menuClickHandler) => {
@@ -124,5 +135,20 @@ export interface IMainMenuAction{
         }
       }
       return result;
+    }
+
+    checkHeight =()=>{
+      let vh = Math.max(document.body.clientHeight,document.documentElement.clientHeight);
+      let header = document.getElementById("layout-header");
+      let folder = document.getElementById("menu_fold_handler");
+      let y = vh - (header?header.clientHeight:0) - (folder?folder.clientHeight:0);
+      if(!this.y  || Math.abs(this.y-y)>3) {
+        this.y = y;
+      }
+      this.menuArea.style.height = this.y + "px";
+    }
+    componentWillUnmount(){
+      detech(window,'resize',this.checkHeight);
+      
     }
   }

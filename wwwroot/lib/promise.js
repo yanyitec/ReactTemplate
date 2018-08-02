@@ -156,13 +156,6 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
             _async(executeCallbacks, 0);
         return promise;
     }
-    function createThenCallback(orignalCallback, resolveOrReject, useApply) {
-        return function (settledValue) {
-            var result = (useApply) ? orignalCallback.apply(null, arguments) : orignalCallback.call(null, settledValue);
-            resolveOrReject(result);
-            return result;
-        };
-    }
     function makeOpts(opts) {
         if (opts === false)
             opts = { "callbackSync": false };
@@ -203,7 +196,14 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
             };
             if (executor) {
                 try {
-                    executor(function (value) { return resolvePromise(promise, promise, value, promise.__promise_options); }, function (reason) { return rejectPromise(promise, promise, reason); });
+                    executor(function (value, applyArg) {
+                        if (value === '#useApply') {
+                            var opts_1 = promise.__promise_options || (promise.__promise_options = { useApply: true });
+                            opts_1.useApply = true;
+                            value = applyArg;
+                        }
+                        resolvePromise(promise, promise, value, promise.__promise_options);
+                    }, function (reason) { return rejectPromise(promise, promise, reason); });
                 }
                 catch (ex) {
                     console.error(ex);

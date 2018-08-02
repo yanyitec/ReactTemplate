@@ -16,85 +16,344 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
-define(["require", "exports", "lib/react/react", "lib/utils", "lib/antd/antd", "lib/utils", "lib/module", "portal/menu", "portal/auth", "portal/ajax"], function (require, exports, react_1, utils_1, antd_1, utils_2, module_1, menu_1, auth_1, ajax_1) {
+define(["require", "exports", "lib/module", "lib/react/react", "lib/antd/antd", "portal/auth", "portal/auth.validation", "portal/menu", "conf/config", "../lib/utils"], function (require, exports, module_1, react_1, antd_1, auth_1, auth_validation_1, menu_1, config_1, utils_1) {
     "use strict";
     exports.__esModule = true;
-    function NavView(appProps) {
-        var props = appProps.nav;
-        var nodes = appProps.menu.data;
-        if (!props || !nodes)
-            return null;
-        var node = props.data;
-        var onNavClick = appProps.onNavClick;
-        var simple = props.simple;
-        var buildCrumbItem = function (node) {
-            if (simple) {
-                return react_1["default"].createElement(antd_1.Breadcrumb.Item, { key: node.Id, onClick: function () { return onNavClick(node); } },
-                    node.Icon ? react_1["default"].createElement(antd_1.Icon, { type: node.Icon }) : null,
-                    node.Name);
+    var AppView = /** @class */ (function (_super) {
+        __extends(AppView, _super);
+        function AppView() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        AppView.prototype.render = function () {
+            var appState = this.props;
+            var authView = appState.auth.visible === true ? react_1["default"].createElement(auth_1["default"], __assign({}, this.props)) : null;
+            //if(authView || !appState.access_token) return authView;
+            var menu = appState.menu;
+            var user = appState.user.principal;
+            var workarea = appState.workarea;
+            var vp = utils_1.viewport();
+            var contentMode = menu.mode;
+            if (menu.collapsed || menu.mode === 'min')
+                contentMode = 'collapsed';
+            var header = null;
+            if (user) {
+                header = react_1["default"].createElement("div", { id: 'layout-header' },
+                    appState.logo_hidden ? null : react_1["default"].createElement("span", { id: 'layout-logo' },
+                        react_1["default"].createElement("img", { src: "themes/" + appState.theme + "/images/logo.png" })),
+                    react_1["default"].createElement("span", { id: 'layout-menu-toggle', onClick: this.props["menu.toggleCollapsed"], onMouseOver: this.props["menu.show"], onMouseOut: this.props["menu.hide"] },
+                        react_1["default"].createElement(antd_1.Icon, { type: "appstore" })),
+                    vp == 'xs' ? react_1["default"].createElement(NavXSView, { nav: appState.nav, menu: menu, onNavClick: this.props["nav.click"] }) : null,
+                    vp == 'xs' || vp == 'sm' ? buildMinQuicks(user, appState.customActions, this.props) : buildNormalQuicks(user, appState.customActions, this.props));
             }
-            var items = [];
-            var p = node && node.ParentId ? nodes[node.ParentId] : undefined;
-            if (p && p.Children) {
-                for (var i = 0, j = p.Children.length; i < j; i++) {
-                    (function (nd, index) {
-                        if (nd.Id === node.Id)
-                            return;
-                        items.push(react_1["default"].createElement(antd_1.Menu.Item, { key: nd.Id, onClick: function () { return onNavClick(nd); } },
-                            nd.Icon ? react_1["default"].createElement(antd_1.Icon, { type: nd.Icon }) : null,
-                            react_1["default"].createElement("span", null, nd.Name)));
-                    })(p.Children[i], i);
+            return react_1["default"].createElement("div", { id: 'layout' },
+                authView,
+                header,
+                menu && menu.roots ? react_1["default"].createElement(menu_1["default"], __assign({ id: 'layout-menu-main' }, menu, { className: contentMode, onMenuClick: this.props["menu.click"], onMenuToggleFold: this.props["menu.toggleFold"], onMouseOver: this.props["menu.show"], onMouseOut: this.props["menu.hide"] })) : null,
+                react_1["default"].createElement("div", { id: 'layout-content', className: contentMode },
+                    react_1["default"].createElement("div", { id: 'layout-body' },
+                        vp != 'xs' ? react_1["default"].createElement("div", { id: 'layout-nav' },
+                            react_1["default"].createElement(NavView, { nav: this.props.nav, menu: menu, onNavClick: this.props["nav.click"], simple: vp == 'sm' })) : null,
+                        workarea ? react_1["default"].createElement(module_1.Loadable, __assign({}, workarea, { id: "layout-workarea", is_workarea: true })) : null)));
+        };
+        AppView.actions = {
+            "auth.visible": function (state, action) {
+                return { auth: { visible: true, message: action.message }, $mask: null };
+            },
+            "auth.text_changed": function (state, action) {
+                var text = action.event.target.value;
+                var name = action.event.target.name;
+                var credence = {};
+                credence[name] = text;
+                var validStates = {};
+                validStates[name] = auth_validation_1["default"](name, text);
+                ;
+                return { auth: { credence: credence, validStates: validStates } };
+            },
+            "auth.check_changed": function (state, action) {
+                var cked = action.event.target.checked;
+                var name = action.event.target.name;
+                var credence = {};
+                credence[name] = cked;
+                //let validStates = {};validStates[name] = authValidate(name,text);;
+                return { auth: { credence: credence } };
+            },
+            "auth.submit": function (state, action) {
+                var credence = state.auth.credence;
+                var valid = this.$validate(credence, auth_validation_1["default"], {}, true);
+                if (valid)
+                    return { auth: { message: valid } };
+                try {
+                    if (state.auth.credence.RememberMe) {
+                        localStorage.setItem("credence", JSON.stringify(credence));
+                    }
+                    else {
+                        localStorage.setItem("credence", null);
+                    }
+                }
+                catch (ex) {
+                    console.warn("本地存储credenc失败");
+                }
+                //if(valid){
+                //    action.payload = new Promise((resolve)=>{
+                //        valid.then(()=>resolve({type:"auth.visible"}));
+                //    });
+                //    return state;
+                //}
+                var api = this;
+                var auth_url = config_1["default"].auth.url;
+                action.payload = new Promise(function (resolve) {
+                    api.$post(auth_url, credence).then(function (authData, data) {
+                        if (authData && authData.AccessToken) {
+                            resolve({ type: "auth.success", authData: authData });
+                        }
+                        else {
+                            resolve({ type: "auth.visible", message: authData ? authData.message : null });
+                        }
+                    }, function (e) {
+                        console.warn("auth failed", e);
+                        resolve({ type: "auth.visible" });
+                    });
+                });
+                return { auth: { visible: false, message: null }, $mask: { content: "登陆中...", __REPLACEALL__: true } };
+            },
+            "auth.success": function (state, action) {
+                var authData = action.authData;
+                var credence = state.auth.credence;
+                credence.AccessToken = authData.AccessToken;
+                try {
+                    if (state.auth.credence.RememberMe) {
+                        localStorage.setItem("credence", JSON.stringify(credence));
+                    }
+                }
+                catch (ex) {
+                    console.warn("本地存储credenc失败");
+                }
+                var newState = handle_resize(state);
+                var store = this.context.store;
+                if (store.__resolve) {
+                    var resolve_1 = store.__resolve;
+                    setTimeout(function () { return resolve_1(authData); }, 0);
+                }
+                store.__resolve = store.__reject = null;
+                var nodes = {};
+                var roots = [];
+                buildMenuModel(authData.Principal.Permissions, nodes, roots);
+                for (var i in authData.Principal.Roles) {
+                    var role = authData.Principal.Roles[i];
+                    buildMenuModel(role.Permissions, nodes, roots);
+                }
+                newState.__$is_workarea__ = "root";
+                newState.access_token = authData.AccessToken;
+                newState.auth = { visible: false };
+                newState.user = { principal: authData.Principal };
+                newState.menu.roots = roots;
+                newState.menu.nodes = nodes;
+                newState.nav = { data: null };
+                newState.$mask = null;
+                return newState;
+            },
+            "menu.toggleFold": function (state, action) {
+                var mode = state.menu.mode === 'fold' ? 'normal' : 'fold';
+                return {
+                    menu: { mode: mode, hidden: false, beforeMode: mode }
+                };
+            },
+            "menu.toggleCollapsed": function (state, action) {
+                return {
+                    menu: { collapsed: !state.menu.collapsed, hidden: !state.menu.collapsed }
+                };
+            },
+            "menu.show": function (state, action) {
+                if (state.menu.mode === 'min' || !state.menu.collapsed)
+                    return state;
+                if (state.menu.waitForHidden) {
+                    clearTimeout(state.menu.waitForHidden);
+                }
+                return { menu: { hidden: false, waitForHidden: 0 } };
+            },
+            "menu.hide": function (state, action) {
+                if (state.menu.mode === 'min' || !state.menu.collapsed)
+                    return state;
+                if (state.menu.waitForHidden && action.hideImmediate) {
+                    clearTimeout(state.menu.waitForHidden);
+                    return { menu: { hidden: true, waitForHidden: 0 } };
+                }
+                var waitForHiden = setTimeout(function () {
+                    deferred.resolve({ type: "menu.hide", hideImmediate: true });
+                }, 100);
+                var deferred = new Deferred();
+                action.payload = deferred;
+                return { menu: { waitForHidden: waitForHiden } };
+            },
+            "menu.click": function (state, action) {
+                var node = action;
+                var url = node.Url;
+                if (!url)
+                    return state;
+                return AppView.actions['app.navigate'].call(this, state, {
+                    type: "app.navigate",
+                    url: url,
+                    forceRefresh: true,
+                    super_store: appStore,
+                    ctype: 'module'
+                });
+            },
+            "app.resize": function (state, action) {
+                return handle_resize(state);
+            },
+            "app.navigate": function (state, action) {
+                var workarea = __assign({}, action);
+                workarea.__REPLACEALL__ = true;
+                workarea.super_store = appStore;
+                workarea.ctype = 'module';
+                workarea.tick = new Date().valueOf();
+                var nav = state.menu.nodes[action._menuId || action.Url || action.url];
+                //action.superStore = appStore;
+                return {
+                    menu: { hidden: state.menu.mode == 'min' ? true : state.menu.hidden },
+                    workarea: workarea,
+                    nav: { data: nav }
+                };
+            },
+            "nav.click": function (state, action) {
+                var navData = action.event;
+                return AppView.actions["menu.click"].call(this, state, navData);
+            }
+        };
+        AppView.state = {
+            __$is_workarea__: "root",
+            theme: "light-blue",
+            auth: {
+                credence: {},
+                validStates: {}
+            },
+            user: {},
+            menu: {},
+            nav: null
+        };
+        AppView.initialize = function (props) {
+            var store = appStore = this.context.store;
+            var credence;
+            try {
+                var json = localStorage.getItem("credence");
+                if (json) {
+                    credence = JSON.parse(json);
+                    props.auth.credence = credence;
                 }
             }
-            var menu = items.length == 0 ? null : react_1["default"].createElement(antd_1.Menu, null, items);
-            return react_1["default"].createElement(antd_1.Breadcrumb.Item, { key: node.Id, onClick: function () { return onNavClick(node); } },
-                react_1["default"].createElement(antd_1.Dropdown, { overlay: menu, placement: "bottomLeft" },
-                    react_1["default"].createElement("span", null,
-                        node.Icon ? react_1["default"].createElement(antd_1.Icon, { type: node.Icon }) : null,
-                        node.Name)));
-        }; //end buildDropdown;
-        var items = [];
-        var nd = node;
-        while (nd) {
-            items.unshift(buildCrumbItem(nd));
-            nd = nodes[nd.ParentId];
+            catch (ex) {
+                console.warn("本地获取credence失败", ex);
+            }
+            utils_1.attach(window, 'resize', function () { store.dispatch({ type: "app.resize" }); });
+            return new Promise(function (resolve, reject) {
+                store.auth().then(resolve, reject);
+            });
+        };
+        AppView.api = {
+            "auth": function () {
+                var _this = this;
+                var store = this.context.store;
+                var auth_url = config_1["default"].auth.url;
+                return new Promise(function (resolve, reject) {
+                    var state = store.getState();
+                    store.__resolve = resolve;
+                    store.__reject = reject;
+                    if (!state.auth.credence.Username || state.auth.credence.Password) {
+                        store.dispatch({ type: "auth.visible" });
+                        return;
+                    }
+                    _this.$post(auth_url, state.auth.credence).then(function (authData) {
+                        if (authData && authData.AccessToken) {
+                            store.dispatch({ type: "auth.success", authData: authData });
+                        }
+                        else {
+                            store.dispatch({ type: "auth.visible" });
+                        }
+                    }, function (e) {
+                        console.warn("auth failed", e);
+                        store.dispatch({ type: "auth.visible" });
+                    });
+                });
+            },
+            "navigate": function (url, data) {
+                var action = {
+                    type: "app.navigate",
+                    state: data,
+                    url: url,
+                    ctype: "module"
+                };
+                this.context.store.dispatch(action);
+                return null;
+            }
+        };
+        return AppView;
+    }(react_1["default"].Component));
+    exports.AppView = AppView;
+    var appStore;
+    function buildMenuModel(perms, nodes, roots) {
+        for (var i = 0, j = perms.length; i < j; i++) {
+            var perm = perms[i];
+            var node = nodes[perm.Id] = buildMenuItem(perm, nodes[perm.Id]);
+            if (!perm.IsMenu)
+                continue;
+            if (perm.ParentId) {
+                var pnode = nodes[perm.ParentId] || (nodes[perm.ParentId] = { Id: perm.ParentId, _menuId: perm.ParentId });
+                if (!pnode.Children)
+                    pnode.Children = [];
+                //node.Parent = pnode;
+                pnode.Children.push(node);
+            }
+            else {
+                roots.push(node);
+            }
+            nodes[node.Url] = nodes[node.Id] = node;
         }
-        items.unshift(react_1["default"].createElement(antd_1.Breadcrumb.Item, { key: "$KEY_HOME", onClick: function () { return onNavClick({ Id: "Home", Name: "首页" }); } },
-            react_1["default"].createElement(antd_1.Icon, { type: 'home' }),
-            "\u9996\u9875"));
-        return react_1["default"].createElement(antd_1.Breadcrumb, null, items);
     }
-    function NavXSView(appProps) {
-        var props = appProps.nav;
-        var nodes = appProps.menu.data;
-        if (!props || !nodes || !props.data)
-            return null;
-        var node = props.data;
-        var onNavClick = appProps.onNavClick;
-        var items = [];
-        var nd = node;
-        while (nd) {
-            (function (nd) {
-                items.push(react_1["default"].createElement(antd_1.Menu.Item, { onClick: function () { return onNavClick(nd); } },
-                    nd.Icon ? react_1["default"].createElement(antd_1.Icon, { type: nd.Icon }) : null,
-                    nd.Name));
-            })(nd);
-            nd = nodes[nd.ParentId];
+    var handle_resize = function (state) {
+        var vp = utils_1.viewport();
+        if (vp === 'xs') {
+            return {
+                viewport: vp,
+                logo_hidden: true,
+                menu: { mode: 'min', beforeMode: state.menu.beforeMode || state.menu.mode, hidden: true, collapsed: true }
+            };
         }
-        items.unshift(react_1["default"].createElement(antd_1.Menu.Item, { onClick: function () { return onNavClick({ Id: "Home", Name: "首页" }); } },
-            react_1["default"].createElement(antd_1.Icon, { type: 'home' }),
-            "\u9996\u9875"));
-        var menu = react_1["default"].createElement(antd_1.Menu, null, items);
-        return react_1["default"].createElement(antd_1.Dropdown, { overlay: menu, placement: "bottomCenter" },
-            react_1["default"].createElement("span", null,
-                node.Icon ? react_1["default"].createElement(antd_1.Icon, { type: node.Icon }) : null,
-                node.Name));
+        else if (vp === 'sm') {
+            return {
+                viewport: vp,
+                logo_hidden: false,
+                menu: {
+                    mode: 'fold'
+                }
+            };
+        }
+        else {
+            return {
+                viewport: vp,
+                logo_hidden: false,
+                menu: {
+                    mode: state.menu.beforeMode || 'normal'
+                }
+            };
+        }
+    };
+    function buildMenuItem(perm, item) {
+        item || (item = { Id: perm.Id, _menuId: perm.Id });
+        item.ParentId = perm.ParentId;
+        item.Name = perm.Name;
+        item.Icon = perm.Icon || "mail";
+        if (perm.Url)
+            item.Url = perm.Url;
+        else if (perm.ControllerName && perm.ActionName) {
+            item.Url = perm.ControllerName + '/' + perm.ActionName;
+        }
+        return item;
     }
-    function buildNormalQuicks(user, customActions) {
+    function buildNormalQuicks(user, customActions, props) {
         var userDiv, customDiv;
-        if (user && user.data) {
+        if (user) {
             var userMenuItems = [
-                react_1["default"].createElement(antd_1.Menu.Item, { key: "10000" },
+                react_1["default"].createElement(antd_1.Menu.Item, { key: "10000", onClick: props["auth.visible"] },
                     react_1["default"].createElement(antd_1.Icon, { type: "idcard" }),
                     " \u91CD\u767B\u9646"),
                 react_1["default"].createElement(antd_1.Menu.Item, { key: "20000" },
@@ -112,7 +371,7 @@ define(["require", "exports", "lib/react/react", "lib/utils", "lib/antd/antd", "
                 react_1["default"].createElement(antd_1.Button.Group, null,
                     react_1["default"].createElement(antd_1.Button, { type: 'dashed' },
                         react_1["default"].createElement(antd_1.Icon, { type: "user" }),
-                        react_1["default"].createElement("a", null, user.data.DisplayName || user.data.Username || ' ')),
+                        react_1["default"].createElement("a", null, user.DisplayName || user.Username || ' ')),
                     react_1["default"].createElement(antd_1.Dropdown, { overlay: userMenu, placement: "bottomRight" },
                         react_1["default"].createElement(antd_1.Button, null,
                             react_1["default"].createElement(antd_1.Icon, { type: "setting" }))),
@@ -135,12 +394,12 @@ define(["require", "exports", "lib/react/react", "lib/utils", "lib/antd/antd", "
             userDiv,
             customDiv);
     }
-    function buildMinQuicks(user, customActions) {
+    function buildMinQuicks(user, customActions, props) {
         var customActionItems, customDiv;
-        if (user && user.data) {
+        if (user) {
             customActionItems = [
                 react_1["default"].createElement(antd_1.Menu.Item, { key: "10000" },
-                    react_1["default"].createElement(antd_1.Icon, { type: "idcard" }),
+                    react_1["default"].createElement(antd_1.Icon, { type: "idcard", onClick: props["auth.visible"] }),
                     " \u91CD\u767B\u9646"),
                 react_1["default"].createElement(antd_1.Menu.Item, { key: "20000" },
                     react_1["default"].createElement(antd_1.Icon, { type: "key" }),
@@ -171,301 +430,79 @@ define(["require", "exports", "lib/react/react", "lib/utils", "lib/antd/antd", "
                 react_1["default"].createElement(antd_1.Button, { size: 'small', theme: 'dark' },
                     react_1["default"].createElement(antd_1.Icon, { type: "ellipsis" }))));
     }
-    var AppView = /** @class */ (function (_super) {
-        __extends(AppView, _super);
-        function AppView(props) {
-            return _super.call(this, props) || this;
-        }
-        AppView.prototype.componentDidMount = function () {
-        };
-        AppView.prototype.render = function () {
-            var state = this.props;
-            var _a = this.props, menu = _a.menu, dialog = _a.dialog, auth = _a.auth, workarea = _a.workarea, nav = _a.nav, user = _a.user, customActions = _a.customActions, viewport = _a.viewport;
-            var layoutLogo;
-            if (viewport === 'xs') {
-                layoutLogo = react_1["default"].createElement("div", { id: 'layout-logo' },
-                    react_1["default"].createElement("a", { className: menu.mode === 'min' ? 'toggle collapsed' : 'toggle', onClick: this.props["menu.toggleMin"] },
-                        react_1["default"].createElement(antd_1.Icon, { type: menu.mode == 'min' ? "menu-unfold" : "menu-fold" })));
+    function NavView(appProps) {
+        var props = appProps.nav;
+        var nodes = appProps.menu.nodes;
+        if (!props || !nodes)
+            return null;
+        var node = props.data;
+        var onNavClick = appProps["onNavClick"];
+        var simple = props.simple;
+        var buildCrumbItem = function (node) {
+            if (simple) {
+                return react_1["default"].createElement(antd_1.Breadcrumb.Item, { key: node.Id, onClick: function () { return onNavClick(node); } },
+                    node.Icon ? react_1["default"].createElement(antd_1.Icon, { type: node.Icon }) : null,
+                    node.Name);
             }
-            else {
-                layoutLogo = react_1["default"].createElement("div", { id: 'layout-logo' },
-                    react_1["default"].createElement("a", { className: menu.mode === 'min' ? 'toggle collapsed' : 'toggle', onClick: this.props["menu.toggleMin"], onMouseEnter: menu.mode === 'min' ? this.props["menu.show"] : null, onMouseOut: menu.mode === 'min' ? this.props["menu.hide"] : null },
-                        react_1["default"].createElement(antd_1.Icon, { type: menu.mode == 'min' ? "caret-down" : "caret-up" })),
-                    react_1["default"].createElement("div", { className: 'logo-image' },
-                        react_1["default"].createElement("img", { src: 'images/logo.png', onClick: this.props["menu.toggleMin"] })));
-            }
-            var contentMode = menu.mode;
-            if (menu.collapsed || menu.mode === 'min')
-                contentMode = 'collapsed';
-            return react_1["default"].createElement("div", { id: 'layout' },
-                react_1["default"].createElement("div", { id: 'layout-header' },
-                    state.logo_hidden ? null : react_1["default"].createElement("span", { id: 'layout-logo' },
-                        react_1["default"].createElement("img", { src: "themes/" + state.theme + "/images/logo.png" })),
-                    react_1["default"].createElement("span", { id: 'layout-menu-toggle', onClick: this.props["menu.toggleCollapsed"], onMouseOver: this.props["menu.show"], onMouseOut: this.props["menu.hide"] },
-                        react_1["default"].createElement(antd_1.Icon, { type: "appstore" })),
-                    react_1["default"].createElement(menu_1["default"], __assign({ id: 'layout-menu-main' }, menu, { className: contentMode, onMenuClick: this.props["menu.click"], onMenuToggleFold: this.props["menu.toggleFold"], onMouseOver: this.props["menu.show"], onMouseOut: this.props["menu.hide"] }))),
-                react_1["default"].createElement("div", { id: 'layout-content', className: contentMode },
-                    react_1["default"].createElement("div", { id: 'layout-body' },
-                        viewport != 'xs' ? react_1["default"].createElement("div", { id: 'layout-nav' },
-                            react_1["default"].createElement(NavView, { nav: nav, menu: menu, onNavClick: this.props["nav.click"], simple: viewport == 'sm' })) : null,
-                        workarea ? react_1["default"].createElement("div", { id: 'layout-workarea' },
-                            react_1["default"].createElement(module_1.Loadable, __assign({ id: "workarea" }, workarea))) : null)),
-                auth.enable === true ? react_1["default"].createElement(auth_1["default"], __assign({}, auth, { onAuthSuccess: this.props["auth.success"] })) : null);
-        };
-        return AppView;
-    }(react_1.Component));
-    exports.AppView = AppView;
-    var handle_resize = function (state) {
-        var vp = utils_2.viewport();
-        if (vp === 'xs') {
-            return {
-                viewport: vp,
-                logo_hidden: true,
-                menu: { mode: 'min', beforeMode: state.menu.beforeMode || state.menu.mode, hidden: true, collapsed: true }
-            };
-        }
-        else if (vp === 'sm') {
-            return {
-                viewport: vp,
-                logo_hidden: false,
-                menu: {
-                    mode: 'fold'
+            var items = [];
+            var p = node && node.ParentId ? nodes[node.ParentId] : undefined;
+            if (p && p.Children) {
+                for (var i = 0, j = p.Children.length; i < j; i++) {
+                    (function (nd, index) {
+                        if (nd.Id === node.Id)
+                            return;
+                        items.push(react_1["default"].createElement(antd_1.Menu.Item, { key: nd.Id, onClick: function () { return onNavClick(nd); } },
+                            nd.Icon ? react_1["default"].createElement(antd_1.Icon, { type: nd.Icon }) : null,
+                            react_1["default"].createElement("span", null, nd.Name)));
+                    })(p.Children[i], i);
                 }
-            };
+            }
+            var menu = items.length == 0 ? null : react_1["default"].createElement(antd_1.Menu, null, items);
+            var dropdown = react_1["default"].createElement(antd_1.Dropdown, { overlay: menu, placement: "bottomLeft" },
+                react_1["default"].createElement("span", null,
+                    node.Icon ? react_1["default"].createElement(antd_1.Icon, { type: node.Icon }) : null,
+                    node.Name));
+            return react_1["default"].createElement(antd_1.Breadcrumb.Item, { key: node.Id, onClick: function () { return onNavClick(node); } },
+                react_1["default"].createElement("span", null,
+                    node.Icon ? react_1["default"].createElement(antd_1.Icon, { type: node.Icon }) : null,
+                    node.Name));
+        }; //end buildDropdown;
+        var items = [];
+        var nd = node;
+        while (nd) {
+            items.unshift(buildCrumbItem(nd));
+            nd = nodes[nd.ParentId];
         }
-        else {
-            return {
-                viewport: vp,
-                logo_hidden: false,
-                menu: {
-                    mode: state.menu.beforeMode || 'normal'
-                }
-            };
-        }
-    };
-    var action_handlers = {
-        "app.navigate": function (state, action) {
-            var workarea = __assign({}, action);
-            workarea.__REPLACEALL__ = true;
-            workarea.super_store = appStore;
-            workarea.ctype = 'module';
-            workarea.tick = new Date().valueOf();
-            //action.superStore = appStore;
-            return {
-                menu: { hidden: state.menu.mode == 'min' ? true : state.menu.hidden },
-                workarea: workarea
-            };
-        },
-        "app.resize": function (state, action) {
-            if (rszDelayTick) {
-                clearTimeout(rszDelayTick);
-                rszDelayTick = 0;
-            }
-            return handle_resize(state);
-        },
-        "menu.toggleFold": function (state, action) {
-            var mode = state.menu.mode === 'fold' ? 'normal' : 'fold';
-            return {
-                menu: { mode: mode, hidden: false, beforeMode: mode }
-            };
-        },
-        "menu.toggleCollapsed": function (state, action) {
-            return {
-                menu: { collapsed: !state.menu.collapsed, hidden: !state.menu.collapsed }
-            };
-        },
-        "menu.show": function (state, action) {
-            if (state.menu.mode === 'min' || !state.menu.collapsed)
-                return state;
-            if (state.menu.waitForHidden) {
-                clearTimeout(state.menu.waitForHidden);
-            }
-            return { menu: { hidden: false, waitForHidden: 0 } };
-        },
-        "menu.hide": function (state, action) {
-            if (state.menu.mode === 'min' || !state.menu.collapsed)
-                return state;
-            if (state.menu.waitForHidden && action.hideImmediate) {
-                clearTimeout(state.menu.waitForHidden);
-                return { menu: { hidden: true, waitForHidden: 0 } };
-            }
-            var waitForHiden = setTimeout(function () {
-                deferred.resolve({ type: "menu.hide", hideImmediate: true });
-            }, 100);
-            var deferred = new Deferred();
-            action.payload = deferred;
-            return { menu: { waitForHidden: waitForHiden } };
-        },
-        "menu.click": function (state, action) {
-            var node = action.data;
-            var url = node.Url;
-            if (!url)
-                return state;
-            if (url.indexOf("[dispatch]:") >= 0) {
-                var actionJson = url.substr("[dispatch]:".length);
-                var action_1 = JSON.parse(actionJson);
-                var handler = action_handlers[action_1.type];
-                if (handler)
-                    return handler.call(this, state, action_1);
-                return state;
-            }
-            return action_handlers['app.navigate'].call(this, state, {
-                type: "app.navigate",
-                url: url,
-                forceRefresh: true,
-                super_store: appStore,
-                ctype: 'module'
-            });
-        },
-        "nav.click": function (state, action) {
-        },
-        "dialog.show": function (state, action) {
-            action.enable = true;
-            if (!action.deferred)
-                action.deferred = new Deferred();
-            action.$transport = { '__transport__': 'dialog' };
-            action.$superStore = action.superStore;
-            action.__REPLACEALL__ = true;
-            return {
-                dialog: action
-            };
-        },
-        "dialog.ok": function (state, action) {
-            var result = state.dialog.$transport.getModalResult ? state.dialog.$transport.getModalResult() : state.dialog.$transport.exports;
-            state.dialog.deferred.resolve({ status: "ok", data: result });
-            return {
-                dialog: { enable: false, deferred: null, $transport: null, $store: null, $superStore: null, __REPLACEALL__: true }
-            };
-        },
-        "dialog.cancel": function (state, action) {
-            state.dialog.deferred.resolve({ status: "cancel" });
-            return {
-                dialog: { enable: false, deferred: null, $transport: null, $store: null, $superStore: null, __REPLACEALL__: true }
-            };
-        },
-        "auth.auth": function (state, action) {
-            return { auth: { enable: true } };
-        },
-        "auth.success": function (state, action) {
-            var _a = buildMenuModel(action.data), roots = _a.roots, nodes = _a.nodes;
-            var newState = handle_resize(state);
-            var newMenu = newState.menu || (newState.menu = {});
-            newMenu.data = nodes;
-            newMenu.roots = roots;
-            newState.user = { data: action.data.User };
-            newState.auth = { data: action.data.Auth, enable: false };
-            return newState;
-        }
-    };
-    function buildMenuModel(authData) {
-        var menus = {};
-        var perms = authData.Permissions;
-        var roots = [];
-        for (var i = 0, j = perms.length; i < j; i++) {
-            var perm = perms[i];
-            var node = menus[perm.Id] = buildMenuItem(perm, menus[perm.Id]);
-            if (perm.ParentId) {
-                var pnode = menus[perm.ParentId] || (menus[perm.ParentId] = { Id: perm.ParentId });
-                if (!pnode.Children)
-                    pnode.Children = [];
-                //node.Parent = pnode;
-                pnode.Children.push(node);
-            }
-            else {
-                roots.push(node);
-            }
-            menus[node.Url] = node;
-        }
-        return { roots: roots, nodes: menus };
+        items.unshift(react_1["default"].createElement(antd_1.Breadcrumb.Item, { key: "$KEY_HOME", onClick: function () { return onNavClick({ Id: "Home", Name: "首页" }); } },
+            react_1["default"].createElement(antd_1.Icon, { type: 'home' }),
+            "\u9996\u9875"));
+        return react_1["default"].createElement(antd_1.Breadcrumb, null, items);
     }
-    function buildMenuItem(perm, item) {
-        item || (item = { Id: perm.Id });
-        item.ParentId = perm.ParentId;
-        item.Name = perm.Name;
-        item.Icon = perm.Icon || "mail";
-        if (perm.Url)
-            item.Url = perm.Url;
-        else if (perm.ControllerName) {
-            perm.Url = perm.ControllerName + '/' + (perm.ActionName || "");
+    function NavXSView(appProps) {
+        var props = appProps.nav;
+        var nodes = appProps.menu.nodes;
+        if (!props || !nodes || !props.data)
+            return null;
+        var node = props.data;
+        var onNavClick = appProps["onNavClick"];
+        var items = [];
+        var nd = node;
+        while (nd) {
+            (function (nd) {
+                items.push(react_1["default"].createElement(antd_1.Menu.Item, { onClick: function () { return onNavClick(nd); } },
+                    nd.Icon ? react_1["default"].createElement(antd_1.Icon, { type: nd.Icon }) : null,
+                    nd.Name));
+            })(nd);
+            nd = nodes[nd.ParentId];
         }
-        return item;
+        items.unshift(react_1["default"].createElement(antd_1.Menu.Item, { onClick: function () { return onNavClick({ Id: "Home", Name: "首页" }); } },
+            react_1["default"].createElement(antd_1.Icon, { type: 'home' }),
+            "\u9996\u9875"));
+        var menu = react_1["default"].createElement(antd_1.Menu, null, items);
+        return react_1["default"].createElement(antd_1.Dropdown, { overlay: menu, placement: "bottomCenter" },
+            react_1["default"].createElement("span", null,
+                node.Icon ? react_1["default"].createElement(antd_1.Icon, { type: node.Icon }) : null,
+                node.Name));
     }
-    var rszDelayTick;
-    utils_2.attach(window, "resize", function () {
-        if (appStore) {
-            if (rszDelayTick)
-                clearTimeout(rszDelayTick);
-            rszDelayTick = setTimeout(function () {
-                appStore.dispatch({ type: 'app.resize' });
-            }, 200);
-        }
-    });
-    var apiProvider = function (appStore) {
-        return {
-            dialog: function (opts) {
-                var deferred = new Deferred();
-                var action = __assign({ type: "dialog.show", deferred: deferred }, opts);
-                appStore.dispatch(action);
-                return deferred.promise();
-            },
-            navigate: function (urlOrOpts, data) {
-                var action = urlOrOpts;
-                if (typeof urlOrOpts === 'string') {
-                    var state = this.getState();
-                    var node = state.menu.data[urlOrOpts];
-                    if (!node)
-                        throw new Error(urlOrOpts + " is not in menu/permissions");
-                    action = __assign({}, node);
-                }
-                //if(action.module===undefined)action.module = action.Url;
-                action.type = "app.navigate";
-                action.ctype = 'module';
-                if (!action.url)
-                    action.url = action.Url;
-                action.innerProps = data;
-                this.dispatch(action);
-            },
-            winAlert: function (msg) {
-                alert(msg);
-            }
-        };
-    };
-    var view_type = utils_2.viewport();
-    var defaultModel = {
-        viewport: view_type,
-        menu: {
-            mode: view_type == 'xs' ? 'min' : 'normal',
-            beforeMode: 'normal'
-        },
-        auth: {
-            enable: true
-        }
-    };
-    var onCreating = function (creation) {
-        if (appStore)
-            throw new Error("App must be singleon, please do not mount it once again.");
-        appStore = creation.$store;
-        appStore.$modname = "app";
-        exports.$app = appStore;
-        define("app", appStore);
-        ajax_1["default"](appStore, appStore, config.ajax);
-    };
-    var appStore;
-    var App = module_1.__module__(AppView, {
-        state: defaultModel,
-        onCreating: onCreating,
-        action_handlers: action_handlers,
-        apiProvider: apiProvider
-    });
-    exports.$app = appStore;
-    var $mount = App.mount;
-    App.mount = function (props, targetElement, superStore) {
-        return new Promise(function (resolve, reject) {
-            var authConfig = props.auth = utils_1.deepClone(config.auth);
-            authConfig.authview_resolve = resolve;
-            authConfig.enable = true;
-            $mount(props, targetElement);
-        });
-    };
-    exports["default"] = App;
+    exports["default"] = module_1.__module__(AppView);
 });

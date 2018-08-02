@@ -46,16 +46,15 @@ require(['config@conf/config'], sniffer).then(function (_config) {
         showError("配置错误，请联系管理员。(未定义入口{entry:any})");
         throw new Error('配置中没有entry,该字段定义入口模块');
     }
-    var entryName = entry.module || entry.url || entry;
-    if (typeof entryName !== 'string') {
+    if (typeof entry !== 'string') {
         showError("配置错误，请联系管理员。(未能找到入口模块名{entry:any})");
         throw new Error('entryName = entry.module || entry.url || entry ，都不是字符串，无法加载entry模块');
     }
     var preloads = config.preloads;
     if (preloads === undefined)
-        preloads = [entryName];
+        preloads = [entry];
     else
-        preloads.push(entryName);
+        preloads.push(entry);
     return require(preloads, sniffer);
 }, showError)
     //启动入口模块
@@ -67,12 +66,7 @@ require(['config@conf/config'], sniffer).then(function (_config) {
     }
     var appElement = document.getElementById("app");
     appElement.innerHTML = "";
-    var appProps = config.entry;
-    if (typeof appProps !== 'object') {
-        appProps = { module: appProps };
-    }
-    appProps.boot = booter;
-    var appPromise = App.mount(appProps, appElement);
+    var appPromise = App.mount({ __boot__: true }, appElement);
     if (!appPromise || typeof appPromise.then !== 'function') {
         return Promise.resolve(appPromise, "callbackSync");
     }

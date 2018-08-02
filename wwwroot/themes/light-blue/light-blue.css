@@ -3,6 +3,41 @@
   background-color: #f4f4f4;
   color: #333333;
 }
+.light-blue #auth-area .auth-bg {
+  background-color: #0b93ff;
+  opacity: 0.2;
+}
+.light-blue #auth-area .auth-form {
+  background-color: #ffffff;
+  color: #333333;
+  opacity: 0.9;
+  border-color: #e7e7e7;
+}
+.light-blue #auth-area .auth-form .actions button {
+  background-color: #0078d7;
+  color: #ffffff;
+}
+.light-blue #auth-area .auth-form .error-message {
+  border: 1px solid #ffa39e;
+  background-color: #fff1f0;
+  color: #ff8b84;
+}
+.light-blue .field.validate-error span.field-input input,
+.light-blue .field.validate-error textarea,
+.light-blue .field.validate-error select {
+  border: 1px solid #ffa39e;
+}
+.light-blue .field.validate-error label.field-valid {
+  color: #ffa39e;
+}
+.light-blue .field.validate-success span.field-input input,
+.light-blue .field.validate-success textarea,
+.light-blue .field.validate-success select {
+  border: 1px solid #b7eb8f;
+}
+.light-blue .field.validate-success label.field-valid {
+  color: #b7eb8f;
+}
 .light-blue #layout #layout-header {
   background-color: #0078d7;
   color: #ffffff;
@@ -43,4 +78,43 @@
 .light-blue .ant-menu-submenu-popup .ant-menu-item:hover,
 .light-blue .ant-menu-submenu-popup .ant-menu-submenu-title:hover {
   background-color: #e7e7e7;
+}
+.light-blue .module .mask .mask-back {
+  background-color: #fcfcfc;
+  opacity: 0.15;
+}
+.light-blue .module .mask.waiting div.mask-front {
+  border: 1px solid #dbdbdb;
+  padding-top: 40px;
+  background-color: #ffffff;
+  background-image: url(images/loading.gif);
+  background-repeat: no-repeat;
+}
+.light-blue .module .mask.info .pop-message-box {
+  border: 1px solid #91d5ff;
+  background-color: #e6f7ff;
+}
+.light-blue .module .mask.info .pop-message-box .pop-message-icon {
+  color: #5ec2ff;
+}
+.light-blue .module .mask.error .pop-message-box {
+  border: 1px solid #ffa39e;
+  background-color: #fff1f0;
+}
+.light-blue .module .mask.error .pop-message-box .pop-message-icon {
+  color: #ff736b;
+}
+.light-blue .module .mask.warning .pop-message-box {
+  border: 1px solid #ffe58f;
+  background-color: #fffbe6;
+}
+.light-blue .module .mask.warning .pop-message-box .pop-message-icon {
+  color: #ffd95c;
+}
+.light-blue .module .mask.success .pop-message-box {
+  border: 1px solid #b7eb8f;
+  background-color: #f6ffed;
+}
+.light-blue .module .mask.success .pop-message-box .pop-message-icon {
+  color: #9be364;
 }

@@ -9,8 +9,7 @@ import * as axios from 'lib/axios';
 import {Modal,Icon} from 'lib/antd/antd';
 
 
-
-declare var require:Function;
+declare var require:any;
 declare var Promise : any;
 declare var Deferred:any;
 export interface IReactComponent{
@@ -22,6 +21,8 @@ export interface IReactComponent{
     context?:any;
     setState?:any;
 }
+
+
 
 export interface ILoadableState{
     id?:string;
@@ -149,7 +150,11 @@ export class Loadable extends React.Component{
             return <div>{content}</div>;
         } 
         if(ctype==='html')  {
-            if(this.props.onContentChange) setTimeout(()=>props.onContentChange.call(this.cnode,this.props.content,ctype),0); 
+            let content = props.content||"";
+            if(this.loaded_content!=content){
+                if(this.props.onContentChange) setTimeout(()=>props.onContentChange.call(this.cnode,this.props.content,ctype),0); 
+                this.loaded_content=content;
+            }
             return <div id={props.id ||null} className={props.className||null} style={props.style||null} dangerouslySetInnerHTML={{__html:props.content}}></div>
         }
         vnode = <div id={props.id ||null} className={props.className||null} style={props.style||null} ref={(node) => this.cnode = node} ></div>;
@@ -253,12 +258,12 @@ export class Loadable extends React.Component{
 
 
 
-export interface IModuleArguments{
+export interface IModuleDefination{
     /**
-     * IN 默认的状态值
+     * 默认的状态值
      *
      * @type {*}
-     * @memberof IModuleArguments
+     * @memberof IModuleDefination
      */
     state?:any,
 
@@ -266,7 +271,7 @@ export interface IModuleArguments{
      * IN 消息处理函数
      *  它会跟action_handlers合并成最终的reducer
      *
-     * @memberof IModuleArguments
+     * @memberof IModuleDefination
      */
     reducer?:(state:any,action:any)=>any;
 
@@ -275,30 +280,24 @@ export interface IModuleArguments{
      * IN 消息处理器
      * 它会跟reducer合并成最终的reducer
      * 
-     * @memberof IModuleArguments
+     * @memberof IModuleDefination
      */
-    action_handlers?:{[index:string]:(state:any,action:any)=>any};
+    actions?:{[index:string]:(state:any,action:any)=>any};
 
-    /**
-     * 上级/模块创建者的 store
-     * 
-     * @type {*}
-     * @memberof IModuleArguments
-     */
-    superStore?:any;
+   
 
 
     /**
      * IN/OUT
-     *  模块与模块之间的通信对象
-     * 用于在模块跟模块之间传递某些值
+     *  
+     * 定义一些api
      *
      * @type {*}
-     * @memberof IModuleArguments
+     * @memberof IModuleDefination
      */
     //transport?:any;
 
-    apiProvider?:(store)=>{[index:string]:Function};
+    api?:(store)=>{[index:string]:Function};
 
     
     /**
@@ -306,7 +305,7 @@ export interface IModuleArguments{
      * 如果不写，就是state全部进入到props去
      *
      * @type {*}
-     * @memberof IModuleArguments
+     * @memberof IModuleDefination
      */
     mapStateToProps?:any;
 
@@ -315,44 +314,50 @@ export interface IModuleArguments{
      * 如果不填，框架会根据action_handlers自动生成一个
      *
      * @type {*}
-     * @memberof IModuleArguments
+     * @memberof IModuleDefination
      */
     mapDispatchToProps?:any;    
 
-    /**
-     * 要挂载的元素
-     *
-     * @type {*}
-     * @memberof IModuleArguments
-     */
-    element?:any;
-
-    /**
-     * IN 如果设定了该参数
-     * mount 会异步挂载,异步函数会调用这个函数
-     * 
-     * @memberof IModuleArguments
-     */
-    mount_async?:(opts:IMountOpts)=>IThenable;
     
     //onCreating?:(creation:IModuleCreation)=>void;
-    initialize?:(props:any)=>IThenable;
-    onMounting?:(store:any)=>void;
+    initialize?:(props:any)=>IThenable|any;
+    
 }
 
 export interface IMountOpts{
     props:any;element:any;superStore?:any;transport?:any;
-    args:IModuleArguments;
+    args:IModuleDefination;
     
 }
 export interface IModule{
     //创建模块实例
     createInstance(state:any,superStore?:any): React.Component;
     mount(stateOrComponent:any,element:any,superStore?:any):IThenable;
+}
+export interface IReduxModule extends IModule{
+    (props:any):any;
     $reducer?:(state:IModState,action:any)=>IModState;
     $api?:{[index:string]:Function};
     $Wrap?:any;
     contextTypes?:{ store: PropTypes.object};
+}
+
+
+export interface IModuleInstance{
+    $store():any;
+    $moduleState(path:string|object,value?:any):any;
+    $closing?:(handler:Function)=>any;
+    $app?:()=>any;
+    $root?:()=>any;
+    $navigate?:(url:string,ctype?:any,parameters?:any)=>IThenable;
+    $waiting?:(text:string)=>void;
+    $modal?:(opts:IModalAction)=>IThenable;
+    $dialog?:(opts:IModalAction)=>IThenable;
+    $messageBox?:(text?:string,caption?:string,icon?:string)=>IThenable;
+    $confirm?:(text?:string,caption?:string,icon?:string)=>IThenable;
+    $get?:(url:string,data?:any,waiting?:string)=>IThenable;
+    $post?:(url:string,data?:any,waiting?:string)=>IThenable;
+    $validate?:(validStates:any,langs?:any,state?:any)=>IThenable;
 }
 
 export interface IModalAction {
@@ -485,35 +490,36 @@ export interface IMaskState{
     onclose?:Function;
 }
 export interface IModState{
-    __$modal__?:IModalState;
-    __$mask__?:IMaskState;
-    __$is_workarea__?:boolean;
+    $modal?:IModalState;
+    $mask?:IMaskState;
+    __$is_workarea__?:boolean|string;
 }
 
 export interface IModuleCreation{
-    $super_store?:any;
-    $state?:any;
-    $reducer?:(state:IModState,action:any)=>IModState;
-    $api?:{[index:string]:Function};
-    $store?:any;
-    $Wrap?:any;
+    super_store?:any;
+    state?:any;
+    reducer?:(state:IModState,action:any)=>IModState;
+    api?:{[index:string]:Function};
+    actions?:any;
+    store?:any;
+    Wrap?:any;
     initialize?:(props:any)=>IThenable;
     /**
      * 最终生成的Provider包含的 着的组件
      *
      * @type {*}
-     * @memberof IModuleArguments
+     * @memberof IModuleDefination
      */
     Redux?:any;
     instance?:React.Component;
 }
 
 export default function define_module(Component:any):IModule{
-    let moduleArguments : IModuleArguments = Component;
+    let moduleArguments : IModuleDefination = Component;
     
-    let createInstance= (props:any,superStore?:any,creation?:IModuleCreation):React.Component =>{
+    let createInstance= (props:any,creation?:IModuleCreation):React.Component =>{
         creation ||(creation = {});
-        creation.$super_store = superStore;
+        //creation.super_store = superStore;
         (props||(props={}));
 
         // 状态
@@ -522,14 +528,14 @@ export default function define_module(Component:any):IModule{
         else state = moduleArguments.state;
         //props优先
         state = mergeDiff(state,props);
-        creation.$state = state;
+        creation.state = state;
         
-        creation.$reducer = Component.$reducer || (Component.$reducer = createReducer(creation,moduleArguments));
+        creation.reducer = Component.$reducer || (Component.$reducer = createReducer(creation,moduleArguments));
         
         // 状态管理 store
-        const store =creation.$store =  createStore(creation.$reducer,creation.$state);
-        store.super_store = creation.$super_store;
-        store.is_inDialog = creation.$state.$inDialog;
+        const store =creation.store =  createStore(creation.reducer,creation.state);
+        store.super_store = creation.super_store;
+        store.is_inDialog = creation.state.$inDialog;
         store.initialize = moduleArguments.initialize;
         let p = store;
         while(p){
@@ -542,7 +548,7 @@ export default function define_module(Component:any):IModule{
 
         let Wrap = Module.$Wrap || (Module.$Wrap = createWrapComponent(Component));
 
-        let Redux = creation.Redux = createRedux(Wrap,moduleArguments);
+        let Redux = creation.Redux = createRedux(Wrap,moduleArguments,creation);
           
         let instance = creation.instance = <Provider store={store}>
             <Redux />
@@ -551,7 +557,7 @@ export default function define_module(Component:any):IModule{
         //if(moduleArguments.onCreating) moduleArguments.onCreating(creation);
         return instance;
     };
-    let Module :IModule = Component as IModule;
+    let Module :IReduxModule = Component as IReduxModule;
     // 默认都在context上挂上store
     Module.contextTypes={ store: PropTypes.object};
     // 接口
@@ -559,70 +565,56 @@ export default function define_module(Component:any):IModule{
     Module.createInstance = createInstance;
     Module.mount = (props:any,element:any,superStore?:any)=>{
         return new Promise((resolve,reject)=>{
-            if(moduleArguments.mount_async){
-                moduleArguments.mount_async({
-                    args:moduleArguments,
-                    props:props,
-                    element:element,
-                    superStore:superStore
-                    //transport:transport
-                }).then((opts:IMountOpts)=>{
-                    if(!opts || !opts.element || !opts.args)return;
-                    let creation :IModuleCreation= {};
-                    let component = createInstance(opts.props,opts.superStore,creation);
-                    ReactDOM.render(component,element,()=>{
-                        resolve(creation.$store);
-                    });
-                },(opts:IMountOpts)=>{
-                    if(!opts || !opts.element || !opts.args)return;
-                    let creation :IModuleCreation= {};
-                    let component = createInstance(opts.props,opts.superStore,creation);
-                    ReactDOM.render(component,element,()=>{
-                        resolve(creation.$store);
-                    });
-                });
-            }else {
-                let creation :IModuleCreation= {};
-                let component = createInstance(props,superStore,creation);
-                ReactDOM.render(component,element,()=>{
-                    resolve(creation.$store);
-                });
-            }
+            let creation :IModuleCreation= {super_store:superStore};
+            let component = createInstance(props,creation);
+            ReactDOM.render(component,element,()=>{
+                resolve(creation.store);
+            });
         });        
     };
     return Module;
 }
 
 
-function createReducer(creation:IModuleCreation,moduleArguments:IModuleArguments){ 
+
+function createReducer(creation:IModuleCreation,moduleArguments:IModuleDefination){ 
     // 行为/事件处理 reducers
     let reducer;
 
-    let action_handlers = moduleArguments.action_handlers ||{};
+    let action_handlers =creation.actions ={... moduleArguments.actions} ||{};
     action_handlers["$module.init"] = (state,action)=>{
         if(!action.state){
-            return {__$mask__:null};
+            return {$mask:null};
         }
-        action.state.__$mask__=null;
+        action.state.$mask=null;
         return action.state;
     }
+    /*action_handlers["$module.setState"]=(state,action)=>{
+        let newState = action.state;
+        if(newState!==undefined)return newState;
+        if(action.path){
+            let accessor = objectAccessor(action.path);
+            newState = accessor.setValue({},action.value);
+        }
+        return newState;
+    }*/
     
     action_handlers['$modal.show']=(state:IModState,modalAction:IModalAction)=>{
-        if(state.__$modal__ && state.__$modal__.status!=='close') {
+        if(state.$modal && state.$modal.status!=='close') {
             throw new Error("already pop out a layer.");
         }
         let modalState :IModalState = modalAction as IModalState;
         let loadableState:ILoadableState = modalAction as ILoadableState;
         modalState.status = 'creating';
         (modalState as any).__REPLACEALL__ =true;
-        loadableState.super_store = creation.$store;
+        loadableState.super_store = creation.store;
         //加载完成
         modalAction.onContentChange = function(result,type){
-            creation.$store.dispatch({type:'$modal.load',load_content:result,ctype:type});
+            creation.store.dispatch({type:'$modal.load',load_content:result,ctype:type});
             
             //通知app更新导航条
             if(modalState.nav_name){
-                creation.$store.root().dispatch({type:'nav.push',text:modalState.nav_name,info:result});
+                creation.store.root().dispatch({type:'nav.push',text:modalState.nav_name,info:result});
             }
             if(modalState.onload){
                 if(typeof (modalState.onload as any).resolve==='function') (modalState.onload as IDeferred).resolve(result);
@@ -630,21 +622,21 @@ function createReducer(creation:IModuleCreation,moduleArguments:IModuleArguments
             }
             //action.payload.resolve(result);
         }
-        return {__$modal__:modalState};
+        return {$modal:modalState};
     };
     action_handlers['$mask.show']=function(state,action){
         action.__REPLACEALL__=true;
         action.type = action.icon;
-        return {__$mask__:action};
+        return {$mask:action};
     }
     action_handlers['$mask.hide']=function(state:IModState,action){
-        if(state.__$mask__.onclose) state.__$mask__.onclose(state);
-        return {__$mask__:null};
+        if(state.$mask.onclose) state.$mask.onclose(state);
+        return {$mask:null};
     }
     action_handlers['$modal.load']=function(state,action){
         return {
-            __$mask__:null,
-            __$modal__:{
+            $mask:null,
+            $modal:{
                 status:'load',
                 load_content:action.load_content,
                 ctype:action.ctype,
@@ -653,7 +645,7 @@ function createReducer(creation:IModuleCreation,moduleArguments:IModuleArguments
         };
     };
     action_handlers['$modal.close']=function(state,action){
-        let popState:IModalState = state.__$modal__;
+        let popState:IModalState = state.$modal;
         let popStore = popState.store;
         let result = {status:action.status,state:popStore?popStore.getState():popState};
         if(popStore && popStore.__close_handlers){
@@ -667,22 +659,22 @@ function createReducer(creation:IModuleCreation,moduleArguments:IModuleArguments
         if(onclose){
             setTimeout(()=>{
                 if(typeof onclose.resolve==='function') onclose.resolve(result);
-                else if(typeof onclose ==='function')onclose(result);
-                creation.$store.root.dispatch({type:'nav.pop',id:id});
+                else if(typeof onclose ==='function') onclose(result);
+                creation.store.root.dispatch({type:'nav.pop',id:id});
             },0);
             
         }
-        return {__$modal__:null};
+        return {$modal:null};
     }
     
     let customReducer = moduleArguments.reducer;
     if(customReducer){
         reducer = (oldState,action)=>{
-            let newState = customReducer.call(creation.$store,oldState,action);
+            let newState = customReducer.call(creation.store,oldState,action);
             if(!newState || newState === oldState){
                 let handler = action_handlers[action.type];
                 if(handler){
-                    newState = handler.call(creation.$store,oldState,action);
+                    newState = handler.call(creation.store,oldState,action);
                 }else{
                     console.warn('disatch a unknown action. state will keep the same.',action);
                     newState = oldState;
@@ -695,7 +687,7 @@ function createReducer(creation:IModuleCreation,moduleArguments:IModuleArguments
             let newState;
             let handler = action_handlers[action.type];
             if(handler){
-                newState = handler.call(creation.$store,oldState,action);
+                newState = handler.call(creation.store,oldState,action);
             }else{
                 console.warn('disatch a unknown action. state will keep the same.',action);
                 newState = oldState;
@@ -709,7 +701,7 @@ function createReducer(creation:IModuleCreation,moduleArguments:IModuleArguments
             new Error('reducer must return a state.');
         } 
         if(action.payload && typeof action.payload.then==='function'){
-            action.payload.then(   (result)=>{ if(result) creation.$store.dispatch(result); } );
+            action.payload.then(   (result)=>{ if(result) creation.store.dispatch(result); } );
         }
         if(newState.__REPLACEALL__){
             newState.__REPLACEALL__=undefined;
@@ -722,122 +714,208 @@ function createReducer(creation:IModuleCreation,moduleArguments:IModuleArguments
     return reducer;
 }
 
-function injectApi(Component:IModuleCreation,creation:IModuleCreation){
-    const store =creation.$store;
-    
-    let apiContainer:any = (Component as any).__api_injected?null:(Component as Function).prototype;
-    if(!apiContainer) return store;
-    (Component as any).__api_injected = true;
-    apiContainer.$closing =function(handler:Function){
-        if(!store.__close_handlers)store.__close_handlers=[];
-        store.__close_handlers.push(handler);
-        return ()=>{
-            for(let i=0,j=store.__close_handlers.length;i<j;i++) {
-                let h = store.__close_handlers.shift();
-                if(h!==handler) store.__close_handlers.push(h);
+
+function injectApi(Component:IModuleDefination,creation:IModuleCreation){
+    const store =creation.store;
+    store.context = {store:store};
+    let apiContainer:IModuleInstance = (Component as Function).prototype;
+    if(!(Component as any).__api_injected){
+        (Component as any).__api_injected = true;
+        if(Component.api){
+            for(let n in Component.api){
+                apiContainer[n] = Component.api[n];
             }
-        };
-    }
-    apiContainer.$store = function(){ return this.context.store;}
-    apiContainer.$waiting = function(msg:string|boolean){
-        this.context.store.dispatch({type:"$mask.show",content:msg});
-    }
+        }
+        /*
+        apiContainer.$moduleState = function(path,value){
+            if(path===undefined) return this.context.store.getState();
+            if(typeof path==='string'){
+                if(value===undefined) {
+                    let state =  this.context.store.getState();
+                    let accessor = objectAccessor(path);
+                    return accessor.getValue(state);
+                }else {
+                    this.context.store.dispatch({
+                        type:"$module.setState",
+                        path:path,
+                        value:value
+                    });
+                }
+            }else{
+                this.context.store.dispatch({
+                    type:"$module.setState",
+                    state:path
+                });
+            }
+        }*/
+        
 
-    apiContainer.$root = function(){
-        let p = this.context.store;
-        while(p){
-            if(!p.super_store) break;
-            else p = p.super_store;
-        }
-        this.$root = ()=>p;
-    }
-    apiContainer.$navigate = function(url:string,ctype?:any,parameters?:any){
-        if(parameters===undefined){ parameters = ctype; ctype=undefined;}
-        return this.context.store.dispatch({
-            type:"app.navigate",
-            url:url,
-            ctype:ctype,
-            parameters:parameters
-        });
-    }
-    apiContainer.$modal=function(action:IModalAction):IThenable{
-        return new Promise((resolve,reject)=>{
-            action.type="$modal.show";
-            //if(param.fireOnLoaded) action.onload= resolve;
-            //else action.onclose = resolve;
-            setTimeout(()=>this.context.store.dispatch(action),0);
-            
-        });
-    }
-    apiContainer.$dialog=function(action:IModalAction):IThenable{
-        return new Promise((resolve,reject)=>{
-            action.type = "$modal.show";
-            action.modalType = "dialog";
-            if(action.callbackOnLoad) action.onload= resolve;
-            else action.onclose = resolve;
-            setTimeout(()=>this.context.store.dispatch(action),0);
-            
-        });
-    }
-    apiContainer.$messageBox=function(text?:string,caption?:string,icon?:string):IThenable{
-        if(icon===undefined){
-            icon = caption;caption=null;
-        }
-        return new Promise((resolve,reject)=>{
-           
-            let action = {
-                type:"$mask.show",
-                caption:caption,
-                message:text,
-                icon:icon,
-                onclose:resolve
+        apiContainer.$closing =function(handler:Function){
+            let store = this.context.store;
+            if(!store.__close_handlers)store.__close_handlers=[];
+            store.__close_handlers.push(handler);
+            return ()=>{
+                for(let i=0,j=store.__close_handlers.length;i<j;i++) {
+                    let h = store.__close_handlers.shift();
+                    if(h!==handler) store.__close_handlers.push(h);
+                }
             };
-            setTimeout(()=>store.dispatch(action),0);
-            
-        });
-    }
+        }
+        apiContainer.$store = function(){ return this.context.store;}
+        apiContainer.$waiting = function(msg:string|boolean,state?:any):void{
+            let self = this;
+            if(state) state.$mask = {content:msg};
+            else setTimeout(()=>self.context.store.dispatch({type:"$mask.show",content:msg}),0);
+        }
 
-    apiContainer.$get = function(url:string,data?:any,waiting?:string):IThenable{
-        if(waiting) this.waiting(waiting);
-        return new Promise((resolve,reject)=>{
-            axios.get(url,data).then((result)=>{
-                if(result.statusCode===401){
-                    this.$root().auth().then(()=>{
-                        this.$get(url,data,waiting);
-                    });
-                    return;
-                }
-                if(waiting)this.waiting(false);
-                handleAjaxResult(this,result,resolve,reject);
+        apiContainer.$app = apiContainer.$root = function(){
+            let p = this.context.store;
+            while(p){
+                if(!p.super_store) break;
+                else p = p.super_store;
+            }
+            this.$root =this.$app = ()=>p;
+        }
+        
+        apiContainer.$navigate = function(url:string,ctype?:any,parameters?:any){
+            if(parameters===undefined){ parameters = ctype; ctype=undefined;}
+            return this.$app().navigate(url,ctype,parameters);
+            
+        }
+        apiContainer.$modal=function(action:IModalAction):IThenable{
+            return new Promise((resolve,reject)=>{
+                action.type = "$modal.show";
+                action.modalType = null;
+                if(action.callbackOnLoad) action.onload= resolve;
+                else action.onclose = resolve;
+                setTimeout(()=>this.context.store.dispatch(action),0);
+                
             });
-        });
-    }
-    apiContainer.$post = function(url:string,data?:any,waiting?:string):IThenable{
-        if(waiting) this.waiting(waiting);
-        return new Promise((resolve,reject)=>{
-            axios.post(url,data).then((result)=>{
-                if(result.statusCode===401){
-                    this.$root().auth().then(()=>{
-                        this.$post(url,data,waiting);
-                    });
-                    return;
-                }
-                if(waiting)this.waiting(false);
-                handleAjaxResult(this,result,resolve,reject);
+        }
+        apiContainer.$dialog=function(action:IModalAction):IThenable{
+            return new Promise((resolve,reject)=>{
+                action.type = "$modal.show";
+                action.modalType = "dialog";
+                if(action.callbackOnLoad) action.onload= resolve;
+                else action.onclose = resolve;
+                setTimeout(()=>this.context.store.dispatch(action),0);
+                
             });
-        });
+        }
+
+        apiContainer.$messageBox=function(text?:string,caption?:string,icon?:string):IThenable{
+            if(icon===undefined){
+                icon = caption;caption=null;
+            }
+            return new Promise((resolve,reject)=>{
+                let action = {
+                    type:"$mask.show",
+                    caption:caption,
+                    message:text,
+                    icon:icon,
+                    onclose:resolve
+                };
+                setTimeout(()=>store.dispatch(action),0);
+                
+            });
+        }
+        apiContainer.$confirm=function(text?:string,caption?:string,icon?:string):IThenable{
+            return new Promise((resolve,reject)=>{
+                let action:any = {};
+                action.type = "$modal.show";
+                action.modalType = "dialog";
+                action.ctype = "html";
+                action.content =text;
+                if(action.callbackOnLoad) action.onload= resolve;
+                else action.onclose = resolve;
+                setTimeout(()=>this.context.store.dispatch(action),0);
+                
+            });
+        }
+
+        apiContainer.$validate = function(data:any,validator:Function,lngs?:any,returnHtml?:boolean){
+            let validStates = validator(data);
+            lngs ||(lngs={});
+            let html = "<ul>";
+            let c = 0;
+            for(let n in validStates){
+                let vrs = validStates[n];
+                if(vrs!==true) {
+                    html += `<li><label>${lngs[n]||n}</label><span>${vrs}</span></li>`;
+                    c++;
+                }
+            }
+            html += "</ul>";
+            if(c){
+                if(returnHtml===true) return html;
+                return this.$messageBox(html,lngs["validation"]||"验证","error");
+                
+            }
+            return null;
+        }
+
+        apiContainer.$get = function(url:string,data?:any,waiting?:string):IThenable{
+            if(waiting) this.waiting(waiting);
+            let me = this;
+            return new Promise((resolve,reject)=>{
+                let urls = require.resolveUrl(url);
+                doAjax(me,"get",url,urls,[],data,waiting,resolve,reject);
+            });
+        }
+        apiContainer.$post = function(url:string,data?:any,waiting?:string):IThenable{
+            if(waiting) this.waiting(waiting);
+            let me = this;
+            return new Promise((resolve,reject)=>{
+                let urls = require.resolveUrl(url);
+                doAjax(me,"post",url,urls,[],data,waiting,resolve,reject);
+            });
+        }
     }
+    if(Component.api){
+        for(let n in Component.api){
+            store[n] = Component.api[n];
+        }
+    }
+    let apiKeys = ["$waiting","$app","$root","$navigate","$modal","$get","$post","$messageBox","$confirm","$dialog","$validate"];
+    for(let i in apiKeys){
+        let key = apiKeys[i];
+        store[key] = apiContainer[key];
+    }
+}
+
+function doAjax(me,method,rawUrl,urls,visited,data,waiting,resolve,reject){
+    let url = urls.shift();
+    if(!url){
+        console.error("ajax失败，无法访问urls",visited);
+        resolve({message:"ajax失败，无法访问urls",urls:visited});
+        return;
+    }
+    let fn = axios[method];
+    fn.call(axios,url,data).then((result)=>{
+        if(result.statusCode===401){
+            me.$root().auth().then(()=>{
+                me['$' +method].call(me,rawUrl,data,waiting);
+            });
+            return;
+        }
+        if(waiting)this.waiting(false);
+        handleAjaxResult(me,result,resolve,reject);
+    },(e)=>{
+        visited.push(url);
+        doAjax(me,method,rawUrl,urls,visited,data,waiting,resolve,reject);
+    });
 }
 function handleAjaxResult(me,result,resolve,reject){
     if(!result.data){
         console.warn("返回的数据格式不正确，缺乏data字段");
-        me.$messageBox("返回的数据格式不正确，缺乏data字段","warn");
-        reject(result.data);
+        me.$messageBox("服务器错误:" + result.message,"warning");
+        reject(result);
         return;
     }
     let remoteData = result.data;
     if(remoteData.StatusText==='error'){
-        me.$messageBox(remoteData.Message || "有错误，请联系管理员","error").done(()=>reject(remoteData));
+        //let errorMessage = remoteData.Message
+        me.$messageBox(remoteData.Message || "服务器返回一个错误，请联系管理员","error").done(()=>reject(remoteData));
         return;
     }
     let complete =()=>{
@@ -854,7 +932,7 @@ function handleAjaxResult(me,result,resolve,reject){
     }else complete();
 }
 
-function createRedux(ModComponent:IModule,moduleArguments:IModuleArguments){
+function createRedux(ModComponent:IModule,moduleArguments:IModuleDefination,creation:IModuleCreation){
     
     // 状态到属性的映射 注入状态到属性中去 mapStateToProps
     let mapStateToProps= moduleArguments.mapStateToProps;
@@ -867,7 +945,7 @@ function createRedux(ModComponent:IModule,moduleArguments:IModuleArguments){
     
     // 消息分发映射 注入消息工厂函数 到属性中去 
     let mapDispatchToProps = moduleArguments.mapDispatchToProps ;  
-    let action_handlers = moduleArguments.action_handlers;
+    let action_handlers = creation.actions;
     if(action_handlers){
         if(!mapDispatchToProps){
             mapDispatchToProps =(dispatch)=>{
@@ -908,8 +986,9 @@ let createWrapComponent = function(Component):any{
         waiting_timer:any;
         tick_count:number;
         disposed:boolean;
+        x:number;y:number;
 
-        static contextTypes = {  store: PropTypes.object };
+        static contextTypes = {  store: PropTypes.object ,page: PropTypes.object };
 
         constructor(props){
             super(props);
@@ -918,8 +997,9 @@ let createWrapComponent = function(Component):any{
         render(){
             let state = this.props;
             let store =this.context.store;
+            
             let waiting;
-            let maskState:IMaskState = state.__$mask__;
+            let maskState:IMaskState = state.$mask;
             if(store.initialize){
                 maskState = {type:null,message:null,exclusive :true};
             }
@@ -972,18 +1052,28 @@ let createWrapComponent = function(Component):any{
             if(store.initialize){
                 let init = this.context.store.initialize;
                 store.initialize = null;
-                init({...this.props}).then((newState)=>{
-                    store.dispatch({type:"$module.init",state:newState});
-                },(e)=>{
-                    store.dispatch({type:"$mask.show",icon:"error",message:e});
-                });
+                var rs = init.call(store,{...state});
+                if(rs){
+                    if(typeof rs.then==='function'){
+                        rs.then((newState)=>{
+                            store.dispatch({type:"$module.init",state:newState});
+                        },(e)=>{
+                            store.dispatch({type:"$mask.show",icon:"error",message:e});
+                        });
+                    }else{
+                        state = mergeDiff(state,rs);
+                    }
+                }else {
+                    maskState = this.props.$mask;
+                }
+                
             }
             if(maskState && maskState.exclusive){
                 return <div className='module' ref={(node)=>this.modElement=node} style={{position:"relative"}}>
                 {waiting}
             </div>
             }
-            let modalState = state.__$modal__,main_hidden=false;
+            let modalState = state.$modal,main_hidden=false;
             let modal;
             if(modalState && modalState.status!=='close'){
                 let modalType = modalState.modalType;
@@ -1000,11 +1090,13 @@ let createWrapComponent = function(Component):any{
                 }
                 //state.pop['module.']
             }
+            let componentInstance = <Component {...state} />;
+            store.page = this.context.page = componentInstance;
 
             return <div className='module' ref={(node)=>this.modElement=node} style={{position:"relative"}}>
                 {waiting}
                 <div className='module-component' style={{display:main_hidden?"none":''}}>
-                <Component {...this.props} />
+                {componentInstance}
                 </div>
                 {modal}
             </div>
@@ -1016,7 +1108,11 @@ let createWrapComponent = function(Component):any{
 
             return <Modal title={popState.title}
                 visible={true}
-                onOk={()=>this.props["$modal.close"]({status:'ok'})}
+                onOk={
+                    ()=>{
+                        this.props["$modal.close"]({status:'ok'});
+                    }
+                }
                 onCancel={()=>this.props["$modal.close"]({status:'cancel'})}
                 confirmLoading={false}
             >
@@ -1047,24 +1143,38 @@ let createWrapComponent = function(Component):any{
                     }
                     if(!p){
                         clearInterval(this.waiting_timer);
+                        return;
                     }
                 }
                 this.waitingElement.style.width = this.modElement.offsetWidth + "px";
-                this.waitingElement.style.height = this.modElement.offsetHeight + 'px';
+                
                 let x :any= (this.waitingElement.offsetWidth - this.waitingFrontElement.clientWidth)/2; 
+                if(!this.x  || Math.abs(this.x-x)>3) {
+                    this.x = x;
+                }
                 let y;
                 if(this.props.__$is_workarea__){
                     let h = Math.max(document.documentElement.clientHeight,document.body.clientHeight);
                     y = (h- this.waitingFrontElement.clientHeight) /2;
                     y += Math.max(document.body.scrollTop,document.documentElement.scrollTop);
-                    y -= document.getElementById("layout-header").clientHeight;
-                    //console.log(h,y);
-                }else{
+                    if(this.props.__$is_workarea__=='root'){
+                        this.waitingElement.style.height = h + 'px';
+                    }else{
+                        this.waitingElement.style.height = this.modElement.offsetHeight + 'px';
+                        let header = document.getElementById("layout-header");
+                        if(header)y -= document.getElementById("layout-header").clientHeight;
+                    }
                     
+                    
+                }else{
+                    this.waitingElement.style.height = this.modElement.offsetHeight + 'px';
                     y = (this.waitingElement.offsetHeight - this.waitingFrontElement.clientHeight)/2;
                 }
-                this.waitingFrontElement.style.left = parseInt(x) + "px";
-                this.waitingFrontElement.style.top = parseInt(y) + "px";
+                if(!this.y  || Math.abs(this.y-y)>3) {
+                    this.y = y;
+                }
+                this.waitingFrontElement.style.left = this.x + "px";
+                this.waitingFrontElement.style.top = this.y + "px";
             };
             this.waiting_timer  = setInterval(cover,100);
             cover();
@@ -1081,6 +1191,8 @@ let createWrapComponent = function(Component):any{
         }
     };
 }
+
+
 
 
 

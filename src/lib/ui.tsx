@@ -5,11 +5,6 @@ import React,{Component} from 'lib/react/react';
 import {attach,detech,getBox,viewport} from 'lib/utils';
 import antd,{Icon,Tooltip,Checkbox,Alert,Button,Collapse} from 'lib/antd/antd';
 
-
-
-
-
-
 export function eachChildren(node,handler:(node:any,index:number,parent:any,deep?:number)=>string|boolean,deep?:number){
     if(!node || !node.props) return;
     let children = node.props.children;
@@ -86,90 +81,87 @@ export class Center extends React.Component{
     }
 }
 
-
-
-
-export interface IField{
-    //名称
-    name?:string;
-    text?:string;
-    //类型
-    inputType?:string;
-    //css
-    css?:string;
-    
-    info?:string;
-}
 export interface IFieldState{
     disabled?:boolean;
-    field:IField;
     name?:string;
-    text?:string;
+    validStates?:any;
+    validate?:Function;
+    info?:string;
+    label?:string;
     className?:string;
-    valid?:string;
-    inputType?:string;
     required?:string|string;
     xs?:boolean;
     sm?:boolean;
 }
-export class FieldView extends Component{
+export class Field extends Component{
     refs:any;
     props:any;
     setState:any;
     forceUpdate:any;
     state:any;
     context:any;
-    cls:string;
+    css:string;
 
     render(){
         
         let state :IFieldState = this.props;
         if(state.disabled===true) return null;
-        let field:IField =state.field ||{};
         
-        let inputType = field.inputType || state.inputType || 'Input';
-        let name = field.name || state.name;
-        let cls = field.css;
+        
+        //let inputType = field.inputType || state.inputType || 'Input';
+        let name = state.name;
+        let cls = this.css;
         if(cls===undefined){
             cls = '';
             if(this.props.className) cls += ' ' + this.props.className;
-            cls += ' ' + inputType;
+            //cls += ' ' + inputType;
             cls += ' ' + name;
             cls += ' field';
-            field.css = cls;
+            this.css = cls;
         }
-        if(state.valid) cls += ' ' + state.valid;
-        let input = antd[inputType];
-        let label;
-        if(field.info){
-            label = <Tooltip title={field.info}><label className='field-label'>
-            {field.text || state.text || name}
-            {state.required?<span className='required'>*</span>:null}
-        </label></Tooltip>
+        let validStates = state.validStates ||{};
+        let validateText = validStates[name];
+        let validateIndicator;
+        if(validateText===true) {
+            cls += " validate-success";
+            validateIndicator = <label  className='field-valid'><Icon type="check" /></label>;
+        }else if(validateText) {
+            cls += ' validate-error';
+            validateIndicator = <label className='field-valid'><Tooltip title={validateText}><Icon type="close" /></Tooltip></label>;
+        }
+        else if(this.props.info){
+
+            validateIndicator = <label  className='field-valid'><Tooltip title={this.props.info}><Icon type="info-circle-o" /></Tooltip></label>;
         }else {
-            label = <label className='field-label'>
-            {field.text || this.props.text || name}
+            validateIndicator = <label  className='field-valid'><i>&nbsp;</i></label>;
+        }
+        //let input = antd[inputType];
+        let label = <label className='field-label'>
+            {state.label|| name}
             {state.required?<span className='required'>*</span>:null}
         </label>;
-        }
         //field.className = "field-input";
         
         return <div className={cls}>
             {label}
-            <span className='field-input'>{React.createElement(input,state)}</span>
+            <span className='field-input'>{this.props.children}</span>
+            {validateIndicator}
         </div>;
     }
 }
 
 interface IFieldsetState{
-    fields:{[name:string]:IFieldState};
-    allowedFieldnames?:{[name:string]:boolean};
-    visibleFieldnames?:{[name:string]:boolean};
-    showAllAllowedFields?:boolean;
+    validStates?:any;
+    validRules?:any;
+    alloweds?:{[name:string]:boolean};
+    visibles?:{[name:string]:boolean};
+    collapsed?:boolean;
     useCollapse?:boolean;
 }
 
-export class FieldsetView extends Component{
+
+
+export class Fieldset extends Component{
     refs:any;
     props:any;
     setState:any;
@@ -188,34 +180,39 @@ export class FieldsetView extends Component{
     }
     render(){
         let state :IFieldsetState = this.props;
-        let fields :{[name:string]:IFieldState} = state.fields || {};
         let hasHidden = false;
         let canCollapse = false;
         let vp:string = viewport() as string;
-        let alloweds = state.allowedFieldnames;
-        let visibles = state.visibleFieldnames;
-        let showAll = state.showAllAllowedFields;
+        let alloweds = state.alloweds;
+        let visibles = state.visibles;
+        let collapsed = state.collapsed;
         let fieldcount=0;
+        let validStates = state.validStates || {};
+        let validRules = state.validRules || {};
 
         eachChildren(this,(child,index,parent,deep)=>{
             if(deep>3 || !child) return false;
-            if(child.type!==FieldView)return;
+            if(child.type!==Field){
+                fieldcount++;
+                return;
+            }
             let cprops:IFieldState = child.props;
+            if(!cprops.validStates) cprops.validStates = validStates;
             let name = cprops.name;
-            let field = fields[name];
-            if(!field) {fieldcount+=1; return; }
-            cprops.field = field;
             if(alloweds && !alloweds[name]) {
                 cprops.disabled=true;
             }
             if((visibles && !visibles[name]) || ((cprops as any)[vp]===false)) {
-                if(showAll!==true && !this.state.expended){
+                if(collapsed!==true && !this.state.expended){
                     hasHidden= true;
                     cprops.disabled=true;
                 }else{
                     canCollapse=true;
                     fieldcount+=1;
                 }
+                
+            }
+            if(!cprops.validate){
                 
             }
 

@@ -1,22 +1,36 @@
 ﻿/// <reference types="react" />
-import { Component } from 'lib/react/react';
-export declare class AppView extends Component {
+import React from 'lib/react/react';
+import { IAuthState } from 'portal/auth';
+import { IMainMenuState } from 'portal/menu';
+export interface IAppState {
+    __$is_workarea__?: boolean | string;
+    theme?: string;
+    access_token?: string;
+    logo_hidden?: boolean;
+    auth?: IAuthState;
+    menu?: IMainMenuState;
+    workarea?: any;
+    user?: any;
+    nav?: any;
+    customActions?: any[];
+}
+export declare class AppView extends React.Component {
+    refs: any;
     props: any;
+    forceUpdate: any;
+    state: any;
     context: any;
-    constructor(props: any);
-    componentDidMount(): void;
+    setState: any;
     render(): JSX.Element;
+    static actions: {
+        [name: string]: (state: IAppState, action: any) => any;
+    };
+    static state: any;
+    static initialize: (props: IAppState) => IThenable;
+    static api: {
+        "auth": () => IThenable;
+        "navigate": (url: any, data?: any) => IThenable;
+    };
 }
-export interface IApp {
-    dialog(opts: any): any;
-    navigate(urlOrOpts: any): any;
-    dispach(action: {
-        type: string;
-    }): any;
-    getJson(url: any, data: any): IThenable;
-    postJson(url: any, data: any): IThenable;
-    winAlert(msg: any): any;
-}
-declare let App: import("../../../../../ITPS/05 architecture/CMBPS.Front/src/lib/module").IModule;
-export declare let $app: IApp;
-export default App;
+declare const _default: import("../../../../Front/ReactTemplate/src/lib/module").IModule;
+export default _default;

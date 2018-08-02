@@ -1,554 +1,541 @@
 
+import {__module__,Loadable, IModuleCreation, IModuleDefination, IModState} from 'lib/module';
 import  React, { Component } from 'lib/react/react';
-import {deepClone} from 'lib/utils';
-import { Menu, Icon,Button,Dropdown,Breadcrumb  } from 'lib/antd/antd';
-import {viewport,attach} from 'lib/utils';
-import {__module__,Loadable, IModuleCreation} from 'lib/module';
+import { Menu, Icon,Button,Dropdown,Breadcrumb,Input,Checkbox  } from 'lib/antd/antd';
+
+import AuthView,{ ICredence, IAuthState, IAuthData }  from 'portal/auth';
+import authValidate from 'portal/auth.validation';
 import MainMenuView,{IMainMenuState,IMenuItem, IMainMenuAction} from 'portal/menu';
-import Auth,{IAuthState} from 'portal/auth';
-import ajaxable from 'portal/ajax';
-
-//import * as config from 'conf/config';
-
+import config from 'conf/config';
+import { viewport, attach } from '../lib/utils';
 
 declare var Deferred : any;
 declare var Promise : any;
 declare var define:any;
 
-interface INavState{
-  disable?:boolean;
-  simple?:boolean;
-  data?:IMenuItem;
-  
+export interface IAppState{
+    __$is_workarea__?:boolean|string;
+    theme?:string;
+    access_token?:string;
+    logo_hidden?:boolean;
+    auth?:IAuthState;
+    menu?:IMainMenuState;
+    workarea?:any;
+    user?:any;
+    nav?:any;
+    customActions?:any[];
 }
-interface INavAction{
-  onNavClick:(data)=>any;
-}
+export class AppView extends React.Component{
+    refs:any;
+    props:any;
+    forceUpdate:any;
+    state:any;
+    context:any;
+    setState:any;
 
-interface IAppState{
-  auth?:IAuthState;
-  menu?:IMainMenuState;
-  nav?:INavState;
-  dialog?:any;
-  workarea?:any;
-  user?:any;
-  menu_mode?:string;
-  //屏幕大小
-  viewport?:string;
-  //主题
-  theme?:string;
-  //logo是否要隐藏
-  logo_hidden?:boolean;
-  [index:string]:any;
-}
-interface IAppAction extends IMainMenuAction,INavAction{
-    onAuthSuccess:(data)=>any;
-    onMenuToggleMin:()=>any;    
-}
+    render(){
+        let appState :IAppState = this.props;
+        let authView = appState.auth.visible===true? <AuthView {...this.props} />:null;
+        //if(authView || !appState.access_token) return authView;
+        let menu :IMainMenuState = appState.menu;
+        let user : any = appState.user.principal;
+        let workarea:any = appState.workarea;
+        let vp = viewport();
 
+        let contentMode = menu.mode;
+        if(menu.collapsed || menu.mode==='min') contentMode = 'collapsed';
 
-
-function NavView(appProps:IAppState & INavAction & {simple:boolean}){
-  let props = appProps.nav;
-  let nodes = appProps.menu.data;
-  if(!props || !nodes ) return null;
-  let node = props.data;
-  let onNavClick = appProps.onNavClick;
-  let simple = props.simple;
-  let buildCrumbItem = function(node:IMenuItem){
-    if(simple){
-      return <Breadcrumb.Item key={node.Id} onClick={()=>onNavClick(node)}>
-        {node.Icon?<Icon type={node.Icon} />:null}
-         {node.Name}
-      </Breadcrumb.Item>;
-    }
-    let items = [];
-    let p = node && node.ParentId?nodes[node.ParentId]:undefined;
-    if(p && p.Children){
-      for(let i =0,j=p.Children.length;i<j;i++){
-        ((nd,index)=>{
-          if(nd.Id===node.Id)return;
-          items.push(<Menu.Item key={nd.Id} onClick={()=>onNavClick(nd)}>
-          {nd.Icon?<Icon type={nd.Icon} />:null}
-          <span>{nd.Name}</span>
-        </Menu.Item>);
-        })(p.Children[i],i); 
-      }
-    }
-    let menu = items.length==0?null:<Menu>{items}</Menu>;
-    return <Breadcrumb.Item key={node.Id} onClick={()=>onNavClick(node)}>
-      <Dropdown overlay={menu} placement="bottomLeft">
-        <span>
-          {node.Icon?<Icon type={node.Icon} />:null}
-          {node.Name} 
-        </span>
-      </Dropdown>
-    </Breadcrumb.Item>
-  };//end buildDropdown;
-  let items = [];
-  let nd = node;
-  while(nd){
-    items.unshift(buildCrumbItem(nd));
-    nd = nodes[nd.ParentId];
-  }
-  items.unshift(<Breadcrumb.Item key="$KEY_HOME" onClick={()=>onNavClick({Id:"Home",Name:"首页"})}>
-     <Icon type='home' />
-     首页
-    </Breadcrumb.Item>);
-
-  return <Breadcrumb>{items}</Breadcrumb>;
-}
-function NavXSView(appProps:IAppState & INavAction){
-  let props = appProps.nav;
-  let nodes = appProps.menu.data;
-  if(!props || !nodes || !props.data) return null;
-  let node = props.data;
-  let onNavClick = appProps.onNavClick;
-  let items = [];
-  let nd = node;
-  while(nd){
-    ((nd)=>{
-      items.push(<Menu.Item onClick={()=>onNavClick(nd)}>
-      {nd.Icon?<Icon type={nd.Icon} />:null}
-      {nd.Name}
-    </Menu.Item>);
-    })(nd);
-    nd = nodes[nd.ParentId];
-  }
-
-  items.unshift(<Menu.Item onClick={()=>onNavClick({Id:"Home",Name:"首页"})}>
-     <Icon type='home' />
-     首页
-    </Menu.Item>);
-  
-  let menu = <Menu>{items}</Menu>;
-  return <Dropdown overlay={menu} placement="bottomCenter">
-  <span>
-    {node.Icon?<Icon type={node.Icon} />:null}
-    {node.Name} 
-  </span>
-</Dropdown>
-}
-  
-
-function buildNormalQuicks(user,customActions){
-  let userDiv,customDiv;
-  if(user && user.data){
-    let userMenuItems = [
-      <Menu.Item key="10000"><Icon type="idcard" /> 重登陆</Menu.Item>,
-      <Menu.Item key="20000"><Icon type="key" /> 修改密码</Menu.Item>,
-      <Menu.Item key="30000"><Icon type="profile" /> 个性化</Menu.Item>,
-      <Menu.Item key="40000"><Icon type="logout" /> 退出</Menu.Item>,
-    ];
-    let userMenu = <Menu>{userMenuItems}</Menu>;
-    userDiv  = <div className='user'><Button.Group >
-      <Button  type='dashed'><Icon type="user" /><a>{user.data.DisplayName||user.data.Username || ' '}</a></Button>
-      <Dropdown overlay={userMenu} placement="bottomRight">
-        <Button>
-        <Icon type="setting" />
-        </Button>
-      </Dropdown>
-      <Button><Icon type="poweroff" /></Button>
-    </Button.Group></div>;
-
-  }
-  
-  
-  if(customActions && customActions.length){
-    let customActionItems=[];
-    for(let i =customActions.length-1,j=0;i>=0;i--){
-      let actionInfo = customActions[i];
-      customActionItems.unshift(<Button type={actionInfo.type || 'primary'} onClick={actionInfo.onClick}><Icon type={actionInfo.icon} /> {actionInfo.text}</Button>);
-    }
-    customDiv = <div className='actions'><Button.Group >{customActionItems}</Button.Group></div>;
-  }
-
-  return <div id='layout-quicks'>
-    {userDiv}
-    {customDiv}
-  </div>
-}
-
-function buildMinQuicks(user,customActions){
-  let customActionItems,customDiv;
-  if(user && user.data){
-    customActionItems = [
-      <Menu.Item key="10000"><Icon type="idcard" /> 重登陆</Menu.Item>,
-      <Menu.Item key="20000"><Icon type="key" /> 修改密码</Menu.Item>,
-      <Menu.Item key="30000"><Icon type="profile" /> 个性化</Menu.Item>,
-      <Menu.Item key="40000"><Icon type="logout" /> 退出</Menu.Item>,
-    ];
-  }
-  
-  
-  if(customActions && customActions.length){
-    let idprefix = (customActions.idprefix|| Math.random().toString())+"_";
-    if(customActions && customActions.length) customActionItems.unshift(<Menu.Divider />);
-    for(let i =customActions.length-1,j=0;i>=0;i--){
-      let actionInfo = customActions[i];
-      customActionItems.unshift(<Menu.Item key={idprefix + i}><Icon type={actionInfo.icon } /> {actionInfo.text }</Menu.Item>);
-    }
-    
-  }
-
-  let customMenu = <Menu>{customActionItems}</Menu>;
-  return <div id='layout-quicks'>
-    <Dropdown overlay={customMenu} placement="bottomRight">
-      <Button size='small' theme='dark'>
-        <Icon type="ellipsis" />
-      </Button>
-    </Dropdown>
-  </div>;
-}
-
-
-export class AppView extends Component{
-  props:any;
-  context:any;
-  constructor(props:any){
-    super(props);
-    
-  }
-  componentDidMount(){
-    
-  }
-  render(){
-    let state :IAppState = this.props;
-    const {menu,dialog,auth,workarea,nav,user,customActions,viewport} = this.props;
- 
-    let layoutLogo;
-    if(viewport==='xs'){
-      layoutLogo = <div id='layout-logo'>
-        <a className={menu.mode==='min'?'toggle collapsed':'toggle'} onClick={this.props["menu.toggleMin"]}><Icon type={menu.mode=='min'?"menu-unfold":"menu-fold"} /></a>
-      </div>;
-    }else {
-      layoutLogo = <div id='layout-logo'>
-        <a className={menu.mode==='min'?'toggle collapsed':'toggle'} onClick={this.props["menu.toggleMin"]} 
-          onMouseEnter={menu.mode==='min'?this.props["menu.show"]:null}
-          onMouseOut={menu.mode==='min'?this.props["menu.hide"]:null}
-        >
-          <Icon type={menu.mode=='min'?"caret-down":"caret-up"} />
-        </a>
-        <div className='logo-image'><img src='images/logo.png' onClick={this.props["menu.toggleMin"]} /></div>
-      </div>;
-    }   
-    let contentMode = menu.mode;
-    if(menu.collapsed || menu.mode==='min') contentMode = 'collapsed';
-
-    return <div  id='layout' >
-      <div id='layout-header'>
-        {state.logo_hidden?null:<span id='layout-logo'><img src={`themes/${state.theme}/images/logo.png`} /></span>}
-        <span id='layout-menu-toggle' onClick={this.props["menu.toggleCollapsed"]} onMouseOver={this.props["menu.show"]} onMouseOut={this.props["menu.hide"]}><Icon type="appstore" /></span>
-        {//viewType=='xs'?<NavXSView nav={nav} menu={menu} onNavClick={this.props["nav.click"]}/>:null
+        let header :any=null;
+        if(user){
+            header = <div id='layout-header'>
+                {appState.logo_hidden?null:<span id='layout-logo'><img src={`themes/${appState.theme}/images/logo.png`} /></span>}
+                <span id='layout-menu-toggle' onClick={this.props["menu.toggleCollapsed"]} onMouseOver={this.props["menu.show"]} onMouseOut={this.props["menu.hide"]}><Icon type="appstore" /></span>
+                {
+                    vp=='xs'?<NavXSView nav={appState.nav} menu={menu} onNavClick={this.props["nav.click"]}/>:null
+                }
+                {
+                    vp=='xs' || vp=='sm'?buildMinQuicks(user,appState.customActions,this.props):buildNormalQuicks(user,appState.customActions,this.props)
+                }
+            </div>
         }
-        {//viewType=='xs' || viewType=='sm'?buildMinQuicks(user,customActions):buildNormalQuicks(user,customActions)
-        }
+        
 
-        
-      </div>
-      <MainMenuView id='layout-menu-main' {...menu} className={contentMode}
-            onMenuClick={this.props["menu.click"]} 
-            onMenuToggleFold={this.props["menu.toggleFold"]} 
-            onMouseOver ={this.props["menu.show"]}
-            onMouseOut={this.props["menu.hide"]}
-          />
-      <div id='layout-content' className={contentMode}>
-        
-        <div id='layout-body'>
-          { viewport!='xs'?<div id='layout-nav'><NavView nav={nav} menu={menu} onNavClick={this.props["nav.click"]} simple={viewport=='sm'} /></div>:null }
-          {workarea ?<Loadable {...workarea}  id="layout-workarea" is_workarea={true} />:null}
+        return <div  id='layout' >
+        { authView }
+        { header }
+        {menu && menu.roots ?<MainMenuView id='layout-menu-main' {...menu} className={contentMode}
+                onMenuClick={this.props["menu.click"]} 
+                onMenuToggleFold={this.props["menu.toggleFold"]} 
+                onMouseOver ={this.props["menu.show"]}
+                onMouseOut={this.props["menu.hide"]}
+        />:null}
+        <div id='layout-content' className={contentMode}>
+            
+            <div id='layout-body'>
+                { vp!='xs'?<div id='layout-nav'><NavView nav={this.props.nav} menu={menu} onNavClick={this.props["nav.click"]} simple={vp=='sm'} /></div>:null }
+                { workarea ?<Loadable {...workarea}  id="layout-workarea" is_workarea={true} />:null }
+            </div>
         </div>
-      </div>
-      
-      {auth.enable===true?<Auth {...auth} onAuthSuccess={this.props["auth.success"]}></Auth>:null}
-    </div>;
-  }
+        
+        
+        </div>;
+    }
+    
+    
+    static actions : {[name:string]:(state:IAppState,action:any)=>any} = {
+        "auth.visible":function(state:IAppState,action){
+            return {auth:{visible:true,message:action.message},$mask:null};
+        },
+        "auth.text_changed":function(state:IAppState,action){
+            let text = action.event.target.value;
+            let name = action.event.target.name;
+            let credence = {};credence[name] = text;
+            let validStates = {};validStates[name] = authValidate(name,text);;
+            return {auth:{credence:credence,validStates:validStates}};
+        },
+        "auth.check_changed":function(state:IAppState,action){
+            let cked = action.event.target.checked;
+            let name = action.event.target.name;
+            let credence = {};credence[name] = cked;
+            //let validStates = {};validStates[name] = authValidate(name,text);;
+            return {auth:{credence:credence}};
+        },
+
+        "auth.submit":function(state:IAppState,action:any){
+            let credence = state.auth.credence;
+            let valid = this.$validate(credence,authValidate,{},true);
+            if(valid) return {auth:{message:valid}};
+            try{
+                if(state.auth.credence.RememberMe){
+                    localStorage.setItem("credence",JSON.stringify(credence));
+                }else {
+                    localStorage.setItem("credence",null);
+                }
+            }catch(ex){
+                console.warn("本地存储credenc失败");
+            }
+            //if(valid){
+            //    action.payload = new Promise((resolve)=>{
+            //        valid.then(()=>resolve({type:"auth.visible"}));
+            //    });
+            //    return state;
+            //}
+            
+            let api = this;
+            let auth_url = config.auth.url;
+            action.payload=new Promise((resolve)=>{
+                api.$post(auth_url,credence).then((authData,data)=>{
+                    if(authData && authData.AccessToken){
+                        resolve({type:"auth.success",authData:authData});
+                    }else {
+                        resolve({type:"auth.visible",message:authData?authData.message:null});
+                    }
+                },(e)=>{
+                    console.warn("auth failed",e);
+                    resolve({type:"auth.visible"});
+                });
+            });
+            return {auth:{visible:false,message:null},$mask:{content:"登陆中...",__REPLACEALL__:true}};
+        },
+        "auth.success":function(state:IAppState,action:any){
+            let authData:IAuthData = action.authData;
+            let credence = state.auth.credence;
+            credence.AccessToken =authData.AccessToken;
+            try{
+                if(state.auth.credence.RememberMe){
+                    localStorage.setItem("credence",JSON.stringify(credence));
+                }
+            }catch(ex){
+                console.warn("本地存储credenc失败");
+            }
+            let newState :IAppState = handle_resize(state);
+
+            let store = this.context.store;
+            if(store.__resolve){
+                let resolve = store.__resolve;
+                setTimeout(()=>resolve(authData),0);
+            }
+            store.__resolve = store.__reject = null;
+            let nodes :{[id:string]:IMenuItem}={};
+            let roots :IMenuItem[]=[];
+
+            buildMenuModel(authData.Principal.Permissions,nodes,roots);
+            for(let i in authData.Principal.Roles){
+                var role = authData.Principal.Roles[i];
+                buildMenuModel(role.Permissions,nodes,roots);
+            }
+            newState.__$is_workarea__="root";
+            newState.access_token = authData.AccessToken;
+            newState.auth= {visible:false};
+            newState.user ={principal: authData.Principal};
+            newState.menu.roots = roots;
+            newState.menu.nodes = nodes;
+            newState.nav ={data:null};
+            (newState as IModState).$mask=null;
+            return newState;
+        },
+        "menu.toggleFold":(state:IAppState,action)=>{
+            let mode = state.menu.mode==='fold'?'normal':'fold';
+            return {
+              menu:{mode:mode,hidden:false,beforeMode :mode}
+            }
+          },
+        "menu.toggleCollapsed":(state:IAppState,action)=>{
+            return {
+                menu:{ collapsed:!state.menu.collapsed,hidden:!state.menu.collapsed }
+            }
+        },
+        "menu.show":(state:IAppState,action)=>{
+            if(state.menu.mode==='min' || !state.menu.collapsed) return state;
+            if(state.menu.waitForHidden){
+                clearTimeout(state.menu.waitForHidden);
+            }
+            
+            return {menu:{hidden:false,waitForHidden:0}};
+        },
+        "menu.hide":(state:IAppState,action)=>{
+            if(state.menu.mode==='min' || !state.menu.collapsed) return state;
+            if(state.menu.waitForHidden && action.hideImmediate){
+                clearTimeout(state.menu.waitForHidden);
+                return {menu:{hidden:true,waitForHidden:0}}
+            }
+            let waitForHiden = setTimeout(()=>{
+                deferred.resolve({type:"menu.hide",hideImmediate:true});
+            },100);
+            let deferred = new Deferred();
+            action.payload = deferred;
+            return {menu:{waitForHidden:waitForHiden}};
+        },
+        
+        "menu.click":function(state,action){
+            let node = action;
+            let url = node.Url;
+            if(!url) return state;
+            
+            return AppView.actions['app.navigate'].call(this,state,{
+                type:"app.navigate",
+                url:url,
+                forceRefresh:true,
+                super_store:appStore,
+                ctype:'module'
+            });
+        },
+        "app.resize":(state:IAppState,action)=>{
+            
+            return handle_resize(state);
+            
+          },
+        "app.navigate":function(state:IAppState,action){
+            let workarea ={...action};
+            workarea.__REPLACEALL__ = true;
+            workarea.super_store = appStore;
+            workarea.ctype = 'module';
+            workarea.tick = new Date().valueOf();
+            let nav = state.menu.nodes[action._menuId||action.Url || action.url];
+            //action.superStore = appStore;
+            return {
+                menu:{hidden:state.menu.mode=='min'?true:state.menu.hidden},
+                workarea:workarea,
+                nav:{data:nav}
+            };
+        },
+        "nav.click":function(state,action){
+            let navData = action.event;
+            return AppView.actions["menu.click"].call(this,state,navData);
+        },
+    };
+
+    static state:any={
+        __$is_workarea__:"root",
+        theme:"light-blue",
+        auth:{
+            credence:{},
+            validStates:{}
+        },
+        user:{},
+        menu:{},
+        nav:null
+    
+        
+    };
+    static initialize=function(props:IAppState):IThenable{
+        let store = appStore = this.context.store;
+        let credence :ICredence;
+
+        try{
+            let json = localStorage.getItem("credence");
+            if(json){
+                credence = JSON.parse(json);
+                props.auth.credence = credence;
+            } 
+        }catch(ex){
+            console.warn("本地获取credence失败",ex);
+        }
+
+        attach(window,'resize',()=>{ store.dispatch({type:"app.resize"}); });
+
+        return new Promise((resolve,reject)=>{
+            store.auth().then(resolve,reject);
+        });
+    };
+
+    static api = {
+        "auth":function():IThenable{
+            let store = this.context.store;
+            let auth_url = config.auth.url;
+            return new Promise((resolve,reject)=>{
+                let state:IAppState = store.getState();
+                store.__resolve = resolve;
+                store.__reject= reject;
+                if(!state.auth.credence.Username||state.auth.credence.Password){
+                    store.dispatch({type:"auth.visible"});
+                    return;
+                }
+                this.$post(auth_url,state.auth.credence).then((authData:IAuthData)=>{
+                    if(authData && authData.AccessToken){
+                        store.dispatch({type:"auth.success",authData:authData});
+                    }else {
+                        store.dispatch({type:"auth.visible"});
+                    }
+                },(e)=>{
+                    console.warn("auth failed",e);
+                    store.dispatch({type:"auth.visible"});
+                });
+            }); 
+        },
+        "navigate":function(url,data?:any):IThenable{
+            let action = {
+                type:"app.navigate",
+                state:data,
+                url:url,
+                ctype:"module"
+            };
+            this.context.store.dispatch(action);
+            return null;
+        }
+    };
 }
+let appStore:any;
 
-
+function buildMenuModel(perms,nodes:{[id:string]:IMenuItem}, roots:IMenuItem[]){
+    
+    for(let i =0,j=perms.length;i<j;i++){
+        let perm = perms[i];
+        let node = nodes[perm.Id]=buildMenuItem(perm,nodes[perm.Id]);
+        if(!perm.IsMenu)continue;
+        if(perm.ParentId){
+            let pnode:IMenuItem = nodes[perm.ParentId] || (nodes[perm.ParentId]={Id:perm.ParentId,_menuId:perm.ParentId});
+            if(!pnode.Children)pnode.Children=[];
+            //node.Parent = pnode;
+            pnode.Children.push(node);
+        }else {
+            roots.push(node);
+        }
+        nodes[node.Url] = nodes[node.Id] = node;
+      
+    }
+    
+}
 
 let handle_resize =(state:IAppState):any=>{
-  let vp = viewport();
-    
-    if(vp==='xs'){
-      return {
-        viewport:vp,
-        logo_hidden:true,
-        menu:{mode:'min',beforeMode : state.menu.beforeMode || state.menu.mode,hidden:true,collapsed:true}
-      };
-    }else if(vp==='sm'){
-      return {
-        viewport:vp,
-        logo_hidden:false,
-        menu:{
-          mode:'fold'
-        }
-      };
-    }else {
-      return {
-        viewport:vp,
-        
-        logo_hidden:false,
-        menu:{
-          mode: state.menu.beforeMode || 'normal'
-        }
-      };
-    }
-}
-
-let action_handlers:{[actionName:string]:(state:IAppState,action)=>any} ={
-  "app.navigate":(state,action)=>{
-    let workarea ={...action};
-    workarea.__REPLACEALL__ = true;
-    workarea.super_store = appStore;
-    workarea.ctype = 'module';
-    workarea.tick = new Date().valueOf();
-    //action.superStore = appStore;
-    return {
-      menu:{hidden:state.menu.mode=='min'?true:state.menu.hidden},
-      workarea:workarea
-    };
-  },
-  "app.resize":(state:IAppState,action)=>{
-    if(rszDelayTick){
-      clearTimeout(rszDelayTick);rszDelayTick=0;
-    }
-    return handle_resize(state);
-    
-  },
-  "menu.toggleFold":(state:IAppState,action)=>{
-    let mode = state.menu.mode==='fold'?'normal':'fold';
-    return {
-      menu:{mode:mode,hidden:false,beforeMode :mode}
-    }
-  },
-  "menu.toggleCollapsed":(state:IAppState,action)=>{
-    return {
-      menu:{ collapsed:!state.menu.collapsed,hidden:!state.menu.collapsed }
-    }
-  },
-  "menu.show":(state:IAppState,action)=>{
-    if(state.menu.mode==='min' || !state.menu.collapsed) return state;
-    if(state.menu.waitForHidden){
-      clearTimeout(state.menu.waitForHidden);
-    }
-    
-    return {menu:{hidden:false,waitForHidden:0}};
-  },
-  "menu.hide":(state:IAppState,action)=>{
-    if(state.menu.mode==='min' || !state.menu.collapsed) return state;
-    if(state.menu.waitForHidden && action.hideImmediate){
-      clearTimeout(state.menu.waitForHidden);
-      return {menu:{hidden:true,waitForHidden:0}}
-    }
-    let waitForHiden = setTimeout(()=>{
-      deferred.resolve({type:"menu.hide",hideImmediate:true});
-    },100);
-    let deferred = new Deferred();
-    action.payload = deferred;
-    return {menu:{waitForHidden:waitForHiden}};
-  },
-
-  "menu.click":function(state,action){
-    let node = action;
-    let url = node.Url;
-    if(!url) return state;
-    if(url.indexOf("[dispatch]:")>=0){
-      let actionJson = url.substr("[dispatch]:".length);
-      let action = JSON.parse(actionJson);
-      let handler = action_handlers[action.type];
-      if(handler) return handler.call(this,state,action);
-      return state;
-    }
-    return action_handlers['app.navigate'].call(this,state,{
-      type:"app.navigate",
-      url:url,
-      forceRefresh:true,
-      super_store:appStore,
-      ctype:'module'
-    });
-    
-  },
-  "nav.click":(state,action)=>{
-
-  },
-  "dialog.show":(state,action)=>{
-    action.enable = true;
-    if(!action.deferred) action.deferred = new Deferred();
-    action.$transport = {'__transport__':'dialog'};
-    action.$superStore = action.superStore;
-    action.__REPLACEALL__=true;
-    return {
-      dialog:action
-    };
-  },
-  "dialog.ok":(state,action)=>{
-    let result = state.dialog.$transport.getModalResult?state.dialog.$transport.getModalResult():state.dialog.$transport.exports;
-    state.dialog.deferred.resolve({status:"ok",data:result});
-    return {
-      dialog:{enable:false,deferred:null,$transport:null,$store:null,$superStore:null,__REPLACEALL__:true}
-    };
-  },
-  "dialog.cancel":(state,action)=>{
-    state.dialog.deferred.resolve({status:"cancel"});
-    return {
-      dialog:{enable:false,deferred:null,$transport:null,$store:null,$superStore:null,__REPLACEALL__:true}
-    };
-  },
-  
-  "auth.auth":(state, action)=>{
-    return {auth:{enable:true}};
-  },
-  
-  "auth.success":(state,action)=>{
-    let{roots, nodes} = buildMenuModel(action);
-    let newState = handle_resize(state);
-    let newMenu = newState.menu || (newState.menu={});
-    
-    newMenu.data = nodes;
-    newMenu.roots = roots;
-    newState.user ={data:action.User};
-    newState.auth ={data:action.Auth,enable:false};
-    return newState;
+    let vp = viewport();
+      
+      if(vp==='xs'){
+        return {
+          viewport:vp,
+          logo_hidden:true,
+          menu:{mode:'min',beforeMode : state.menu.beforeMode || state.menu.mode,hidden:true,collapsed:true}
+        };
+      }else if(vp==='sm'){
+        return {
+          viewport:vp,
+          logo_hidden:false,
+          menu:{
+            mode:'fold'
+          }
+        };
+      }else {
+        return {
+          viewport:vp,
+          logo_hidden:false,
+          menu:{
+            mode: state.menu.beforeMode || 'normal'
+          }
+        };
+      }
   }
-};
-
-
-
-function buildMenuModel(authData){
-  let menus :{[id:string]:IMenuItem}={};
-  let perms = authData.Permissions;
-  let roots :IMenuItem[]=[];
-  for(let i =0,j=perms.length;i<j;i++){
-    let perm = perms[i];
-    let node = menus[perm.Id]=buildMenuItem(perm,menus[perm.Id]);
-    if(perm.ParentId){
-      let pnode:IMenuItem = menus[perm.ParentId] || (menus[perm.ParentId]={Id:perm.ParentId});
-      if(!pnode.Children)pnode.Children=[];
-      //node.Parent = pnode;
-      pnode.Children.push(node);
-    }else {
-      roots.push(node);
-    }
-    menus[node.Url] = node;
-    
-  }
-  return {roots:roots,nodes:menus};
-}
 function buildMenuItem(perm,item?:IMenuItem){
-  item ||(item={Id:perm.Id});
-  item.ParentId = perm.ParentId;
-  item.Name = perm.Name;
-  item.Icon = perm.Icon || "mail";
-  if(perm.Url) item.Url = perm.Url;
-  else if(perm.ControllerName){
-    perm.Url = perm.ControllerName + '/' + (perm.ActionName||"");
-  }
-  return item;
-}
-
-let rszDelayTick;
-attach(window,"resize",()=>{
-  if(appStore) {
-    if(rszDelayTick) clearTimeout(rszDelayTick);
-    rszDelayTick = setTimeout(() => {
-      appStore.dispatch({type:'app.resize'});
-    }, 200);
-  }
-})
-
-
-export interface IApp{
-  dialog(opts);
-  navigate(urlOrOpts);
-  dispach(action:{type:string});
-  getJson(url,data):IThenable;
-  postJson(url,data):IThenable;
-  winAlert(msg);
-}
-const apiProvider =(appStore)=>{return {
-  dialog:(opts)=>{
-    let deferred = new Deferred();
-    let action ={type:"dialog.show", deferred:deferred,...opts};
-    appStore.dispatch(action);
-    return deferred.promise();
-  },
-  navigate:function(urlOrOpts,data?:any){
-    let action = urlOrOpts;
-    if(typeof urlOrOpts ==='string'){
-      let state :IAppState= this.getState();
-      let node = state.menu.data[urlOrOpts];
-      if(!node) throw new Error(`${urlOrOpts} is not in menu/permissions`);
-      action = {...node};
+    item ||(item={Id:perm.Id,_menuId:perm.Id});
+    item.ParentId = perm.ParentId;
+    item.Name = perm.Name;
+    item.Icon = perm.Icon || "mail";
+    if(perm.Url) item.Url = perm.Url;
+    else if(perm.ControllerName && perm.ActionName){
+        item.Url = perm.ControllerName + '/' + perm.ActionName;
     }
-    //if(action.module===undefined)action.module = action.Url;
-    action.type = "app.navigate";
-    action.ctype = 'module';
-    if(!action.url) action.url = action.Url; 
-    action.innerProps= data;
-    this.dispatch(action);
-  },
-  
-  
-  winAlert(msg){
-    alert(msg);
-  }
-};};
-
-
-
-let view_type = viewport();
-let defaultModel = {
-  viewport:view_type,
-  menu:{
-    mode:view_type=='xs'?'min':'normal',
-    beforeMode:'normal'
-  },
-  auth:{
-    enable:true
-  }
+    return item;
 }
-let onCreating =(creation:IModuleCreation)=>{
-  if(appStore) throw new Error("App must be singleon, please do not mount it once again.");
-    appStore = creation.$store;
-    appStore.$modname = "app";
-    $app = appStore;
-    define("app",appStore);
-    ajaxable(appStore,appStore,config.ajax);
-}
-let appStore;
-let App= __module__(AppView,{
-    state :defaultModel,
-    onCreating:onCreating,
-    action_handlers:action_handlers,
-    apiProvider:apiProvider
-  }
-);
 
 
-
-export let $app :IApp = appStore;
-
-let $mount = App.mount;
-App.mount =(props:any,targetElement:HTMLElement,superStore)=>{
-  return new Promise((resolve,reject)=>{
-    let authConfig = props.auth= deepClone(config.auth);
-    authConfig.authview_resolve = resolve;
-    authConfig.enable = true;
-    $mount(props,targetElement);
-  });
+function buildNormalQuicks(user,customActions,props:any){
+    let userDiv,customDiv;
+    if(user){
+      let userMenuItems = [
+        <Menu.Item key="10000" onClick={props["auth.visible"]}><Icon type="idcard" /> 重登陆</Menu.Item>,
+        <Menu.Item key="20000"><Icon type="key" /> 修改密码</Menu.Item>,
+        <Menu.Item key="30000"><Icon type="profile" /> 个性化</Menu.Item>,
+        <Menu.Item key="40000"><Icon type="logout" /> 退出</Menu.Item>,
+      ];
+      let userMenu = <Menu>{userMenuItems}</Menu>;
+      userDiv  = <div className='user'><Button.Group >
+        <Button  type='dashed'><Icon type="user" /><a>{user.DisplayName||user.Username || ' '}</a></Button>
+        <Dropdown overlay={userMenu} placement="bottomRight">
+          <Button>
+          <Icon type="setting" />
+          </Button>
+        </Dropdown>
+        <Button><Icon type="poweroff" /></Button>
+      </Button.Group></div>;
   
+    }
+    
+    
+    if(customActions && customActions.length){
+      let customActionItems=[];
+      for(let i =customActions.length-1,j=0;i>=0;i--){
+        let actionInfo = customActions[i];
+        customActionItems.unshift(<Button type={actionInfo.type || 'primary'} onClick={actionInfo.onClick}><Icon type={actionInfo.icon} /> {actionInfo.text}</Button>);
+      }
+      customDiv = <div className='actions'><Button.Group >{customActionItems}</Button.Group></div>;
+    }
+  
+    return <div id='layout-quicks'>
+      {userDiv}
+      {customDiv}
+    </div>
 }
-export default App;
+  
+function buildMinQuicks(user,customActions,props:any){
+    let customActionItems,customDiv;
+    if(user){
+      customActionItems = [
+        <Menu.Item key="10000"><Icon type="idcard"  onClick={props["auth.visible"]} /> 重登陆</Menu.Item>,
+        <Menu.Item key="20000"><Icon type="key" /> 修改密码</Menu.Item>,
+        <Menu.Item key="30000"><Icon type="profile" /> 个性化</Menu.Item>,
+        <Menu.Item key="40000"><Icon type="logout" /> 退出</Menu.Item>,
+      ];
+    }
+    
+    
+    if(customActions && customActions.length){
+      let idprefix = (customActions.idprefix|| Math.random().toString())+"_";
+      if(customActions && customActions.length) customActionItems.unshift(<Menu.Divider />);
+      for(let i =customActions.length-1,j=0;i>=0;i--){
+        let actionInfo = customActions[i];
+        customActionItems.unshift(<Menu.Item key={idprefix + i}><Icon type={actionInfo.icon } /> {actionInfo.text }</Menu.Item>);
+      }
+      
+    }
+  
+    let customMenu = <Menu>{customActionItems}</Menu>;
+    return <div id='layout-quicks'>
+      <Dropdown overlay={customMenu} placement="bottomRight">
+        <Button size='small' theme='dark'>
+          <Icon type="ellipsis" />
+        </Button>
+      </Dropdown>
+    </div>;
+}
+
+interface INavAction{
+    onNavClick:(data)=>any;
+  }
+
+function NavView(appProps:IAppState & INavAction  & {simple:boolean}){
+    let props = appProps.nav;
+    let nodes = appProps.menu.nodes;
+    if(!props || !nodes ) return null;
+    let node = props.data;
+    let onNavClick = appProps["onNavClick"];
+    let simple = props.simple;
+    let buildCrumbItem = function(node:IMenuItem){
+      if(simple){
+        return <Breadcrumb.Item key={node.Id} onClick={()=>onNavClick(node)}>
+          {node.Icon?<Icon type={node.Icon} />:null}
+           {node.Name}
+        </Breadcrumb.Item>;
+      }
+      let items = [];
+      let p = node && node.ParentId?nodes[node.ParentId]:undefined;
+      if(p && p.Children){
+        for(let i =0,j=p.Children.length;i<j;i++){
+          ((nd,index)=>{
+            if(nd.Id===node.Id)return;
+            items.push(<Menu.Item key={nd.Id} onClick={()=>onNavClick(nd)}>
+            {nd.Icon?<Icon type={nd.Icon} />:null}
+            <span>{nd.Name}</span>
+          </Menu.Item>);
+          })(p.Children[i],i); 
+        }
+      }
+      let menu = items.length==0?null:<Menu>{items}</Menu>;
+      var dropdown = <Dropdown overlay={menu} placement="bottomLeft">
+      <span>
+        {node.Icon?<Icon type={node.Icon} />:null}
+        {node.Name} 
+      </span>
+    </Dropdown>;
+      return <Breadcrumb.Item key={node.Id} onClick={()=>onNavClick(node)}>
+        <span>
+        {node.Icon?<Icon type={node.Icon} />:null}
+        {node.Name} 
+      </span>
+      </Breadcrumb.Item>
+    };//end buildDropdown;
+    let items = [];
+    let nd = node;
+    while(nd){
+      items.unshift(buildCrumbItem(nd));
+      nd = nodes[nd.ParentId];
+    }
+    items.unshift(<Breadcrumb.Item key="$KEY_HOME" onClick={()=>onNavClick({Id:"Home",Name:"首页"})}>
+       <Icon type='home' />
+       首页
+      </Breadcrumb.Item>);
+  
+    return <Breadcrumb>{items}</Breadcrumb>;
+  }
+  function NavXSView(appProps:IAppState & INavAction){
+    let props = appProps.nav;
+    let nodes = appProps.menu.nodes;
+    if(!props || !nodes || !props.data) return null;
+    let node = props.data;
+    let onNavClick = appProps["onNavClick"];
+    let items = [];
+    let nd = node;
+    while(nd){
+      ((nd)=>{
+        items.push(<Menu.Item onClick={()=>onNavClick(nd)}>
+        {nd.Icon?<Icon type={nd.Icon} />:null}
+        {nd.Name}
+      </Menu.Item>);
+      })(nd);
+      nd = nodes[nd.ParentId];
+    }
+  
+    items.unshift(<Menu.Item onClick={()=>onNavClick({Id:"Home",Name:"首页"})}>
+       <Icon type='home' />
+       首页
+      </Menu.Item>);
+    
+    let menu = <Menu>{items}</Menu>;
+    return <Dropdown overlay={menu} placement="bottomCenter">
+    <span>
+      {node.Icon?<Icon type={node.Icon} />:null}
+      {node.Name} 
+    </span>
+  </Dropdown>
+}
 
 
-
-
-
-
-
-
-
-
-
-
+export default __module__(AppView);

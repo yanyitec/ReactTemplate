@@ -2,6 +2,7 @@
 import { Component } from 'lib/react/react';
 export interface IMenuItem {
     Id: string;
+    _menuId: string;
     Name?: string;
     Icon?: string;
     Url?: string;
@@ -10,7 +11,7 @@ export interface IMenuItem {
 }
 export interface IMainMenuState {
     id?: string;
-    data?: {
+    nodes?: {
         [index: string]: IMenuItem;
     };
     roots?: IMenuItem[];
@@ -39,8 +40,14 @@ export default class MainMenuView extends Component {
     forceUpdate: any;
     context: any;
     refs: any;
+    menuArea: any;
+    timer: any;
+    y: number;
     constructor(props: IMainMenuState & IMainMenuAction);
     render(): JSX.Element;
+    componentDidMount(): void;
     _buildMenuName: (node: any, menuClickHandler: any) => JSX.Element;
     _buildMenu: (children: any, menuClickHandler: any) => any[];
+    checkHeight: () => void;
+    componentWillUnmount(): void;
 }

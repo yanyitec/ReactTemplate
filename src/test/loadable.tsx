@@ -1,6 +1,6 @@
 import * as React from 'lib/react/react';
 
-import {$mountable,Loadable} from 'lib/module';
+import {$mountable,Loadable, __module__} from 'lib/module';
 class OtherComponent extends React.Component{
     props:any;
     constructor(props:any){
@@ -71,15 +71,15 @@ class TestLoadable extends React.Component{
         </div>;
         
     }
-}
-export default $mountable(TestLoadable,{
-    state:{
+    static state:any={
         iframe_url:"in-iframe.html"
-    },
-    action_handlers:{
+    };
+
+    static actions:any = {
         "changeIframeUrl":function(state,action){
             let newIframeUrl = prompt("请输入新的iframe的url","in-iframe_other.html");
             return {iframe_url:newIframeUrl};
         }
-    }
-});
+    };
+}
+export default __module__(TestLoadable);

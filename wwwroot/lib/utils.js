@@ -35,6 +35,8 @@
             }
             var destT = typeof dest;
             var srcT = typeof src;
+            if (srcT === 'object' && Object.prototype.toString.call(src) === '[object Array]')
+                return src;
             var ds = void 0, isArr = false;
             if (destT === 'object') {
                 //console.log(Object.prototype.toString.call(dest),dest);
@@ -53,7 +55,6 @@
             if (!isArr) {
                 if (Object.prototype.toString.call(src) === '[object Array]') {
                     ds = [];
-                    isArr;
                 }
                 else if (!ds) {
                     ds = {};
@@ -194,6 +195,61 @@
     };
     exports.attach(window, 'resize', viewportResizeHandler);
     viewportResizeHandler();
+    var objectAccessors = {};
+    function objectAccessor(path) {
+        var accessor = objectAccessors[path];
+        if (!accessor) {
+            accessor = objectAccessors[path] = genAccessor(path);
+        }
+        return accessor;
+    }
+    exports.objectAccessor = objectAccessor;
+    utils.objectAccessor = objectAccessor;
+    function genAccessor(path) {
+        var set_codes = ["var curr=$root;if(!curr) $root = curr={};var next;"];
+        var get_codes = ["var curr=$root;if(!curr)return undefined;"];
+        var paths = path.split('.');
+        for (var i = 0, j = paths.length - 1; i < j; i++) {
+            var sub = paths[i];
+            set_codes.push("next=curr[\"" + sub + "\"];if(!next) next=curr[\"" + sub + "\"]={};curr=next;");
+            get_codes.push("curr = curr[\"" + sub + "\"];if(!curr) return undefined;");
+        }
+        set_codes.push("curr[\"" + paths[paths.length - 1] + "\"]=$value;return $root;");
+        get_codes.push("return curr[\"" + paths[paths.length - 1] + "\"];");
+        var setCode = set_codes.join("\n");
+        var setter = new Function("$root", "$value", setCode);
+        var getCode = get_codes.join("\n");
+        var getter = new Function("$root", getCode);
+        return {
+            setValue: setter,
+            getValue: getter
+        };
+    }
+    function is_array(obj) {
+        return Object.prototype.toString.call(obj) == "[object Array]";
+    }
+    exports.is_array = is_array;
+    utils.is_array = is_array;
+    function array_remove(arr, item) {
+        for (var i = 0, j = arr.length; i < j; i++) {
+            var exist = arr.shift();
+            if (exist !== item)
+                arr.push(exist);
+        }
+    }
+    exports.array_remove = array_remove;
+    utils.array_remove = array_remove;
+    function array_filter(arr, predicator) {
+        var result = [];
+        for (var i = 0, j = arr.length; i < j; i++) {
+            var exist = arr.shift();
+            if (predicator(exist) === true)
+                result.push(exist);
+        }
+        return result;
+    }
+    exports.array_filter = array_filter;
+    utils.array_remove = array_remove;
     if (!String.prototype.startsWith) {
         String.prototype.startsWith = function (strx) {
             return this.indexOf(strx) == 0;

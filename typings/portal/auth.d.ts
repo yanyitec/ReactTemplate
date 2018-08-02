@@ -1,66 +1,46 @@
 ﻿/// <reference types="react" />
 import { Component } from 'lib/react/react';
-export interface IAuthInfo {
-    Username?: string;
-    Password?: string;
-    RememberMe?: boolean;
+export interface ICredence {
+    Username: string;
+    Password: string;
+    RememberMe: boolean;
     AccessToken?: string;
 }
-export interface IAuthPermission {
+export interface IPrincipal {
     Id: string;
-    Name?: string;
-    SystemId?: string;
-    Url?: string;
-    Icon?: string;
-    ControllerName?: string;
-    ActionName?: string;
-    ParentId?: string;
+    Username: string;
+    Permissions: any;
+    Roles: any;
 }
 export interface IAuthData {
     AccessToken: string;
-    Info: IAuthInfo;
-    Permissions: IAuthPermission[];
+    Principal: IPrincipal;
     Profile: any;
-    User: any;
 }
 export interface IAuthState {
-    enable: boolean;
-    data?: IAuthInfo;
+    visible: boolean;
+    message?: string;
+    validStates?: any;
     auth_type?: string;
     url?: string;
-    auth_dataType?: string;
-    authview_resolve?: Function;
+    credence?: ICredence;
+    [key: string]: any;
 }
-export interface IAuthNotice {
-    onAuthSuccess?: Function;
-}
-export interface IAuthInternalState extends IAuthInfo {
-    nameInputing?: boolean | string;
-    pswdInputing?: boolean | string;
-    errorMessages?: string[];
-    processing?: boolean;
-}
-export default class Auth extends Component {
+export default class AuthView extends Component {
     refs: any;
-    props: IAuthState & IAuthNotice;
-    setState: any;
+    props: any;
     forceUpdate: any;
-    state: IAuthInternalState;
+    state: any;
     context: any;
-    timer: any;
-    iframe: HTMLIFrameElement;
-    view_resolve: Function;
-    constructor(props: IAuthState & IAuthNotice);
-    doAuth(): void;
-    checkInputs(): any[];
-    nameChange: (e: any) => void;
-    pswdChange: (e: any) => void;
-    rememberMeChange: (e: any) => void;
-    nameFocusin: () => void;
-    nameFocusout: (e: any) => void;
-    pswdFocusin: () => void;
-    pswdFocusout: (e: any) => void;
-    formSubmit: (e: any) => void;
+    setState: any;
+    bg: any;
+    elem: any;
+    form: any;
+    isAttached: boolean;
+    constructor(props: any);
     render(): JSX.Element;
     componentDidMount(): void;
+    componentDidUpdate(): void;
+    componentWillUnmount(): void;
+    keepCenter: () => void;
 }

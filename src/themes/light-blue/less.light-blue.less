@@ -25,6 +25,47 @@
         color:@back-font-color;
     }
 
+    #auth-area{
+        
+        .auth-bg{
+            background-color:lighten(@front-bg-color,10%);
+            opacity: 0.2;
+        }
+        .auth-form{
+            background-color:lighten( @back-bg-color,5%);
+            color:@back-font-color;
+            opacity: 0.9;
+            border-color:darken(@back-bg-color,5%);
+            .actions button{
+                background-color:@front-bg-color;
+                color:@front-font-color;
+            }
+            .error-message{
+                border: 1px solid #ffa39e;
+                background-color: #fff1f0;
+                color:darken(#ffa39e,5%);
+            }
+        }
+    }
+    .field{
+        &.validate-error{
+             span.field-input input,textarea,select{
+                border:1px solid #ffa39e;
+            }
+            label.field-valid{
+                color:#ffa39e;
+            }
+        }
+        &.validate-success{
+            span.field-input input,textarea,select{
+               border:1px solid #b7eb8f;
+           }
+           label.field-valid{
+               color:#b7eb8f;
+           }
+       }
+    }
+
     #layout{
         #layout-header{
             background-color:@front-bg-color;
@@ -77,7 +118,7 @@
         }
     }
 
-    #layout .module{
+    .module{
         .mask{
             .mask-back{
                 background-color: lighten(@back-bg-color,3%);

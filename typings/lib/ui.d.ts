@@ -14,36 +14,29 @@ export declare class Center extends React.Component {
     componentDidMount(): void;
     componentWillUnmount(): void;
 }
-export interface IField {
-    name?: string;
-    text?: string;
-    inputType?: string;
-    css?: string;
-    info?: string;
-}
 export interface IFieldState {
     disabled?: boolean;
-    field: IField;
     name?: string;
-    text?: string;
+    validStates?: any;
+    validate?: Function;
+    info?: string;
+    label?: string;
     className?: string;
-    valid?: string;
-    inputType?: string;
     required?: string | string;
     xs?: boolean;
     sm?: boolean;
 }
-export declare class FieldView extends Component {
+export declare class Field extends Component {
     refs: any;
     props: any;
     setState: any;
     forceUpdate: any;
     state: any;
     context: any;
-    cls: string;
+    css: string;
     render(): JSX.Element;
 }
-export declare class FieldsetView extends Component {
+export declare class Fieldset extends Component {
     refs: any;
     props: any;
     setState: any;

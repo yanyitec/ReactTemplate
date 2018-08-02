@@ -18,4 +18,12 @@ export interface IViewport {
     name: string;
 }
 export declare let viewport: (onChange?: boolean | ((type: any) => void)) => string | IViewport;
+export interface IAccessor {
+    setValue($root: object, value: any): object;
+    getValue($root: object): any;
+}
+export declare function objectAccessor(path: string): IAccessor;
+export declare function is_array(obj: any): boolean;
+export declare function array_remove(arr: any[], item: any): void;
+export declare function array_filter(arr: any[], predicator: Function): any[];
 export default utils;

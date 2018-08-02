@@ -177,6 +177,65 @@ let viewportResizeHandler = ()=>{
 attach(window,'resize',viewportResizeHandler);
 viewportResizeHandler();
 
+export interface IAccessor{
+    setValue($root:object,value:any):object;
+    getValue($root:object):any;
+}
+let objectAccessors:{[pathname:string]:IAccessor} = {};
+export function objectAccessor(path:string):IAccessor{
+    let accessor:IAccessor = objectAccessors[path];
+    if(!accessor) {
+        accessor = objectAccessors[path] = genAccessor(path);
+    }
+    return accessor;
+}
+utils.objectAccessor = objectAccessor;
+
+function genAccessor(path:string):IAccessor{
+    let set_codes = ["var curr=$root;if(!curr) $root = curr={};var next;"];
+    let get_codes = ["var curr=$root;if(!curr)return undefined;"];
+    let paths = path.split('.');
+    for(let i=0,j=paths.length-1;i<j;i++){
+        let sub = paths[i];
+        set_codes.push(`next=curr["${sub}"];if(!next) next=curr["${sub}"]={};curr=next;`);
+        get_codes.push(`curr = curr["${sub}"];if(!curr) return undefined;`);
+    }
+    set_codes.push(`curr["${paths[paths.length-1]}"]=$value;return $root;`);
+    get_codes.push(`return curr["${paths[paths.length-1]}"];`);
+    let setCode = set_codes.join("\n");
+    let setter:($root:object,$value:any)=>object = new Function("$root","$value",setCode) as ($root:object,$value:any)=>object;
+    let getCode = get_codes.join("\n");
+    let getter:($root:object)=>any = new Function("$root",getCode) as ($root:object)=>any;
+    return {
+        setValue:setter,
+        getValue:getter
+    };
+}
+
+
+export function is_array(obj:any):boolean{
+    return Object.prototype.toString.call(obj) =="[object Array]";
+}
+utils.is_array = is_array;
+export function array_remove(arr:any[],item:any){
+    for(let i =0,j=arr.length;i<j;i++){
+        let exist = arr.shift();
+        if(exist!==item) arr.push(exist);
+    }
+}
+utils.array_remove = array_remove;
+
+export function array_filter(arr:any[],predicator:Function){
+    let result :any[]= [];
+    for(let i =0,j=arr.length;i<j;i++){
+        let exist = arr.shift();
+        if(predicator(exist)===true) result.push(exist);
+    }
+    return result;
+}
+utils.array_remove = array_remove;
+
+
 
 if(!(String.prototype as any).startsWith){
     (String.prototype as any).startsWith = function(strx){

@@ -522,7 +522,10 @@ var ModuleStates;
         var slashAt = url.indexOf('/', dotAt);
         if (slashAt >= 0)
             return '';
-        return url.substring(dotAt);
+        var ext = url.substring(dotAt);
+        if (ext.length > 3)
+            return null;
+        return ext;
     }
     function trim(text) {
         if (!text)

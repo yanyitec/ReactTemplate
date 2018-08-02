@@ -9,5 +9,5 @@ export declare class My extends React.Component {
     onChange: (evt: any) => void;
     render(): JSX.Element;
 }
-declare const _default: import("../../../../../ITPS/05 architecture/CMBPS.Front/src/lib/module").IModule;
+declare const _default: import("../../../../Front/ReactTemplate/src/lib/module").IModule;
 export default _default;

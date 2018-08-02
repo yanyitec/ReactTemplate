@@ -20,7 +20,7 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  display: table;
+  display: block;
   clear: both;
 }
 .grid > .col-d4,
@@ -32,8 +32,13 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
+}
+.grid > .col-d4:last-child,
+.grid > .col-d3:last-child,
+.grid > .col-d2:last-child,
+.grid > .col-d1:last-child {
+  clear: right;
 }
 .grid > .col-s24 {
   position: relative;
@@ -41,9 +46,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 100%;
+}
+.grid > .col-s24:last-child {
+  clear: right;
 }
 .grid > .col-s23 {
   position: relative;
@@ -51,9 +58,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 95.83333333%;
+}
+.grid > .col-s23:last-child {
+  clear: right;
 }
 .grid > .col-s22 {
   position: relative;
@@ -61,9 +70,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 91.66666667%;
+}
+.grid > .col-s22:last-child {
+  clear: right;
 }
 .grid > .col-s21 {
   position: relative;
@@ -71,9 +82,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 87.5%;
+}
+.grid > .col-s21:last-child {
+  clear: right;
 }
 .grid > .col-s20 {
   position: relative;
@@ -81,9 +94,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 83.33333333%;
+}
+.grid > .col-s20:last-child {
+  clear: right;
 }
 .grid > .col-s19 {
   position: relative;
@@ -91,9 +106,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 79.16666667%;
+}
+.grid > .col-s19:last-child {
+  clear: right;
 }
 .grid > .col-s18 {
   position: relative;
@@ -101,9 +118,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 75%;
+}
+.grid > .col-s18:last-child {
+  clear: right;
 }
 .grid > .col-s17 {
   position: relative;
@@ -111,9 +130,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 70.83333333%;
+}
+.grid > .col-s17:last-child {
+  clear: right;
 }
 .grid > .col-s16 {
   position: relative;
@@ -121,9 +142,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 66.66666667%;
+}
+.grid > .col-s16:last-child {
+  clear: right;
 }
 .grid > .col-s15 {
   position: relative;
@@ -131,9 +154,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 62.5%;
+}
+.grid > .col-s15:last-child {
+  clear: right;
 }
 .grid > .col-s14 {
   position: relative;
@@ -141,9 +166,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 58.33333333%;
+}
+.grid > .col-s14:last-child {
+  clear: right;
 }
 .grid > .col-s13 {
   position: relative;
@@ -151,9 +178,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 54.16666667%;
+}
+.grid > .col-s13:last-child {
+  clear: right;
 }
 .grid > .col-s12 {
   position: relative;
@@ -161,9 +190,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 50%;
+}
+.grid > .col-s12:last-child {
+  clear: right;
 }
 .grid > .col-s11 {
   position: relative;
@@ -171,9 +202,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 45.83333333%;
+}
+.grid > .col-s11:last-child {
+  clear: right;
 }
 .grid > .col-s10 {
   position: relative;
@@ -181,9 +214,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 41.66666667%;
+}
+.grid > .col-s10:last-child {
+  clear: right;
 }
 .grid > .col-s9 {
   position: relative;
@@ -191,9 +226,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 37.5%;
+}
+.grid > .col-s9:last-child {
+  clear: right;
 }
 .grid > .col-s8 {
   position: relative;
@@ -201,9 +238,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 33.33333333%;
+}
+.grid > .col-s8:last-child {
+  clear: right;
 }
 .grid > .col-s7 {
   position: relative;
@@ -211,9 +250,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 29.16666667%;
+}
+.grid > .col-s7:last-child {
+  clear: right;
 }
 .grid > .col-s6 {
   position: relative;
@@ -221,9 +262,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 25%;
+}
+.grid > .col-s6:last-child {
+  clear: right;
 }
 .grid > .col-s5 {
   position: relative;
@@ -231,9 +274,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 20.83333333%;
+}
+.grid > .col-s5:last-child {
+  clear: right;
 }
 .grid > .col-s4 {
   position: relative;
@@ -241,9 +286,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 16.66666667%;
+}
+.grid > .col-s4:last-child {
+  clear: right;
 }
 .grid > .col-s3 {
   position: relative;
@@ -251,9 +298,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 12.5%;
+}
+.grid > .col-s3:last-child {
+  clear: right;
 }
 .grid > .col-s2 {
   position: relative;
@@ -261,9 +310,11 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 8.33333333%;
+}
+.grid > .col-s2:last-child {
+  clear: right;
 }
 .grid > .col-s1 {
   position: relative;
@@ -271,31 +322,57 @@ body {
   border: 0;
   margin: 0;
   padding: 0;
-  display: block;
   float: left;
   width: 4.16666667%;
 }
+.grid > .col-s1:last-child {
+  clear: right;
+}
 .field {
+  width: 100%;
+  display: table;
+}
+.field > label.field-label,
+.field > span.field-input,
+.field > label.field-valid {
+  display: table-cell;
+}
+#auth-area {
+  position: relative;
   box-sizing: border-box;
   border: 0;
   margin: 0;
   padding: 0;
-  position: relative;
-}
-.field .field-label {
-  position: absolute;
+  position: fixed;
   left: 0;
   top: 0;
-  z-index: 1;
+  width: 100%;
+  height: 100%;
+  z-index: 896;
 }
-.field .field-input {
+#auth-area h1 {
+  text-align: center;
+}
+#auth-area .auth-bg {
   position: relative;
   box-sizing: border-box;
   border: 0;
   margin: 0;
   padding: 0;
-  display: inline-block;
+  height: 100%;
+  z-index: 897;
+}
+#auth-area .auth-form {
+  z-index: 898;
+}
+#auth-area .auth-form .rememberMe {
+  text-align: right;
+}
+#auth-area .auth-form .actions button {
   width: 100%;
+}
+.ant-tooltip {
+  z-index: 9999999;
 }
 #layout {
   position: relative;
@@ -315,7 +392,7 @@ body {
   left: 0;
   top: 0;
   width: 100%;
-  z-index: 100;
+  z-index: 790;
 }
 #layout #layout-header #layout-menu-toggle {
   position: relative;
@@ -326,27 +403,83 @@ body {
   position: absolute;
   left: 0;
   top: 0;
-  z-index: 101;
+  z-index: 1001;
 }
-#layout #layout-header #layout-menu-main {
+#layout.menu-mode-fold #layout-menu-main .fold-menu {
+  text-align: center;
+}
+#layout.menu-mode-fold #layout-menu-main .ant-menu-root > li {
+  text-align: center;
+}
+#layout #layout-menu-main {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  left: 0;
+  z-index: 790;
+  width: 230px ;
+}
+#layout #layout-menu-main .fold-menu {
+  text-align: left;
+}
+.module {
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+.module .mask {
   position: relative;
   box-sizing: border-box;
   border: 0;
   margin: 0;
   padding: 0;
   position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 996;
   left: 0;
-  z-index: 102;
-  width: 200px ;
+  top: 0;
 }
-#layout #layout-header #layout-menu-main .fold-menu {
-  text-align: left;
+.module .mask > div.mask-back {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 997;
 }
-#layout.menu-mode-fold #layout-header #layout-menu-main .fold-menu {
-  text-align: center;
+.module .mask > div.mask-front {
+  margin: 0;
+  position: absolute;
+  z-index: 998;
 }
-#layout.menu-mode-fold #layout-header #layout-menu-main .ant-menu-root > li {
-  text-align: center;
+.module .mask > div.mask-front .pop-message-box {
+  padding: 0;
+  position: relative;
+}
+.module .mask > div.mask-front .pop-message-box > div.pop-message-header {
+  display: table-row;
+}
+.module .mask > div.mask-front .pop-message-box > div.pop-message-header > div {
+  display: table-cell;
+}
+.module .mask > div.mask-front .pop-message-box > div.pop-message-body {
+  display: block;
+}
+.module .mask > div.mask-front .pop-message-box > div.pop-message-footer {
+  position: absolute;
+}
+#layout-quicks {
+  position: absolute;
+  z-index: 798;
 }
 @media (max-width: 767px) {
   .grid > .col-d1,
@@ -598,21 +731,101 @@ body {
   * {
     font-size: 10px;
   }
-  .grid > .field {
-    padding: 2px 4px;
+  .field {
+    padding: 2px;
   }
-  .grid > .field .field-label {
-    width: 50px;
+  .field > label.field-label {
+    width: 60px;
     text-align: right;
+    padding-right: 2px;
   }
-  .grid > .field .field-input {
-    padding-left: 50px;
+  .field > span.field-input {
+    width: auto;
+  }
+  .field > label.field-valid {
+    width: 10px;
+  }
+  #auth-area .auth-form {
+    box-sizing: border-box;
+    margin: 0;
+    min-width: 230px;
+    max-width: 220px;
+    padding: 2px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 1.6px;
+  }
+  #auth-area .auth-form h1 {
+    font-size: 15px;
+    padding: 2px;
+  }
+  #auth-area .auth-form h1 i {
+    font-size: 17px;
+  }
+  #auth-area .auth-form .field {
+    padding-right: 20px;
+  }
+  #auth-area .auth-form .field > label.field-label {
+    width: 30px;
+    font-size: 12px;
+  }
+  #auth-area .auth-form .field > label.field-label i {
+    font-size: 12px;
+  }
+  #auth-area .auth-form .field > label.field-valid {
+    box-sizing: border-box;
+    padding: 1px;
+    width: 12px;
+  }
+  #auth-area .auth-form .actions {
+    padding: 3px 6px;
+  }
+  #auth-area .auth-form .actions i {
+    font-size: 12px;
+  }
+  #auth-area .auth-form .error-message {
+    padding: 2px;
+    margin: 3px;
+    border-radius: 2px;
+  }
+  .module {
+    padding: 2px;
+  }
+  .module .mask > div.mask-front .pop-message-box {
+    padding: 3px;
+    padding-right: 26px;
+    border-radius: 1.4px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-header .pop-message-caption {
+    vertical-align: middle;
+    font-size: 12px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-header i {
+    font-size: 18px;
+    margin: 0 3px 0 0;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-body {
+    display: block;
+    padding-left: 21px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-footer {
+    position: absolute;
+    top: 2px;
+    right: 3px;
+  }
+  .module .mask.waiting .mask-front {
+    padding: 2px;
+    border-radius: 2px;
+    background-position: 50% 2px;
+  }
+  .module .mask.waiting .mask-front .pop-message {
+    padding: 2px;
   }
   #layout #layout-header {
     height: 36px;
   }
   #layout #layout-header #layout-logo img {
-    width: 200px;
+    width: 230px;
     height: 22.248px;
     margin: 6.876px 3px;
     margin-left: 39px;
@@ -625,43 +838,43 @@ body {
   #layout #layout-header #layout-menu-toggle * {
     font-size: 14.4px;
   }
-  #layout #layout-header #layout-menu-main {
+  #layout #layout-menu-main {
     left: 0;
     top: 36px;
   }
-  #layout #layout-header #layout-menu-main .fold-menu {
+  #layout #layout-menu-main .fold-menu {
     height: 20px;
     padding: 2px;
   }
-  #layout #layout-header #layout-menu-main .anticon {
+  #layout #layout-menu-main .anticon {
     font-size: 12px;
   }
-  #layout #layout-header #layout-menu-main.fold {
+  #layout #layout-menu-main.fold {
     width: 36px;
   }
-  #layout #layout-header #layout-menu-main.fold .fold-menu {
+  #layout #layout-menu-main.fold .fold-menu {
     text-align: center;
   }
-  #layout #layout-header #layout-menu-main.fold .anticon {
-    font-size: 15px;
+  #layout #layout-menu-main.fold .anticon {
+    font-size: 14px;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed {
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed {
     width: 36px;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item,
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item,
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
     padding: 0 10.5px !important;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-root > li {
+  #layout #layout-menu-main.fold .ant-menu-root > li {
     text-align: left;
   }
   #layout #layout-content {
     padding-top: 36px;
-    padding-left: 200px;
+    padding-left: 230px;
   }
   #layout #layout-content.normal {
-    padding-left: 200px;
+    padding-left: 230px;
   }
   #layout #layout-content.fold {
     padding-left: 36px;
@@ -674,6 +887,39 @@ body {
   }
   #layout #layout-content.min {
     padding-left: 0;
+  }
+  #layout #layout-workarea {
+    padding: 4px;
+  }
+  #layout-quicks {
+    right: 2px;
+    top: 0;
+    line-height: 36px;
+    height: 36px;
+  }
+  .ant-menu-vertical > .ant-menu-item,
+  .ant-menu-vertical-left > .ant-menu-item,
+  .ant-menu-vertical-right > .ant-menu-item,
+  .ant-menu-inline > .ant-menu-item,
+  .ant-menu-vertical > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-vertical-left > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-vertical-right > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-sub.ant-menu-inline > .ant-menu-item,
+  .ant-menu-sub.ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title {
+    line-height: 20px;
+    height: 20px;
+  }
+  .ant-menu-vertical .ant-menu-submenu,
+  .ant-menu-vertical-left .ant-menu-submenu,
+  .ant-menu-vertical-right .ant-menu-submenu,
+  .ant-menu-inline .ant-menu-submenu {
+    padding-bottom: 5px;
+  }
+  .ant-menu-inline-collapsed > .ant-menu-item .anticon,
+  .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item .anticon,
+  .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title .anticon {
+    line-height: 20px;
   }
 }
 /* 小屏幕（平板，大于等于 768px） */
@@ -929,21 +1175,101 @@ body {
   * {
     font-size: 12px;
   }
-  .grid > .field {
-    padding: 3px 6px;
+  .field {
+    padding: 3px;
   }
-  .grid > .field .field-label {
-    width: 60px;
+  .field > label.field-label {
+    width: 72px;
     text-align: right;
+    padding-right: 3px;
   }
-  .grid > .field .field-input {
-    padding-left: 60px;
+  .field > span.field-input {
+    width: auto;
+  }
+  .field > label.field-valid {
+    width: 12px;
+  }
+  #auth-area .auth-form {
+    box-sizing: border-box;
+    margin: 0;
+    min-width: 230px;
+    max-width: 264px;
+    padding: 3px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 2.4px;
+  }
+  #auth-area .auth-form h1 {
+    font-size: 18px;
+    padding: 3px;
+  }
+  #auth-area .auth-form h1 i {
+    font-size: 20.4px;
+  }
+  #auth-area .auth-form .field {
+    padding-right: 24px;
+  }
+  #auth-area .auth-form .field > label.field-label {
+    width: 36px;
+    font-size: 14.4px;
+  }
+  #auth-area .auth-form .field > label.field-label i {
+    font-size: 14.4px;
+  }
+  #auth-area .auth-form .field > label.field-valid {
+    box-sizing: border-box;
+    padding: 1.5px;
+    width: 15px;
+  }
+  #auth-area .auth-form .actions {
+    padding: 5px 10px;
+  }
+  #auth-area .auth-form .actions i {
+    font-size: 14.4px;
+  }
+  #auth-area .auth-form .error-message {
+    padding: 3px;
+    margin: 5px;
+    border-radius: 3px;
+  }
+  .module {
+    padding: 3px;
+  }
+  .module .mask > div.mask-front .pop-message-box {
+    padding: 4.5px;
+    padding-right: 34px;
+    border-radius: 2.1px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-header .pop-message-caption {
+    vertical-align: middle;
+    font-size: 14.4px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-header i {
+    font-size: 21.6px;
+    margin: 0 5px 0 0;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-body {
+    display: block;
+    padding-left: 26.6px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-footer {
+    position: absolute;
+    top: 3px;
+    right: 5px;
+  }
+  .module .mask.waiting .mask-front {
+    padding: 3px;
+    border-radius: 3px;
+    background-position: 50% 3px;
+  }
+  .module .mask.waiting .mask-front .pop-message {
+    padding: 3px;
   }
   #layout #layout-header {
     height: 42px;
   }
   #layout #layout-header #layout-logo img {
-    width: 200px;
+    width: 230px;
     height: 25.956px;
     margin: 8.022px 5px;
     margin-left: 47px;
@@ -956,43 +1282,43 @@ body {
   #layout #layout-header #layout-menu-toggle * {
     font-size: 16.8px;
   }
-  #layout #layout-header #layout-menu-main {
+  #layout #layout-menu-main {
     left: 0;
     top: 42px;
   }
-  #layout #layout-header #layout-menu-main .fold-menu {
+  #layout #layout-menu-main .fold-menu {
     height: 24px;
     padding: 3px;
   }
-  #layout #layout-header #layout-menu-main .anticon {
+  #layout #layout-menu-main .anticon {
     font-size: 14.4px;
   }
-  #layout #layout-header #layout-menu-main.fold {
+  #layout #layout-menu-main.fold {
     width: 42px;
   }
-  #layout #layout-header #layout-menu-main.fold .fold-menu {
+  #layout #layout-menu-main.fold .fold-menu {
     text-align: center;
   }
-  #layout #layout-header #layout-menu-main.fold .anticon {
-    font-size: 18px;
+  #layout #layout-menu-main.fold .anticon {
+    font-size: 16.8px;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed {
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed {
     width: 42px;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item,
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item,
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
     padding: 0 12px !important;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-root > li {
+  #layout #layout-menu-main.fold .ant-menu-root > li {
     text-align: left;
   }
   #layout #layout-content {
     padding-top: 42px;
-    padding-left: 200px;
+    padding-left: 230px;
   }
   #layout #layout-content.normal {
-    padding-left: 200px;
+    padding-left: 230px;
   }
   #layout #layout-content.fold {
     padding-left: 42px;
@@ -1005,6 +1331,39 @@ body {
   }
   #layout #layout-content.min {
     padding-left: 0;
+  }
+  #layout #layout-workarea {
+    padding: 6px;
+  }
+  #layout-quicks {
+    right: 3px;
+    top: 0;
+    line-height: 42px;
+    height: 42px;
+  }
+  .ant-menu-vertical > .ant-menu-item,
+  .ant-menu-vertical-left > .ant-menu-item,
+  .ant-menu-vertical-right > .ant-menu-item,
+  .ant-menu-inline > .ant-menu-item,
+  .ant-menu-vertical > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-vertical-left > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-vertical-right > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-sub.ant-menu-inline > .ant-menu-item,
+  .ant-menu-sub.ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title {
+    line-height: 24px;
+    height: 24px;
+  }
+  .ant-menu-vertical .ant-menu-submenu,
+  .ant-menu-vertical-left .ant-menu-submenu,
+  .ant-menu-vertical-right .ant-menu-submenu,
+  .ant-menu-inline .ant-menu-submenu {
+    padding-bottom: 6px;
+  }
+  .ant-menu-inline-collapsed > .ant-menu-item .anticon,
+  .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item .anticon,
+  .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title .anticon {
+    line-height: 24px;
   }
 }
 /* 中等屏幕（桌面显示器，大于等于 992px） */
@@ -1263,21 +1622,101 @@ body {
   * {
     font-size: 12px;
   }
-  .grid > .field {
-    padding: 4px 8px;
+  .field {
+    padding: 4px;
   }
-  .grid > .field .field-label {
-    width: 60px;
+  .field > label.field-label {
+    width: 72px;
     text-align: right;
+    padding-right: 4px;
   }
-  .grid > .field .field-input {
-    padding-left: 60px;
+  .field > span.field-input {
+    width: auto;
+  }
+  .field > label.field-valid {
+    width: 12px;
+  }
+  #auth-area .auth-form {
+    box-sizing: border-box;
+    margin: 0;
+    min-width: 230px;
+    max-width: 264px;
+    padding: 4px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 3.2px;
+  }
+  #auth-area .auth-form h1 {
+    font-size: 18px;
+    padding: 4px;
+  }
+  #auth-area .auth-form h1 i {
+    font-size: 20.4px;
+  }
+  #auth-area .auth-form .field {
+    padding-right: 24px;
+  }
+  #auth-area .auth-form .field > label.field-label {
+    width: 36px;
+    font-size: 14.4px;
+  }
+  #auth-area .auth-form .field > label.field-label i {
+    font-size: 14.4px;
+  }
+  #auth-area .auth-form .field > label.field-valid {
+    box-sizing: border-box;
+    padding: 2px;
+    width: 16px;
+  }
+  #auth-area .auth-form .actions {
+    padding: 6px 12px;
+  }
+  #auth-area .auth-form .actions i {
+    font-size: 14.4px;
+  }
+  #auth-area .auth-form .error-message {
+    padding: 4px;
+    margin: 6px;
+    border-radius: 4px;
+  }
+  .module {
+    padding: 4px;
+  }
+  .module .mask > div.mask-front .pop-message-box {
+    padding: 6px;
+    padding-right: 36px;
+    border-radius: 2.8px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-header .pop-message-caption {
+    vertical-align: middle;
+    font-size: 14.4px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-header i {
+    font-size: 21.6px;
+    margin: 0 6px 0 0;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-body {
+    display: block;
+    padding-left: 27.6px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-footer {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+  }
+  .module .mask.waiting .mask-front {
+    padding: 4px;
+    border-radius: 4px;
+    background-position: 50% 4px;
+  }
+  .module .mask.waiting .mask-front .pop-message {
+    padding: 4px;
   }
   #layout #layout-header {
     height: 50px;
   }
   #layout #layout-header #layout-logo img {
-    width: 200px;
+    width: 230px;
     height: 30.9px;
     margin: 9.55px 6px;
     margin-left: 56px;
@@ -1290,43 +1729,43 @@ body {
   #layout #layout-header #layout-menu-toggle * {
     font-size: 20px;
   }
-  #layout #layout-header #layout-menu-main {
+  #layout #layout-menu-main {
     left: 0;
     top: 50px;
   }
-  #layout #layout-header #layout-menu-main .fold-menu {
+  #layout #layout-menu-main .fold-menu {
     height: 24px;
     padding: 4px;
   }
-  #layout #layout-header #layout-menu-main .anticon {
+  #layout #layout-menu-main .anticon {
     font-size: 14.4px;
   }
-  #layout #layout-header #layout-menu-main.fold {
+  #layout #layout-menu-main.fold {
     width: 50px;
   }
-  #layout #layout-header #layout-menu-main.fold .fold-menu {
+  #layout #layout-menu-main.fold .fold-menu {
     text-align: center;
   }
-  #layout #layout-header #layout-menu-main.fold .anticon {
-    font-size: 18px;
+  #layout #layout-menu-main.fold .anticon {
+    font-size: 16.8px;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed {
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed {
     width: 50px;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item,
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item,
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
     padding: 0 16px !important;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-root > li {
+  #layout #layout-menu-main.fold .ant-menu-root > li {
     text-align: left;
   }
   #layout #layout-content {
     padding-top: 50px;
-    padding-left: 200px;
+    padding-left: 230px;
   }
   #layout #layout-content.normal {
-    padding-left: 200px;
+    padding-left: 230px;
   }
   #layout #layout-content.fold {
     padding-left: 50px;
@@ -1340,6 +1779,39 @@ body {
   #layout #layout-content.min {
     padding-left: 0;
   }
+  #layout #layout-workarea {
+    padding: 8px;
+  }
+  #layout-quicks {
+    right: 4px;
+    top: 0;
+    line-height: 50px;
+    height: 50px;
+  }
+  .ant-menu-vertical > .ant-menu-item,
+  .ant-menu-vertical-left > .ant-menu-item,
+  .ant-menu-vertical-right > .ant-menu-item,
+  .ant-menu-inline > .ant-menu-item,
+  .ant-menu-vertical > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-vertical-left > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-vertical-right > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-sub.ant-menu-inline > .ant-menu-item,
+  .ant-menu-sub.ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title {
+    line-height: 24px;
+    height: 24px;
+  }
+  .ant-menu-vertical .ant-menu-submenu,
+  .ant-menu-vertical-left .ant-menu-submenu,
+  .ant-menu-vertical-right .ant-menu-submenu,
+  .ant-menu-inline .ant-menu-submenu {
+    padding-bottom: 6px;
+  }
+  .ant-menu-inline-collapsed > .ant-menu-item .anticon,
+  .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item .anticon,
+  .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title .anticon {
+    line-height: 24px;
+  }
 }
 /* 大屏幕（大桌面显示器，大于等于 1200px） */
 @media (min-width: 1200px) {
@@ -1351,7 +1823,7 @@ body {
   }
   .grid > .col-d3 {
     width: 33.33333%;
-    padding: 5px;
+    padding: 7px;
   }
   .grid > .col-d4 {
     width: 25%;
@@ -1599,21 +2071,101 @@ body {
   * {
     font-size: 14px;
   }
-  .grid > .field {
-    padding: 5px 10px;
+  .field {
+    padding: 7px;
   }
-  .grid > .field .field-label {
-    width: 70px;
+  .field > label.field-label {
+    width: 84px;
     text-align: right;
+    padding-right: 7px;
   }
-  .grid > .field .field-input {
-    padding-left: 70px;
+  .field > span.field-input {
+    width: auto;
+  }
+  .field > label.field-valid {
+    width: 14px;
+  }
+  #auth-area .auth-form {
+    box-sizing: border-box;
+    margin: 0;
+    min-width: 230px;
+    max-width: 308px;
+    padding: 7px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 5.6px;
+  }
+  #auth-area .auth-form h1 {
+    font-size: 21px;
+    padding: 7px;
+  }
+  #auth-area .auth-form h1 i {
+    font-size: 23.8px;
+  }
+  #auth-area .auth-form .field {
+    padding-right: 28px;
+  }
+  #auth-area .auth-form .field > label.field-label {
+    width: 42px;
+    font-size: 16.8px;
+  }
+  #auth-area .auth-form .field > label.field-label i {
+    font-size: 16.8px;
+  }
+  #auth-area .auth-form .field > label.field-valid {
+    box-sizing: border-box;
+    padding: 3.5px;
+    width: 21px;
+  }
+  #auth-area .auth-form .actions {
+    padding: 8px 16px;
+  }
+  #auth-area .auth-form .actions i {
+    font-size: 16.8px;
+  }
+  #auth-area .auth-form .error-message {
+    padding: 7px;
+    margin: 8px;
+    border-radius: 7px;
+  }
+  .module {
+    padding: 7px;
+  }
+  .module .mask > div.mask-front .pop-message-box {
+    padding: 10.5px;
+    padding-right: 44px;
+    border-radius: 4.9px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-header .pop-message-caption {
+    vertical-align: middle;
+    font-size: 16.8px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-header i {
+    font-size: 25.2px;
+    margin: 0 8px 0 0;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-body {
+    display: block;
+    padding-left: 33.2px;
+  }
+  .module .mask > div.mask-front .pop-message-box > div.pop-message-footer {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+  }
+  .module .mask.waiting .mask-front {
+    padding: 7px;
+    border-radius: 7px;
+    background-position: 50% 7px;
+  }
+  .module .mask.waiting .mask-front .pop-message {
+    padding: 7px;
   }
   #layout #layout-header {
     height: 56px;
   }
   #layout #layout-header #layout-logo img {
-    width: 200px;
+    width: 230px;
     height: 34.608px;
     margin: 10.696px 8px;
     margin-left: 64px;
@@ -1626,43 +2178,43 @@ body {
   #layout #layout-header #layout-menu-toggle * {
     font-size: 22.4px;
   }
-  #layout #layout-header #layout-menu-main {
+  #layout #layout-menu-main {
     left: 0;
     top: 56px;
   }
-  #layout #layout-header #layout-menu-main .fold-menu {
+  #layout #layout-menu-main .fold-menu {
     height: 28px;
-    padding: 5px;
+    padding: 7px;
   }
-  #layout #layout-header #layout-menu-main .anticon {
+  #layout #layout-menu-main .anticon {
     font-size: 16.8px;
   }
-  #layout #layout-header #layout-menu-main.fold {
+  #layout #layout-menu-main.fold {
     width: 56px;
   }
-  #layout #layout-header #layout-menu-main.fold .fold-menu {
+  #layout #layout-menu-main.fold .fold-menu {
     text-align: center;
   }
-  #layout #layout-header #layout-menu-main.fold .anticon {
-    font-size: 21px;
+  #layout #layout-menu-main.fold .anticon {
+    font-size: 19.6px;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed {
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed {
     width: 56px;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item,
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
-  #layout #layout-header #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item,
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item,
+  #layout #layout-menu-main.fold .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
     padding: 0 17.5px !important;
   }
-  #layout #layout-header #layout-menu-main.fold .ant-menu-root > li {
+  #layout #layout-menu-main.fold .ant-menu-root > li {
     text-align: left;
   }
   #layout #layout-content {
     padding-top: 56px;
-    padding-left: 200px;
+    padding-left: 230px;
   }
   #layout #layout-content.normal {
-    padding-left: 200px;
+    padding-left: 230px;
   }
   #layout #layout-content.fold {
     padding-left: 56px;
@@ -1675,5 +2227,38 @@ body {
   }
   #layout #layout-content.min {
     padding-left: 0;
+  }
+  #layout #layout-workarea {
+    padding: 14px;
+  }
+  #layout-quicks {
+    right: 7px;
+    top: 0;
+    line-height: 56px;
+    height: 56px;
+  }
+  .ant-menu-vertical > .ant-menu-item,
+  .ant-menu-vertical-left > .ant-menu-item,
+  .ant-menu-vertical-right > .ant-menu-item,
+  .ant-menu-inline > .ant-menu-item,
+  .ant-menu-vertical > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-vertical-left > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-vertical-right > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title,
+  .ant-menu-sub.ant-menu-inline > .ant-menu-item,
+  .ant-menu-sub.ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title {
+    line-height: 28px;
+    height: 28px;
+  }
+  .ant-menu-vertical .ant-menu-submenu,
+  .ant-menu-vertical-left .ant-menu-submenu,
+  .ant-menu-vertical-right .ant-menu-submenu,
+  .ant-menu-inline .ant-menu-submenu {
+    padding-bottom: 7px;
+  }
+  .ant-menu-inline-collapsed > .ant-menu-item .anticon,
+  .ant-menu-inline-collapsed > .ant-menu-item-group > .ant-menu-item-group-list > .ant-menu-item .anticon,
+  .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title .anticon {
+    line-height: 28px;
   }
 }
